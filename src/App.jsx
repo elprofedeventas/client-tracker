@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 
 // Pega aquí la URL de tu Web App de Apps Script
-const API_BASE = '/gs/macros/s/AKfycbwiuai50-MZsFIfTKcBdX0oGQeU0rUE3Hk6TIbkD6N9mfMtlNqrMA402RUDtV9tSMq5/exec'
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwiuai50-MZsFIfTKcBdX0oGQeU0rUE3Hk6TIbkD6N9mfMtlNqrMA402RUDtV9tSMq5/exec'
 
 const today = () => new Date().toISOString().split('T')[0]
 
@@ -242,28 +242,23 @@ export default function App() {
   }
 
   const handleSubmit = async () => {
-    if (!validate()) return
-    setLoading(true)
-    try {
-      const res = await fetch(API_BASE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(form).toString(),
-      })
-      const data = await res.json()
-      if (data.success) {
-        showToast(`✓ ${form.nombre} registrado exitosamente`)
-        setForm(EMPTY_FORM)
-        setErrors({})
-      } else {
-        showToast(data.error || 'Error al registrar', 'error')
-      }
-    } catch {
-      showToast('Error al conectar con Apps Script', 'error')
-    } finally {
-      setLoading(false)
-    }
+  if (!validate()) return
+  setLoading(true)
+  try {
+    const params = new URLSearchParams({ ...form, action: 'create' })
+    await fetch(`${API_BASE}?${params.toString()}`, {
+      method: 'GET',
+      mode: 'no-cors',
+    })
+    showToast(`✓ ${form.nombre} registrado exitosamente`)
+    setForm(EMPTY_FORM)
+    setErrors({})
+  } catch {
+    showToast('Error al conectar con Apps Script', 'error')
+  } finally {
+    setLoading(false)
   }
+}
 
   const inp = (field, value) => {
     setForm(f => ({ ...f, [field]: value }))
