@@ -26,8 +26,3 @@ export default async function handler(req, res) {
     res.status(500).json({ success: false, error: error.message })
   }
 }
-```
-
-Guarda en GitHub, espera que Vercel redespliege y prueba esta URL directamente en el navegador para ver qué responde Apps Script:
-```
-https://client-tracker-gray.vercel.app/api/proxy?action=create&nombre=Test&telefono=0999999999
