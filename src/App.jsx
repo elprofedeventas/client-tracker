@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 
 // Pega aquí la URL de tu Web App de Apps Script
-const API_BASE = 'https://script.google.com/macros/s/AKfycbwiuai50-MZsFIfTKcBdX0oGQeU0rUE3Hk6TIbkD6N9mfMtlNqrMA402RUDtV9tSMq5/exec'
+const API_BASE = '/api/proxy'
 
 const today = () => new Date().toISOString().split('T')[0]
 
