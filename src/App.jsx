@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
 
-// Pega aquí la URL de tu Web App de Apps Script
 const API_BASE = '/api/proxy'
 
 const today = () => new Date().toISOString().split('T')[0]
@@ -8,11 +7,13 @@ const today = () => new Date().toISOString().split('T')[0]
 const EMPTY_FORM = {
   nombre: '',
   negocio: '',
+  identificacion: '',
   telefono: '',
   email: '',
   direccion: '',
   locales: '',
-  fechaVisita: today(),
+  contacto: '',
+  telefonoContacto: '',
   notas: '',
   siguienteAccionFecha: '',
   accion: '',
@@ -35,12 +36,16 @@ const icons = {
   building: 'M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M2 22h20M6 14h.01M10 14h.01M14 14h.01M6 10h.01M10 10h.01M14 10h.01M6 6h.01M10 6h.01M14 6h.01',
   calendar: 'M3 9h18M3 9V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4M3 9v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9M8 3v4M16 3v4',
   note: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8',
+  id: 'M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2zM9 12a3 3 0 1 1 6 0 3 3 0 0 1-6 0',
+  contact: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
   plus: 'M12 5v14M5 12h14',
   list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   check: 'M20 6L9 17l-5-5',
   x: 'M18 6L6 18M6 6l12 12',
   refresh: 'M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15',
   chevron: 'M9 18l6-6-6-6',
+  clock: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 6v6l4 2',
+  alert: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01',
 }
 
 // ─── Field component ──────────────────────────────────────────────────────────
@@ -48,15 +53,9 @@ function Field({ label, icon, required, children, hint }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
       <label style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: '11px',
-        fontWeight: '700',
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
-        color: 'var(--muted)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px'
+        fontFamily: 'var(--font-display)', fontSize: '11px', fontWeight: '700',
+        letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)',
+        display: 'flex', alignItems: 'center', gap: '6px'
       }}>
         <span style={{ color: 'var(--accent)', opacity: 0.7 }}>
           <Icon d={icons[icon]} size={14} />
@@ -71,15 +70,17 @@ function Field({ label, icon, required, children, hint }) {
 }
 
 const inputStyle = {
-  width: '100%',
-  padding: '10px 14px',
-  background: 'var(--white)',
-  border: '1.5px solid var(--border)',
-  borderRadius: 'var(--radius)',
-  color: 'var(--ink)',
-  fontSize: '15px',
-  transition: 'border-color 0.2s, box-shadow 0.2s',
-  outline: 'none',
+  width: '100%', padding: '10px 14px', background: 'var(--white)',
+  border: '1.5px solid var(--border)', borderRadius: 'var(--radius)',
+  color: 'var(--ink)', fontSize: '15px',
+  transition: 'border-color 0.2s, box-shadow 0.2s', outline: 'none',
+}
+
+const sectionTitle = {
+  fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em',
+  textTransform: 'uppercase', color: 'var(--muted)',
+  marginBottom: '16px', paddingBottom: '8px',
+  borderBottom: '1px solid var(--cream)', fontFamily: 'var(--font-display)',
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -88,18 +89,15 @@ function Toast({ message, type, onClose }) {
     const t = setTimeout(onClose, 4000)
     return () => clearTimeout(t)
   }, [onClose])
-
   return (
     <div style={{
       position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000,
       background: type === 'success' ? 'var(--success-bg)' : 'var(--error-bg)',
       border: `1.5px solid ${type === 'success' ? 'var(--success)' : 'var(--error)'}`,
       color: type === 'success' ? 'var(--success)' : 'var(--error)',
-      borderRadius: 'var(--radius-lg)',
-      padding: '14px 20px',
+      borderRadius: 'var(--radius-lg)', padding: '14px 20px',
       display: 'flex', alignItems: 'center', gap: '10px',
-      fontWeight: '500', maxWidth: '340px',
-      boxShadow: 'var(--shadow-lg)',
+      fontWeight: '500', maxWidth: '340px', boxShadow: 'var(--shadow-lg)',
       animation: 'fadeUp 0.3s ease',
     }}>
       <Icon d={type === 'success' ? icons.check : icons.x} size={18} />
@@ -111,33 +109,31 @@ function Toast({ message, type, onClose }) {
 // ─── Client row ───────────────────────────────────────────────────────────────
 function ClientRow({ client, index }) {
   const [open, setOpen] = useState(false)
+
+  const hasNextAction = client.siguienteAccionFecha || client.accion
+
   return (
     <div style={{
-      background: 'var(--white)',
-      border: '1.5px solid var(--border)',
-      borderRadius: 'var(--radius-lg)',
-      overflow: 'hidden',
+      background: 'var(--white)', border: '1.5px solid var(--border)',
+      borderRadius: 'var(--radius-lg)', overflow: 'hidden',
       animation: `fadeUp 0.3s ${index * 0.05}s ease both`,
       transition: 'box-shadow 0.2s',
     }}
       onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
       onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
     >
-      <div
-        onClick={() => setOpen(!open)}
-        style={{
-          padding: '14px 18px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          cursor: 'pointer', userSelect: 'none',
-        }}
-      >
+      {/* Row header */}
+      <div onClick={() => setOpen(!open)} style={{
+        padding: '14px 18px', display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none',
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div style={{
             width: '38px', height: '38px', borderRadius: '50%',
             background: 'var(--accent-light)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--accent)', fontFamily: 'var(--font-display)', fontWeight: '800',
-            fontSize: '14px', flexShrink: 0,
+            color: 'var(--accent)', fontFamily: 'var(--font-display)',
+            fontWeight: '800', fontSize: '14px', flexShrink: 0,
           }}>
             {client.nombre?.charAt(0).toUpperCase()}
           </div>
@@ -150,7 +146,18 @@ function ClientRow({ client, index }) {
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Siguiente acción badge */}
+          {hasNextAction && (
+            <div style={{
+              background: 'var(--accent-light)', color: 'var(--accent)',
+              fontSize: '11px', fontWeight: '700', padding: '3px 8px',
+              borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '4px',
+            }}>
+              <Icon d={icons.alert} size={11} />
+              {client.siguienteAccionFecha}
+            </div>
+          )}
           <span style={{ fontSize: '12px', color: 'var(--muted)' }}>{client.fechaVisita}</span>
           <span style={{
             transform: open ? 'rotate(90deg)' : 'rotate(0)',
@@ -161,36 +168,78 @@ function ClientRow({ client, index }) {
         </div>
       </div>
 
+      {/* Expanded detail */}
       {open && (
         <div style={{
-          padding: '0 18px 16px',
+          padding: '14px 18px 16px',
           display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
           gap: '12px', borderTop: '1px solid var(--cream)',
-          paddingTop: '14px', animation: 'fadeUp 0.2s ease',
+          animation: 'fadeUp 0.2s ease',
         }}>
           {[
+            { icon: 'id', label: 'Identificación', val: client.identificacion },
             { icon: 'mail', label: 'Email', val: client.email },
             { icon: 'map', label: 'Dirección', val: client.direccion },
             { icon: 'building', label: 'Locales', val: client.locales },
-            { icon: 'calendar', label: 'Fecha Visita', val: client.fechaVisita },
+            { icon: 'contact', label: 'Contacto', val: client.contacto },
+            { icon: 'phone', label: 'Tel. Contacto', val: client.telefonoContacto },
+            { icon: 'clock', label: 'Fecha de Visita', val: client.fechaVisita },
           ].map(({ icon, label, val }) => val ? (
             <div key={label}>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div style={{
+                fontSize: '11px', color: 'var(--muted)', fontWeight: '600',
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px'
+              }}>
                 <Icon d={icons[icon]} size={12} />{label}
               </div>
               <div style={{ fontSize: '14px' }}>{val}</div>
             </div>
           ) : null)}
+
+          {/* Siguiente acción */}
+          {(client.siguienteAccionFecha || client.accion) && (
+            <div style={{
+              gridColumn: '1 / -1',
+              background: 'var(--accent-light)',
+              borderRadius: 'var(--radius)',
+              padding: '10px 14px',
+              display: 'flex', alignItems: 'flex-start', gap: '10px',
+            }}>
+              <Icon d={icons.alert} size={16} stroke="var(--accent)" />
+              <div>
+                <div style={{
+                  fontSize: '11px', color: 'var(--accent)', fontWeight: '700',
+                  letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px'
+                }}>
+                  Siguiente acción
+                </div>
+                <div style={{ fontSize: '14px', color: 'var(--ink)', fontWeight: '500' }}>
+                  {client.accion}{client.accion && client.siguienteAccionFecha ? ' — ' : ''}{client.siguienteAccionFecha}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Notas */}
           {client.notas && (
             <div style={{ gridColumn: '1 / -1' }}>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <div style={{
+                fontSize: '11px', color: 'var(--muted)', fontWeight: '600',
+                letterSpacing: '0.06em', textTransform: 'uppercase',
+                marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px'
+              }}>
                 <Icon d={icons.note} size={12} />Notas
               </div>
-              <div style={{ fontSize: '14px', fontStyle: 'italic', color: 'var(--muted)', background: 'var(--cream)', padding: '8px 12px', borderRadius: 'var(--radius)' }}>
+              <div style={{
+                fontSize: '14px', fontStyle: 'italic', color: 'var(--muted)',
+                background: 'var(--cream)', padding: '8px 12px', borderRadius: 'var(--radius)'
+              }}>
                 "{client.notas}"
               </div>
             </div>
           )}
+
           <div style={{ gridColumn: '1 / -1', fontSize: '11px', color: 'var(--border)', textAlign: 'right' }}>
             Registrado: {client.fechaRegistro}
           </div>
@@ -221,7 +270,7 @@ export default function App() {
       if (data.success) setClients(data.data)
       else showToast('Error al cargar clientes', 'error')
     } catch {
-      showToast('No se puede conectar al servidor', 'error')
+      showToast('Error al conectar con Apps Script', 'error')
     } finally {
       setLoadingList(false)
     }
@@ -242,23 +291,25 @@ export default function App() {
   }
 
   const handleSubmit = async () => {
-  if (!validate()) return
-  setLoading(true)
-  try {
-    const params = new URLSearchParams({ ...form, action: 'create' })
-    await fetch(`${API_BASE}?${params.toString()}`, {
-      method: 'GET',
-      mode: 'no-cors',
-    })
-    showToast(`✓ ${form.nombre} registrado exitosamente`)
-    setForm(EMPTY_FORM)
-    setErrors({})
-  } catch {
-    showToast('Error al conectar con Apps Script', 'error')
-  } finally {
-    setLoading(false)
+    if (!validate()) return
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({ ...form, action: 'create' })
+      const res = await fetch(`${API_BASE}?${params.toString()}`)
+      const data = await res.json()
+      if (data.success) {
+        showToast(`✓ ${form.nombre} registrado exitosamente`)
+        setForm(EMPTY_FORM)
+        setErrors({})
+      } else {
+        showToast(data.error || 'Error al registrar', 'error')
+      }
+    } catch {
+      showToast('Error al conectar con Apps Script', 'error')
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
   const inp = (field, value) => {
     setForm(f => ({ ...f, [field]: value }))
@@ -271,32 +322,34 @@ export default function App() {
     boxShadow: focusedField === field ? '0 0 0 3px rgba(13,13,13,0.06)' : 'none',
   })
 
+  const fieldProps = (field) => ({
+    style: getInputStyle(field),
+    value: form[field],
+    onChange: e => inp(field, e.target.value),
+    onFocus: () => setFocusedField(field),
+    onBlur: () => setFocusedField(null),
+  })
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--paper)' }}>
 
       {/* Header */}
       <header style={{
-        background: 'var(--ink)',
-        padding: '0 24px',
+        background: 'var(--ink)', padding: '0 24px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         height: '60px', position: 'sticky', top: 0, zIndex: 100,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
-            width: '28px', height: '28px', borderRadius: '6px',
-            background: 'var(--accent)',
+            width: '28px', height: '28px', borderRadius: '6px', background: 'var(--accent)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <Icon d={icons.user} size={15} stroke="white" />
           </div>
-          <span style={{
-            fontFamily: 'var(--font-display)', fontWeight: '800',
-            fontSize: '16px', color: 'white', letterSpacing: '-0.01em'
-          }}>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '16px', color: 'white', letterSpacing: '-0.01em' }}>
             ClientTracker
           </span>
         </div>
-
         <nav style={{ display: 'flex', gap: '4px' }}>
           {[
             { key: 'form', icon: icons.plus, label: 'Nuevo' },
@@ -306,15 +359,11 @@ export default function App() {
               background: view === key ? 'rgba(255,255,255,0.15)' : 'transparent',
               border: 'none',
               color: view === key ? 'white' : 'rgba(255,255,255,0.5)',
-              padding: '6px 14px',
-              borderRadius: 'var(--radius)',
+              padding: '6px 14px', borderRadius: 'var(--radius)',
               display: 'flex', alignItems: 'center', gap: '6px',
-              fontWeight: '600', fontSize: '13px',
-              transition: 'all 0.15s',
-              cursor: 'pointer',
+              fontWeight: '600', fontSize: '13px', transition: 'all 0.15s', cursor: 'pointer',
             }}>
-              <Icon d={icon} size={15} />
-              {label}
+              <Icon d={icon} size={15} />{label}
             </button>
           ))}
         </nav>
@@ -322,214 +371,143 @@ export default function App() {
 
       <main style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 20px' }}>
 
-        {/* FORM VIEW */}
+        {/* ── FORM VIEW ─────────────────────────────────────────────────────── */}
         {view === 'form' && (
           <div style={{ animation: 'fadeUp 0.4s ease' }}>
             <div style={{ marginBottom: '32px' }}>
               <div style={{
-                display: 'inline-block',
-                background: 'var(--accent-light)',
-                color: 'var(--accent)',
-                fontSize: '11px', fontWeight: '700',
-                letterSpacing: '0.1em', textTransform: 'uppercase',
+                display: 'inline-block', background: 'var(--accent-light)', color: 'var(--accent)',
+                fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase',
                 padding: '4px 10px', borderRadius: '20px', marginBottom: '10px'
               }}>
                 Nueva visita
               </div>
-              <h1 style={{
-                fontFamily: 'var(--font-display)', fontWeight: '800',
-                fontSize: '28px', lineHeight: 1.1, letterSpacing: '-0.02em',
-              }}>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
                 Registrar cliente
               </h1>
               <p style={{ color: 'var(--muted)', marginTop: '6px', fontSize: '14px' }}>
-                Completa los datos del prospecto que visitaste hoy.
+                La fecha y hora de visita se registran automáticamente al guardar.
               </p>
             </div>
 
             <div style={{
-              background: 'var(--white)',
-              border: '1.5px solid var(--border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '28px',
-              display: 'flex', flexDirection: 'column', gap: '20px',
+              background: 'var(--white)', border: '1.5px solid var(--border)',
+              borderRadius: 'var(--radius-lg)', padding: '28px',
+              display: 'flex', flexDirection: 'column', gap: '24px',
               boxShadow: 'var(--shadow)',
             }}>
 
-              {/* Datos de contacto */}
+              {/* Datos del cliente */}
               <div>
-                <div style={{
-                  fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em',
-                  textTransform: 'uppercase', color: 'var(--muted)',
-                  marginBottom: '16px', paddingBottom: '8px',
-                  borderBottom: '1px solid var(--cream)',
-                  fontFamily: 'var(--font-display)',
-                }}>
-                  Datos de contacto
-                </div>
+                <div style={sectionTitle}>Datos del cliente</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <Field label="Nombre completo" icon="user" required>
-                    <input style={getInputStyle('nombre')} value={form.nombre}
-                      onChange={e => inp('nombre', e.target.value)}
-                      onFocus={() => setFocusedField('nombre')}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="Ej: María López" />
+                    <input {...fieldProps('nombre')} placeholder="Ej: María López" />
                     {errors.nombre && <span style={{ fontSize: '12px', color: 'var(--accent)' }}>{errors.nombre}</span>}
                   </Field>
-
-                  <Field label="Nombre del negocio" icon="store">
-                    <input style={getInputStyle('negocio')} value={form.negocio}
-                      onChange={e => inp('negocio', e.target.value)}
-                      onFocus={() => setFocusedField('negocio')}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="Ej: Farmacia del Parque" />
+                  <Field label="Identificación" icon="id" hint="Cédula o RUC">
+                    <input {...fieldProps('identificacion')} placeholder="Ej: 0912345678" />
                   </Field>
-
                   <Field label="Teléfono" icon="phone" required>
-                    <input style={getInputStyle('telefono')} value={form.telefono}
-                      onChange={e => inp('telefono', e.target.value)}
-                      onFocus={() => setFocusedField('telefono')}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="+52 55 1234 5678" type="tel" />
+                    <input {...fieldProps('telefono')} placeholder="Ej: 0997002220" type="tel" />
                     {errors.telefono && <span style={{ fontSize: '12px', color: 'var(--accent)' }}>{errors.telefono}</span>}
                   </Field>
-
                   <Field label="Email" icon="mail">
-                    <input style={getInputStyle('email')} value={form.email}
-                      onChange={e => inp('email', e.target.value)}
-                      onFocus={() => setFocusedField('email')}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="correo@ejemplo.com" type="email" />
+                    <input {...fieldProps('email')} placeholder="correo@ejemplo.com" type="email" />
                     {errors.email && <span style={{ fontSize: '12px', color: 'var(--accent)' }}>{errors.email}</span>}
                   </Field>
                 </div>
               </div>
 
-              {/* Info del negocio */}
+              {/* Datos del negocio */}
               <div>
-                <div style={{
-                  fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em',
-                  textTransform: 'uppercase', color: 'var(--muted)',
-                  marginBottom: '16px', paddingBottom: '8px',
-                  borderBottom: '1px solid var(--cream)',
-                  fontFamily: 'var(--font-display)',
-                }}>
-                  Info del negocio
-                </div>
+                <div style={sectionTitle}>Datos del negocio</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
-                  <Field label="Dirección" icon="map">
-                    <input style={getInputStyle('direccion')} value={form.direccion}
-                      onChange={e => inp('direccion', e.target.value)}
-                      onFocus={() => setFocusedField('direccion')}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="Calle, colonia, ciudad" />
+                  <Field label="Nombre del negocio" icon="store">
+                    <input {...fieldProps('negocio')} placeholder="Ej: Farmacia del Parque" />
                   </Field>
+                  <Field label="¿Cuántos locales?" icon="building" hint="Sucursales">
+                    <input {...fieldProps('locales')} placeholder="Ej: 3" type="number" min="1" />
+                  </Field>
+                  <Field label="Dirección" icon="map">
+                    <input {...fieldProps('direccion')} placeholder="Calle, colonia, ciudad" style={{ ...getInputStyle('direccion'), gridColumn: '1 / -1' }} />
+                  </Field>
+                </div>
+              </div>
 
-                  <Field label="¿Cuántos locales?" icon="building" hint="Número de sucursales">
-                    <input style={getInputStyle('locales')} value={form.locales}
-                      onChange={e => inp('locales', e.target.value)}
-                      onFocus={() => setFocusedField('locales')}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="Ej: 3" type="number" min="1" />
+              {/* Persona de contacto */}
+              <div>
+                <div style={sectionTitle}>Persona de contacto</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <Field label="Contacto" icon="contact">
+                    <input {...fieldProps('contacto')} placeholder="Nombre del contacto" />
+                  </Field>
+                  <Field label="Teléfono de contacto" icon="phone">
+                    <input {...fieldProps('telefonoContacto')} placeholder="Ej: 0987654321" type="tel" />
                   </Field>
                 </div>
               </div>
 
               {/* Detalles de la visita */}
               <div>
-                <div style={{
-                  fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em',
-                  textTransform: 'uppercase', color: 'var(--muted)',
-                  marginBottom: '16px', paddingBottom: '8px',
-                  borderBottom: '1px solid var(--cream)',
-                  fontFamily: 'var(--font-display)',
-                }}>
-                  Detalles de la visita
-                </div>
+                <div style={sectionTitle}>Detalles de la visita</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <Field label="Fecha de visita" icon="calendar">
-                    <input style={getInputStyle('fechaVisita')} value={form.fechaVisita}
-                      onChange={e => inp('fechaVisita', e.target.value)}
-                      onFocus={() => setFocusedField('fechaVisita')}
-                      onBlur={() => setFocusedField(null)}
-                      type="date" />
-                  </Field>
-
+                  <div style={{
+                    background: 'var(--cream)', borderRadius: 'var(--radius)',
+                    padding: '10px 14px', fontSize: '13px', color: 'var(--muted)',
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                  }}>
+                    <Icon d={icons.clock} size={14} />
+                    La fecha y hora exacta de esta visita se registrará automáticamente al guardar.
+                  </div>
                   <Field label="Notas / Comentarios" icon="note">
-                    <textarea style={{
-                      ...getInputStyle('notas'),
-                      resize: 'vertical', minHeight: '90px', lineHeight: '1.5'
-                    }} value={form.notas}
-                      onChange={e => inp('notas', e.target.value)}
-                      onFocus={() => setFocusedField('notas')}
-                      onBlur={() => setFocusedField(null)}
+                    <textarea {...fieldProps('notas')} style={{ ...getInputStyle('notas'), resize: 'vertical', minHeight: '90px', lineHeight: '1.5' }}
                       placeholder="Interés del cliente, próximos pasos, observaciones..." />
                   </Field>
+                </div>
+              </div>
 
-                  <Field label="Siguiente Acción" icon="calendar">
-                    <input style={getInputStyle('siguienteAccionFecha')} value={form.siguienteAccionFecha}
-                      onChange={e => inp('siguienteAccionFecha', e.target.value)}
-                      onFocus={() => setFocusedField('siguienteAccionFecha')}
-                      onBlur={() => setFocusedField(null)}
-                      type="date" />
+              {/* Siguiente acción */}
+              <div>
+                <div style={sectionTitle}>Seguimiento</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <Field label="Siguiente acción (fecha)" icon="calendar">
+                    <input {...fieldProps('siguienteAccionFecha')} type="date" />
                   </Field>
-
-                  <Field label="Acción" icon="note">
-                    <input style={getInputStyle('accion')} value={form.accion}
-                      onChange={e => inp('accion', e.target.value)}
-                      onFocus={() => setFocusedField('accion')}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="Ej: Llamar, Enviar propuesta, Visitar..." />
+                  <Field label="Acción a realizar" icon="alert">
+                    <input {...fieldProps('accion')} placeholder="Ej: Llamar, Visitar, Demo..." />
                   </Field>
                 </div>
               </div>
 
               {/* Submit */}
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                style={{
-                  width: '100%',
-                  padding: '13px',
-                  background: loading ? 'var(--muted)' : 'var(--ink)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 'var(--radius)',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  letterSpacing: '0.04em',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  transition: 'background 0.2s, transform 0.1s',
-                  marginTop: '4px',
-                }}
+              <button onClick={handleSubmit} disabled={loading} style={{
+                width: '100%', padding: '13px',
+                background: loading ? 'var(--muted)' : 'var(--ink)',
+                color: 'white', border: 'none', borderRadius: 'var(--radius)',
+                fontSize: '14px', fontWeight: '700', letterSpacing: '0.04em',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                transition: 'background 0.2s', marginTop: '4px', cursor: loading ? 'not-allowed' : 'pointer',
+              }}
                 onMouseEnter={e => { if (!loading) e.target.style.background = 'var(--accent)' }}
                 onMouseLeave={e => { if (!loading) e.target.style.background = 'var(--ink)' }}
               >
                 {loading ? (
-                  <>
-                    <span style={{ animation: 'pulse 1s infinite' }}>⏳</span>
-                    Guardando en Google Sheets...
-                  </>
+                  <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando en Google Sheets...</>
                 ) : (
-                  <>
-                    <Icon d={icons.check} size={16} />
-                    Registrar cliente
-                  </>
+                  <><Icon d={icons.check} size={16} /> Registrar cliente</>
                 )}
               </button>
             </div>
           </div>
         )}
 
-        {/* LIST VIEW */}
+        {/* ── LIST VIEW ─────────────────────────────────────────────────────── */}
         {view === 'list' && (
           <div style={{ animation: 'fadeUp 0.4s ease' }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '28px' }}>
               <div>
-                <h1 style={{
-                  fontFamily: 'var(--font-display)', fontWeight: '800',
-                  fontSize: '28px', letterSpacing: '-0.02em',
-                }}>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', letterSpacing: '-0.02em' }}>
                   Clientes registrados
                 </h1>
                 <p style={{ color: 'var(--muted)', fontSize: '14px', marginTop: '4px' }}>
@@ -540,8 +518,7 @@ export default function App() {
                 background: 'var(--white)', border: '1.5px solid var(--border)',
                 borderRadius: 'var(--radius)', padding: '8px 14px',
                 color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px',
-                fontSize: '13px', fontWeight: '600',
-                transition: 'all 0.15s',
+                fontSize: '13px', fontWeight: '600', transition: 'all 0.15s', cursor: 'pointer',
               }}>
                 <span style={{ display: 'inline-block', animation: loadingList ? 'pulse 1s infinite' : 'none' }}>
                   <Icon d={icons.refresh} size={15} />
@@ -557,17 +534,12 @@ export default function App() {
               </div>
             ) : clients.length === 0 ? (
               <div style={{
-                textAlign: 'center', padding: '60px',
-                background: 'var(--white)', border: '1.5px dashed var(--border)',
-                borderRadius: 'var(--radius-lg)', color: 'var(--muted)',
+                textAlign: 'center', padding: '60px', background: 'var(--white)',
+                border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', color: 'var(--muted)',
               }}>
                 <div style={{ fontSize: '36px', marginBottom: '12px' }}>📋</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', marginBottom: '6px' }}>
-                  Sin registros aún
-                </div>
-                <div style={{ fontSize: '14px' }}>
-                  Registra tu primer cliente con el botón "Nuevo"
-                </div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', marginBottom: '6px' }}>Sin registros aún</div>
+                <div style={{ fontSize: '14px' }}>Registra tu primer cliente con el botón "Nuevo"</div>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -578,9 +550,7 @@ export default function App() {
         )}
       </main>
 
-      {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   )
 }
