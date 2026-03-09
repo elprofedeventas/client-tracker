@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  const base = 'https://script.google.com/macros/s/AKfycbylT0P67idRl5iKqc5LLgr-J3fRy6fV_tiXBtU8OQAWOEG2Yjljd9WHYBzhaYs576dA/exec'
+  const base = 'https://script.google.com/macros/s/AKfycby0ReDaZ2umu69_KZ66yHj_OcEzbhWwqh6mxFVDJSPFF6Cco1ML-G_dHtWP-5yI-mUT/exec'
   
   const url = `${base}?${new URLSearchParams(req.query)}`
   
@@ -26,6 +26,7 @@ export default async function handler(req, res) {
     res.status(500).json({ success: false, error: error.message })
   }
 }
+
 
 
 
