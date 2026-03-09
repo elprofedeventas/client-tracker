@@ -358,7 +358,7 @@ function Dashboard() {
                           </div>
                           {p.telefono && (
                             <a
-                              href={`https://wa.me/${p.telefono.toString().replace(/\D/g,'')}`}
+                              href={`https://wa.me/593${p.telefono.toString().replace(/\D/g,'').replace(/^0/,'')}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#25d366', fontWeight: '700', textDecoration: 'none', flexShrink: 0, marginLeft: '12px' }}
