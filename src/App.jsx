@@ -36,6 +36,7 @@ const icons = {
   edit: 'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z',
   arrowLeft: 'M19 12H5M12 19l-7-7 7-7',
   search: 'M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z',
+  package: 'M16.5 9.4l-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.27 6.96L12 12.01l8.73-5.05M12 22.08V12',
   menu: 'M3 12h18M3 6h18M3 18h18',
   dashboard: 'M3 3h7v7H3zM13 3h8v7h-8zM13 13h8v8h-8zM3 13h7v8H3z',
   orders: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M12 12h.01M12 16h.01M8 12h.01M8 16h.01M16 12h.01M16 16h.01',
@@ -448,6 +449,334 @@ function EditForm({ client, onSave, onCancel }) {
   )
 }
 
+// ─── Formato moneda ───────────────────────────────────────────────────────────
+const fmtMoney = (n) => '$' + (parseFloat(n)||0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+// ─── Badge de estado ──────────────────────────────────────────────────────────
+const ESTADO_COLORS = {
+  'Negociando': { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
+  'Detenido':   { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
+  'Perdido':    { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
+  'Vendido':    { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
+}
+
+function EstadoBadge({ estado }) {
+  const c = ESTADO_COLORS[estado] || { bg: 'var(--cream)', color: 'var(--muted)', border: 'var(--border)' }
+  return (
+    <span style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}`, borderRadius: '20px', padding: '3px 10px', fontSize: '11px', fontWeight: '700', letterSpacing: '0.04em' }}>
+      {estado}
+    </span>
+  )
+}
+
+function OrderRow({ order, index, onView }) {
+  return (
+    <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', animation: `fadeUp 0.2s ${Math.min(index,5)*0.04}s ease both`, transition: 'box-shadow 0.2s', cursor: 'pointer' }}
+      onClick={() => onView(order)}
+      onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
+      onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '12px', color: 'var(--muted)', marginBottom: '2px' }}>{order.numOrden}</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.clienteNombre}</div>
+        <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{order.clienteNegocio || '—'} · {formatFecha(order.fecha)}</div>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0, marginLeft: '12px' }}>
+        <EstadoBadge estado={order.estado} />
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '16px' }}>{fmtMoney(order.total)}</div>
+      </div>
+    </div>
+  )
+}
+
+function ViewOrder({ order, onBack, onChangeEstado }) {
+  const [estado, setEstado] = useState(order.estado)
+  const [saving, setSaving] = useState(false)
+
+  const handleEstado = async (nuevoEstado) => {
+    setSaving(true)
+    try {
+      const params = new URLSearchParams({ action: 'updateOrdenEstado', rowIndex: order.rowIndex, estado: nuevoEstado })
+      const res = await fetch(`${API_BASE}?${params}`)
+      const data = await res.json()
+      if (data.success) { setEstado(nuevoEstado); onChangeEstado(order.rowIndex, nuevoEstado) }
+    } catch {}
+    finally { setSaving(false) }
+  }
+
+  return (
+    <div style={{ animation: 'fadeUp 0.4s ease' }}>
+      <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', padding: '0', marginBottom: '24px' }}>
+        <Icon d={icons.arrowLeft} size={15} /> Volver a órdenes
+      </button>
+      <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px', gap: '12px' }}>
+          <div>
+            <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: '600', marginBottom: '4px' }}>{order.numOrden}</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px' }}>{order.clienteNombre}</div>
+            {order.clienteNegocio && <div style={{ fontSize: '14px', color: 'var(--muted)' }}>{order.clienteNegocio}</div>}
+            <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>{formatFecha(order.fecha)}</div>
+          </div>
+          <EstadoBadge estado={estado} />
+        </div>
+        <div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>Cambiar estado</div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {['Negociando','Detenido','Perdido','Vendido'].map(e => {
+              const c = ESTADO_COLORS[e]; const activo = estado === e
+              return <button key={e} onClick={() => !activo && handleEstado(e)} disabled={saving} style={{ padding: '6px 14px', borderRadius: '20px', border: `1.5px solid ${activo ? c.color : 'var(--border)'}`, background: activo ? c.bg : 'var(--white)', color: activo ? c.color : 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: activo ? 'default' : 'pointer', transition: 'all 0.15s' }}>{e}</button>
+            })}
+          </div>
+        </div>
+      </div>
+      <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
+        <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '14px' }}>Productos</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {(order.items||[]).map((item, i) => (
+            <div key={i} style={{ padding: '12px', background: 'var(--cream)', borderRadius: 'var(--radius)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: '700', fontSize: '14px' }}>{item.nombre}</div>
+                <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>
+                  {item.cantidad} × {fmtMoney(item.precioUnitario)}{item.descuento > 0 && ` · Desc. ${item.descuento}%`}{item.iva > 0 && ` · IVA ${item.iva}%`}
+                </div>
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '15px', flexShrink: 0 }}>{fmtMoney(item.total)}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ borderTop: '1px solid var(--border)', marginTop: '14px', paddingTop: '14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--muted)' }}><span>Subtotal sin IVA</span><span>{fmtMoney(order.totalSinIva)}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--muted)' }}><span>IVA</span><span>{fmtMoney(order.totalIva)}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontFamily: 'var(--font-display)', fontWeight: '800' }}><span>Total</span><span>{fmtMoney(order.total)}</span></div>
+        </div>
+      </div>
+      {order.notas && (
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.note} size={13} />Notas</div>
+          <div style={{ fontSize: '14px', fontStyle: 'italic', color: 'var(--muted)' }}>"{order.notas}"</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function NewOrder({ onBack, onSaved, showToast }) {
+  const [clienteSearch, setClienteSearch] = useState('')
+  const [clientes, setClientes] = useState([])
+  const [loadingClientes, setLoadingClientes] = useState(false)
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
+  const [productos, setProductos] = useState([])
+  const [items, setItems] = useState([])
+  const [estado, setEstado] = useState('Negociando')
+  const [notas, setNotas] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    fetch(`${API_BASE}?action=getProductos`).then(r => r.json()).then(d => { if (d.success) setProductos(d.data) }).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (!clienteSearch.trim()) { setClientes([]); return }
+    setLoadingClientes(true)
+    fetch(API_BASE).then(r => r.json()).then(d => {
+      if (d.success) {
+        const q = clienteSearch.toLowerCase()
+        setClientes(d.data.filter(c => c.nombre.toLowerCase().includes(q) || (c.negocio||'').toLowerCase().includes(q)))
+      }
+    }).catch(() => {}).finally(() => setLoadingClientes(false))
+  }, [clienteSearch])
+
+  const addItem = (producto) => {
+    setItems(prev => {
+      const exists = prev.find(i => i.producto.rowIndex === producto.rowIndex)
+      if (exists) return prev.map(i => i.producto.rowIndex === producto.rowIndex ? { ...i, cantidad: i.cantidad + 1 } : i)
+      return [...prev, { producto, cantidad: 1, descuento: 0 }]
+    })
+  }
+  const removeItem = (idx) => setItems(prev => prev.filter((_, i) => i !== idx))
+  const updateItem = (idx, field, value) => setItems(prev => prev.map((item, i) => i === idx ? { ...item, [field]: parseFloat(value)||0 } : item))
+
+  const calcTotals = () => {
+    let sinIva = 0, ivaTotal = 0
+    items.forEach(({ producto, cantidad, descuento }) => { const sub = cantidad * producto.precio * (1 - descuento/100); sinIva += sub; ivaTotal += sub * (producto.iva/100) })
+    return { sinIva, ivaTotal, total: sinIva + ivaTotal }
+  }
+
+  const handleSave = async () => {
+    if (!clienteSeleccionado) { showToast('Selecciona un cliente', 'error'); return }
+    if (items.length === 0) { showToast('Agrega al menos un producto', 'error'); return }
+    setSaving(true)
+    try {
+      const lineItems = items.map(({ producto, cantidad, descuento }) => ({ codigo: producto.codigo, nombre: producto.nombre, cantidad, precioUnitario: producto.precio, iva: producto.iva, descuento }))
+      const params = new URLSearchParams({ action: 'createOrden', clienteNombre: clienteSeleccionado.nombre, clienteNegocio: clienteSeleccionado.negocio||'', estado, notas, items: JSON.stringify(lineItems) })
+      const res = await fetch(`${API_BASE}?${params}`)
+      const data = await res.json()
+      if (data.success) { showToast(`✓ Orden ${data.numOrden} creada`); onSaved() }
+      else showToast(data.error || 'Error al crear orden', 'error')
+    } catch { showToast('Error de conexión', 'error') }
+    finally { setSaving(false) }
+  }
+
+  const { sinIva, ivaTotal, total } = calcTotals()
+
+  return (
+    <div style={{ animation: 'fadeUp 0.4s ease' }}>
+      <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', padding: '0', marginBottom: '24px' }}><Icon d={icons.arrowLeft} size={15} /> Cancelar</button>
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'inline-block', background: 'var(--accent-light)', color: 'var(--accent)', fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '20px', marginBottom: '10px' }}>Nueva orden</div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', lineHeight: 1.1, letterSpacing: '-0.02em' }}>Crear orden</h1>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Cliente */}
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.user} size={13} />Cliente</div>
+          {clienteSeleccionado ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--accent-light)', borderRadius: 'var(--radius)', padding: '12px 14px' }}>
+              <div><div style={{ fontWeight: '700', fontSize: '15px' }}>{clienteSeleccionado.nombre}</div><div style={{ fontSize: '13px', color: 'var(--muted)' }}>{clienteSeleccionado.negocio||'—'}</div></div>
+              <button onClick={() => setClienteSeleccionado(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: '4px' }}><Icon d={icons.x} size={16} /></button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ position: 'relative', marginBottom: '8px' }}>
+                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }}><Icon d={icons.search} size={15} /></span>
+                <input type="text" placeholder="Buscar cliente..." value={clienteSearch} onChange={e => setClienteSearch(e.target.value)} style={{ ...inputStyle, paddingLeft: '38px', fontSize: '14px' }} />
+              </div>
+              {loadingClientes && <div style={{ fontSize: '13px', color: 'var(--muted)', padding: '8px 0' }}>Buscando...</div>}
+              {clientes.length > 0 && (
+                <div style={{ border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+                  {clientes.slice(0,5).map((c, i) => (
+                    <div key={c.rowIndex} onClick={() => { setClienteSeleccionado(c); setClienteSearch('') }}
+                      style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: i < Math.min(clientes.length,5)-1 ? '1px solid var(--cream)' : 'none', transition: 'background 0.1s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--cream)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      <div style={{ fontWeight: '600', fontSize: '14px' }}>{c.nombre}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{c.negocio||'—'}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        {/* Productos */}
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.package} size={13} />Productos</div>
+          {items.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
+              {items.map((item, idx) => (
+                <div key={idx} style={{ background: 'var(--cream)', borderRadius: 'var(--radius)', padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div><div style={{ fontWeight: '700', fontSize: '14px' }}>{item.producto.nombre}</div><div style={{ fontSize: '12px', color: 'var(--muted)' }}>{fmtMoney(item.producto.precio)} · IVA {item.producto.iva}%</div></div>
+                    <button onClick={() => removeItem(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: '4px' }}><Icon d={icons.x} size={15} /></button>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div>
+                      <label style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Cantidad</label>
+                      <input type="number" min="1" value={item.cantidad} onChange={e => updateItem(idx, 'cantidad', e.target.value)} style={{ ...inputStyle, padding: '7px 10px', fontSize: '14px', marginTop: '4px' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Descuento %</label>
+                      <input type="number" min="0" max="100" value={item.descuento} onChange={e => updateItem(idx, 'descuento', e.target.value)} style={{ ...inputStyle, padding: '7px 10px', fontSize: '14px', marginTop: '4px' }} />
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '14px', marginTop: '6px' }}>
+                    {fmtMoney((item.cantidad * item.producto.precio * (1 - item.descuento/100)) * (1 + item.producto.iva/100))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {productos.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px', color: 'var(--muted)', fontSize: '13px' }}>No hay productos en el catálogo.<br />Agrégalos en la pestaña "Productos" del Sheet.</div>
+          ) : (
+            <div style={{ border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+              {productos.map((p, i) => (
+                <div key={p.rowIndex} onClick={() => addItem(p)}
+                  style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: i < productos.length-1 ? '1px solid var(--cream)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'background 0.1s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--cream)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                  <div><div style={{ fontWeight: '600', fontSize: '14px' }}>{p.nombre}</div><div style={{ fontSize: '12px', color: 'var(--muted)' }}>{p.categoria && `${p.categoria} · `}IVA {p.iva}% · {fmtMoney(p.precio)}</div></div>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}><Icon d={icons.plus} size={14} /></div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Estado y notas */}
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>Estado y notas</div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
+            {['Negociando','Detenido','Perdido','Vendido'].map(e => {
+              const c = ESTADO_COLORS[e]; const activo = estado === e
+              return <button key={e} onClick={() => setEstado(e)} style={{ padding: '7px 16px', borderRadius: '20px', border: `1.5px solid ${activo ? c.color : 'var(--border)'}`, background: activo ? c.bg : 'var(--white)', color: activo ? c.color : 'var(--muted)', fontSize: '13px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>{e}</button>
+            })}
+          </div>
+          <textarea value={notas} onChange={e => setNotas(e.target.value)} placeholder="Notas de la orden..." style={{ ...inputStyle, resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px' }} />
+        </div>
+        {/* Resumen */}
+        {items.length > 0 && (
+          <div style={{ background: 'var(--ink)', borderRadius: 'var(--radius-lg)', padding: '20px', color: 'white' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', opacity: 0.7 }}><span>Subtotal sin IVA</span><span>{fmtMoney(sinIva)}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', opacity: 0.7 }}><span>IVA</span><span>{fmtMoney(ivaTotal)}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontFamily: 'var(--font-display)', fontWeight: '800', marginTop: '4px' }}><span>Total</span><span>{fmtMoney(total)}</span></div>
+            </div>
+            <button onClick={handleSave} disabled={saving || !clienteSeleccionado} style={{ width: '100%', padding: '13px', background: saving || !clienteSeleccionado ? 'rgba(255,255,255,0.2)' : 'var(--accent)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: saving || !clienteSeleccionado ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
+              {saving ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando...</> : <><Icon d={icons.check} size={16} /> Guardar orden</>}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function OrdersView({ onViewOrder, onNewOrder }) {
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filtroEstado, setFiltroEstado] = useState('Todos')
+
+  useEffect(() => {
+    fetch(`${API_BASE}?action=getOrdenes`).then(r => r.json()).then(d => { if (d.success) setOrders(d.data) }).catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  const filtradas = filtroEstado === 'Todos' ? orders : orders.filter(o => o.estado === filtroEstado)
+
+  return (
+    <div style={{ animation: 'fadeUp 0.4s ease' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', letterSpacing: '-0.02em' }}>Órdenes</h1>
+          <p style={{ color: 'var(--muted)', fontSize: '14px', marginTop: '4px' }}>{filtradas.length} {filtradas.length === 1 ? 'orden' : 'órdenes'}</p>
+        </div>
+        <button onClick={onNewOrder} style={{ background: 'var(--ink)', color: 'white', border: 'none', borderRadius: 'var(--radius)', padding: '9px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--accent)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--ink)'}>
+          <Icon d={icons.plus} size={15} /> Nueva orden
+        </button>
+      </div>
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        {['Todos','Negociando','Detenido','Perdido','Vendido'].map(e => {
+          const activo = filtroEstado === e; const c = ESTADO_COLORS[e] || {}
+          return <button key={e} onClick={() => setFiltroEstado(e)} style={{ padding: '6px 14px', borderRadius: '20px', border: `1.5px solid ${activo ? (e === 'Todos' ? 'var(--ink)' : c.color) : 'var(--border)'}`, background: activo ? (e === 'Todos' ? 'var(--ink)' : c.bg) : 'var(--white)', color: activo ? (e === 'Todos' ? 'white' : c.color) : 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>{e}</button>
+        })}
+      </div>
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--muted)' }}><div style={{ fontSize: '24px', marginBottom: '12px', animation: 'pulse 1s infinite' }}>⏳</div>Cargando órdenes...</div>
+      ) : filtradas.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px', background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', color: 'var(--muted)' }}>
+          <div style={{ fontSize: '36px', marginBottom: '12px' }}>📦</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', marginBottom: '6px' }}>Sin órdenes{filtroEstado !== 'Todos' ? ` en "${filtroEstado}"` : ''}</div>
+          <div style={{ fontSize: '14px' }}>Crea tu primera orden con el botón "Nueva orden"</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {filtradas.map((o, i) => <OrderRow key={o.numOrden} order={o} index={i} onView={onViewOrder} />)}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [view, setView] = useState('dashboard')
@@ -462,6 +791,8 @@ export default function App() {
   const [acciones, setAcciones] = useState([])
   const [editingClient, setEditingClient] = useState(null)
   const [viewingClient, setViewingClient] = useState(null)
+  const [viewingOrder, setViewingOrder] = useState(null)
+  const [orders, setOrders] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
 
   const showToast = (message, type = 'success') => setToast({ message, type })
@@ -511,10 +842,12 @@ export default function App() {
     finally { setLoading(false) }
   }
 
-  const navigate = (v) => { setView(v); setMenuOpen(false); if (v !== 'edit') setEditingClient(null); if (v !== 'view') setViewingClient(null) }
+  const navigate = (v) => { setView(v); setMenuOpen(false); if (v !== 'edit') setEditingClient(null); if (v !== 'view') setViewingClient(null); if (v !== 'viewOrder' && v !== 'newOrder') setViewingOrder(null) }
   const handleEdit = (c) => { setEditingClient(c); setViewingClient(null); setView('edit') }
   const handleView = (c) => { setViewingClient(c); setView('view') }
   const handleSaveEdit = (c) => { setClients(p => p.map(x => x.rowIndex === c.rowIndex ? c : x)); showToast(`✓ ${c.nombre} actualizado`); setView('list') }
+  const handleViewOrder = (o) => { setViewingOrder(o); setView('viewOrder') }
+  const handleChangeEstado = (rowIndex, estado) => setOrders(p => p.map(o => o.rowIndex === rowIndex ? { ...o, estado } : o))
 
   const inp = (f, v) => { setForm(p => ({ ...p, [f]: v })); if (errors[f]) setErrors(e => ({ ...e, [f]: null })) }
   const gs = (f) => ({ ...inputStyle, borderColor: errors[f] ? 'var(--accent)' : focusedField === f ? 'var(--ink)' : 'var(--border)', boxShadow: focusedField === f ? '0 0 0 3px rgba(13,13,13,0.06)' : 'none' })
@@ -543,15 +876,17 @@ export default function App() {
       {/* Dropdown menu */}
       {menuOpen && (
         <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: '68px', right: '16px', zIndex: 300, background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', minWidth: '200px', animation: 'fadeUp 0.2s ease' }}>
-          {menuItems.map(({ key, icon, label }) => (
-            <button key={key} onClick={() => navigate(key)} style={{ width: '100%', padding: '13px 18px', background: (view === key || (view === 'edit' && key === 'list')) ? 'var(--accent-light)' : 'transparent', border: 'none', borderBottom: '1px solid var(--cream)', color: (view === key || (view === 'edit' && key === 'list')) ? 'var(--accent)' : 'var(--ink)', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s' }}
-              onMouseEnter={e => { if (view !== key) e.currentTarget.style.background = 'var(--cream)' }}
-              onMouseLeave={e => { if (view !== key) e.currentTarget.style.background = 'transparent' }}>
-              <Icon d={icon} size={17} stroke={(view === key || (view === 'edit' && key === 'list')) ? 'var(--accent)' : 'var(--ink)'} />
-              {label}
-              {key === 'orders' && <span style={{ marginLeft: 'auto', fontSize: '10px', background: 'var(--cream)', color: 'var(--muted)', padding: '2px 6px', borderRadius: '10px', fontWeight: '700' }}>Próximamente</span>}
-            </button>
-          ))}
+          {menuItems.map(({ key, icon, label }) => {
+              const isActive = view === key || (view === 'edit' && key === 'list') || (view === 'view' && key === 'list') || ((view === 'viewOrder' || view === 'newOrder') && key === 'orders')
+              return (
+                <button key={key} onClick={() => navigate(key)} style={{ width: '100%', padding: '13px 18px', background: isActive ? 'var(--accent-light)' : 'transparent', border: 'none', borderBottom: '1px solid var(--cream)', color: isActive ? 'var(--accent)' : 'var(--ink)', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s' }}
+                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--cream)' }}
+                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}>
+                  <Icon d={icon} size={17} stroke={isActive ? 'var(--accent)' : 'var(--ink)'} />
+                  {label}
+                </button>
+              )
+            })}
         </div>
       )}
 
@@ -664,13 +999,19 @@ export default function App() {
           </div>
         )}
 
-        {/* ── ÓRDENES (próximamente) ─────────────────────────────────────────── */}
+        {/* ── ÓRDENES ───────────────────────────────────────────────────────── */}
         {view === 'orders' && (
-          <div style={{ animation: 'fadeUp 0.4s ease', textAlign: 'center', padding: '80px 20px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📦</div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '24px', marginBottom: '8px' }}>Órdenes</h1>
-            <p style={{ color: 'var(--muted)', fontSize: '15px' }}>Esta sección está en desarrollo.<br />Próximamente podrás gestionar tus órdenes aquí.</p>
-          </div>
+          <OrdersView onViewOrder={handleViewOrder} onNewOrder={() => setView('newOrder')} />
+        )}
+
+        {/* ── VER ORDEN ─────────────────────────────────────────────────────── */}
+        {view === 'viewOrder' && viewingOrder && (
+          <ViewOrder order={viewingOrder} onBack={() => setView('orders')} onChangeEstado={handleChangeEstado} />
+        )}
+
+        {/* ── NUEVA ORDEN ───────────────────────────────────────────────────── */}
+        {view === 'newOrder' && (
+          <NewOrder onBack={() => setView('orders')} onSaved={() => setView('orders')} showToast={showToast} />
         )}
       </main>
 
