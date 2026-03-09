@@ -277,9 +277,9 @@ function ClientRow({ client, index, onEdit, onView, query }) {
           <Icon d={icons.eye} size={13} /> Ver
         </button>
         <button onClick={() => onEdit(client)}
-          style={{ background: 'var(--ink)', color: 'white', border: 'none', borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s' }}
+          style={{ background: 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s' }}
           onMouseEnter={e => e.currentTarget.style.background = 'var(--accent)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'var(--ink)'}>
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--brand-dark)'}>
           <Icon d={icons.edit} size={13} /> Editar
         </button>
       </div>
@@ -320,9 +320,9 @@ function ViewClient({ client, onEdit, onBack }) {
             </div>
           </div>
           <button onClick={() => onEdit(client)}
-            style={{ background: 'var(--ink)', color: 'white', border: 'none', borderRadius: 'var(--radius)', padding: '8px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s' }}
+            style={{ background: 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', padding: '8px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s' }}
             onMouseEnter={e => e.currentTarget.style.background = 'var(--accent)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'var(--ink)'}>
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--brand-dark)'}>
             <Icon d={icons.edit} size={14} /> Editar
           </button>
         </div>
@@ -378,7 +378,7 @@ function EditForm({ client, onSave, onCancel }) {
   const [focusedField, setFocusedField] = useState(null)
 
   const inp = (f, v) => { setForm(p => ({ ...p, [f]: v })); if (errors[f]) setErrors(e => ({ ...e, [f]: null })) }
-  const gs = (f) => ({ ...inputStyle, borderColor: errors[f] ? 'var(--accent)' : focusedField === f ? 'var(--ink)' : 'var(--border)', boxShadow: focusedField === f ? '0 0 0 3px rgba(13,13,13,0.06)' : 'none' })
+  const gs = (f) => ({ ...inputStyle, borderColor: errors[f] ? 'var(--accent)' : focusedField === f ? 'var(--brand)' : 'var(--border)', boxShadow: focusedField === f ? '0 0 0 3px rgba(30,58,95,0.12)' : 'none' })
   const fp = (f, x = {}) => ({ style: gs(f), value: form[f], onChange: e => inp(f, e.target.value), onFocus: () => setFocusedField(f), onBlur: () => setFocusedField(null), ...x })
 
   const validate = () => {
@@ -438,9 +438,9 @@ function EditForm({ client, onSave, onCancel }) {
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button onClick={onCancel} style={{ flex: 1, padding: '13px', background: 'var(--cream)', color: 'var(--ink)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>Cancelar</button>
-          <button onClick={handleSave} disabled={loading} style={{ flex: 2, padding: '13px', background: loading ? 'var(--muted)' : 'var(--ink)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}
-            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--accent)' }}
-            onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--ink)' }}>
+          <button onClick={handleSave} disabled={loading} style={{ flex: 2, padding: '13px', background: loading ? 'var(--muted)' : 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}
+            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--brand-dark)' }}
+            onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--brand-dark)' }}>
             {loading ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando...</> : <><Icon d={icons.check} size={16} /> Guardar cambios</>}
           </button>
         </div>
@@ -714,7 +714,7 @@ function NewOrder({ onBack, onSaved, showToast }) {
         </div>
         {/* Resumen */}
         {items.length > 0 && (
-          <div style={{ background: 'var(--ink)', borderRadius: 'var(--radius-lg)', padding: '20px', color: 'white' }}>
+          <div style={{ background: 'var(--brand)', borderRadius: 'var(--radius-lg)', padding: '20px', color: 'white' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', opacity: 0.7 }}><span>Subtotal sin IVA</span><span>{fmtMoney(sinIva)}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', opacity: 0.7 }}><span>IVA</span><span>{fmtMoney(ivaTotal)}</span></div>
@@ -748,16 +748,16 @@ function OrdersView({ onViewOrder, onNewOrder }) {
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', letterSpacing: '-0.02em' }}>Órdenes</h1>
           <p style={{ color: 'var(--muted)', fontSize: '14px', marginTop: '4px' }}>{filtradas.length} {filtradas.length === 1 ? 'orden' : 'órdenes'}</p>
         </div>
-        <button onClick={onNewOrder} style={{ background: 'var(--ink)', color: 'white', border: 'none', borderRadius: 'var(--radius)', padding: '9px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s' }}
+        <button onClick={onNewOrder} style={{ background: 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', padding: '9px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s' }}
           onMouseEnter={e => e.currentTarget.style.background = 'var(--accent)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'var(--ink)'}>
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--brand-dark)'}>
           <Icon d={icons.plus} size={15} /> Nueva orden
         </button>
       </div>
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
         {['Todos','Negociando','Detenido','Perdido','Vendido'].map(e => {
           const activo = filtroEstado === e; const c = ESTADO_COLORS[e] || {}
-          return <button key={e} onClick={() => setFiltroEstado(e)} style={{ padding: '6px 14px', borderRadius: '20px', border: `1.5px solid ${activo ? (e === 'Todos' ? 'var(--ink)' : c.color) : 'var(--border)'}`, background: activo ? (e === 'Todos' ? 'var(--ink)' : c.bg) : 'var(--white)', color: activo ? (e === 'Todos' ? 'white' : c.color) : 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>{e}</button>
+          return <button key={e} onClick={() => setFiltroEstado(e)} style={{ padding: '6px 14px', borderRadius: '20px', border: `1.5px solid ${activo ? (e === 'Todos' ? 'var(--brand)' : c.color) : 'var(--border)'}`, background: activo ? (e === 'Todos' ? 'var(--brand)' : c.bg) : 'var(--white)', color: activo ? (e === 'Todos' ? 'white' : c.color) : 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>{e}</button>
         })}
       </div>
       {loading ? (
@@ -850,7 +850,7 @@ export default function App() {
   const handleChangeEstado = (rowIndex, estado) => setOrders(p => p.map(o => o.rowIndex === rowIndex ? { ...o, estado } : o))
 
   const inp = (f, v) => { setForm(p => ({ ...p, [f]: v })); if (errors[f]) setErrors(e => ({ ...e, [f]: null })) }
-  const gs = (f) => ({ ...inputStyle, borderColor: errors[f] ? 'var(--accent)' : focusedField === f ? 'var(--ink)' : 'var(--border)', boxShadow: focusedField === f ? '0 0 0 3px rgba(13,13,13,0.06)' : 'none' })
+  const gs = (f) => ({ ...inputStyle, borderColor: errors[f] ? 'var(--accent)' : focusedField === f ? 'var(--brand)' : 'var(--border)', boxShadow: focusedField === f ? '0 0 0 3px rgba(30,58,95,0.12)' : 'none' })
   const fp = (f, x = {}) => ({ style: gs(f), value: form[f], onChange: e => inp(f, e.target.value), onFocus: () => setFocusedField(f), onBlur: () => setFocusedField(null), ...x })
 
   const menuItems = [
@@ -864,7 +864,7 @@ export default function App() {
     <div style={{ minHeight: '100vh', background: 'var(--paper)' }} onClick={() => menuOpen && setMenuOpen(false)}>
 
       {/* Header */}
-      <header style={{ background: 'var(--ink)', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '60px', position: 'sticky', top: 0, zIndex: 200 }}>
+      <header style={{ background: 'var(--brand)', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '60px', position: 'sticky', top: 0, zIndex: 200 }}>
         <span style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '17px', color: 'white', letterSpacing: '-0.01em' }}>
           Orden PPP
         </span>
@@ -951,9 +951,9 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              <button onClick={handleSubmit} disabled={loading} style={{ width: '100%', padding: '13px', background: loading ? 'var(--muted)' : 'var(--ink)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'background 0.2s', marginTop: '4px', cursor: loading ? 'not-allowed' : 'pointer' }}
-                onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--accent)' }}
-                onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--ink)' }}>
+              <button onClick={handleSubmit} disabled={loading} style={{ width: '100%', padding: '13px', background: loading ? 'var(--muted)' : 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'background 0.2s', marginTop: '4px', cursor: loading ? 'not-allowed' : 'pointer' }}
+                onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--brand-dark)' }}
+                onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--brand-dark)' }}>
                 {loading ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando...</> : <><Icon d={icons.check} size={16} /> Registrar cliente</>}
               </button>
             </div>
