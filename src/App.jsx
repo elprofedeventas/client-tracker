@@ -17,7 +17,6 @@ const EMPTY_FORM = {
   accion: '',
 }
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
 const Icon = ({ d, size = 18, stroke = 'currentColor', fill = 'none' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={fill}
     stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -42,11 +41,11 @@ const icons = {
   x: 'M18 6L6 18M6 6l12 12',
   refresh: 'M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15',
   chevron: 'M9 18l6-6-6-6',
-  clock: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 6v6l4 2',
   alert: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01',
+  edit: 'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z',
+  arrowLeft: 'M19 12H5M12 19l-7-7 7-7',
 }
 
-// ─── Field component ──────────────────────────────────────────────────────────
 function Field({ label, icon, required, children, hint }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -55,9 +54,7 @@ function Field({ label, icon, required, children, hint }) {
         letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)',
         display: 'flex', alignItems: 'center', gap: '6px'
       }}>
-        <span style={{ color: 'var(--accent)', opacity: 0.7 }}>
-          <Icon d={icons[icon]} size={14} />
-        </span>
+        <span style={{ color: 'var(--accent)', opacity: 0.7 }}><Icon d={icons[icon]} size={14} /></span>
         {label}
         {required && <span style={{ color: 'var(--accent)' }}>*</span>}
       </label>
@@ -81,7 +78,6 @@ const sectionTitle = {
   borderBottom: '1px solid var(--cream)', fontFamily: 'var(--font-display)',
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ message, type, onClose }) {
   useEffect(() => {
     const t = setTimeout(onClose, 4000)
@@ -104,8 +100,7 @@ function Toast({ message, type, onClose }) {
   )
 }
 
-// ─── Client row ───────────────────────────────────────────────────────────────
-function ClientRow({ client, index }) {
+function ClientRow({ client, index, onEdit }) {
   const [open, setOpen] = useState(false)
   const hasNextAction = client.siguienteAccionFecha || client.accion
 
@@ -113,8 +108,7 @@ function ClientRow({ client, index }) {
     <div style={{
       background: 'var(--white)', border: '1.5px solid var(--border)',
       borderRadius: 'var(--radius-lg)', overflow: 'hidden',
-      animation: `fadeUp 0.3s ${index * 0.05}s ease both`,
-      transition: 'box-shadow 0.2s',
+      animation: `fadeUp 0.3s ${index * 0.05}s ease both`, transition: 'box-shadow 0.2s',
     }}
       onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
       onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
@@ -156,57 +150,76 @@ function ClientRow({ client, index }) {
 
       {open && (
         <div style={{
-          padding: '14px 18px 16px',
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-          gap: '12px', borderTop: '1px solid var(--cream)', animation: 'fadeUp 0.2s ease',
+          padding: '14px 18px 16px', borderTop: '1px solid var(--cream)',
+          animation: 'fadeUp 0.2s ease',
         }}>
-          {[
-            { icon: 'id', label: 'Identificación', val: client.identificacion },
-            { icon: 'mail', label: 'Email', val: client.email },
-            { icon: 'map', label: 'Dirección', val: client.direccion },
-            { icon: 'building', label: 'Locales', val: client.locales },
-            { icon: 'contact', label: 'Contacto', val: client.contacto },
-            { icon: 'phone', label: 'Tel. Contacto', val: client.telefonoContacto },
-          ].map(({ icon, label, val }) => val ? (
-            <div key={label}>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Icon d={icons[icon]} size={12} />{label}
-              </div>
-              <div style={{ fontSize: '14px' }}>{val}</div>
-            </div>
-          ) : null)}
-
-          {hasNextAction && (
-            <div style={{
-              gridColumn: '1 / -1', background: 'var(--accent-light)',
-              borderRadius: 'var(--radius)', padding: '10px 14px',
-              display: 'flex', alignItems: 'flex-start', gap: '10px',
-            }}>
-              <Icon d={icons.alert} size={16} stroke="var(--accent)" />
-              <div>
-                <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px' }}>
-                  Siguiente acción
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', marginBottom: '14px' }}>
+            {[
+              { icon: 'id', label: 'Identificación', val: client.identificacion },
+              { icon: 'mail', label: 'Email', val: client.email },
+              { icon: 'map', label: 'Dirección', val: client.direccion },
+              { icon: 'building', label: 'Locales', val: client.locales },
+              { icon: 'contact', label: 'Contacto', val: client.contacto },
+              { icon: 'phone', label: 'Tel. Contacto', val: client.telefonoContacto },
+            ].map(({ icon, label, val }) => val ? (
+              <div key={label}>
+                <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Icon d={icons[icon]} size={12} />{label}
                 </div>
-                <div style={{ fontSize: '14px', color: 'var(--ink)', fontWeight: '500' }}>
-                  {client.accion}{client.accion && client.siguienteAccionFecha ? ' — ' : ''}{client.siguienteAccionFecha}
+                <div style={{ fontSize: '14px' }}>{val}</div>
+              </div>
+            ) : null)}
+
+            {hasNextAction && (
+              <div style={{
+                gridColumn: '1 / -1', background: 'var(--accent-light)',
+                borderRadius: 'var(--radius)', padding: '10px 14px',
+                display: 'flex', alignItems: 'flex-start', gap: '10px',
+              }}>
+                <Icon d={icons.alert} size={16} stroke="var(--accent)" />
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px' }}>
+                    Siguiente acción
+                  </div>
+                  <div style={{ fontSize: '14px', color: 'var(--ink)', fontWeight: '500' }}>
+                    {client.accion}{client.accion && client.siguienteAccionFecha ? ' — ' : ''}{client.siguienteAccionFecha}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {client.notas && (
-            <div style={{ gridColumn: '1 / -1' }}>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Icon d={icons.note} size={12} />Notas
+            {client.notas && (
+              <div style={{ gridColumn: '1 / -1' }}>
+                <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Icon d={icons.note} size={12} />Notas
+                </div>
+                <div style={{ fontSize: '14px', fontStyle: 'italic', color: 'var(--muted)', background: 'var(--cream)', padding: '8px 12px', borderRadius: 'var(--radius)' }}>
+                  "{client.notas}"
+                </div>
               </div>
-              <div style={{ fontSize: '14px', fontStyle: 'italic', color: 'var(--muted)', background: 'var(--cream)', padding: '8px 12px', borderRadius: 'var(--radius)' }}>
-                "{client.notas}"
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          <div style={{ gridColumn: '1 / -1', fontSize: '11px', color: 'var(--border)', textAlign: 'right' }}>
-            Registrado: {client.fechaRegistro}
+          {/* Footer con fecha y botón editar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '11px', color: 'var(--border)' }}>
+              Registrado: {client.fechaRegistro}
+            </span>
+            <button
+              onClick={e => { e.stopPropagation(); onEdit(client) }}
+              style={{
+                background: 'var(--ink)', color: 'white', border: 'none',
+                borderRadius: 'var(--radius)', padding: '7px 14px',
+                fontSize: '12px', fontWeight: '700', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '6px',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--accent)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--ink)'}
+            >
+              <Icon d={icons.edit} size={13} />
+              Editar
+            </button>
           </div>
         </div>
       )}
@@ -214,9 +227,190 @@ function ClientRow({ client, index }) {
   )
 }
 
+// ─── Edit Form ────────────────────────────────────────────────────────────────
+function EditForm({ client, onSave, onCancel }) {
+  const [form, setForm] = useState({
+    nombre: client.nombre || '',
+    negocio: client.negocio || '',
+    identificacion: client.identificacion || '',
+    telefono: client.telefono || '',
+    email: client.email || '',
+    direccion: client.direccion || '',
+    locales: client.locales || '',
+    contacto: client.contacto || '',
+    telefonoContacto: client.telefonoContacto || '',
+  })
+  const [errors, setErrors] = useState({})
+  const [loading, setLoading] = useState(false)
+  const [focusedField, setFocusedField] = useState(null)
+
+  const inp = (field, value) => {
+    setForm(f => ({ ...f, [field]: value }))
+    if (errors[field]) setErrors(e => ({ ...e, [field]: null }))
+  }
+
+  const getInputStyle = (field) => ({
+    ...inputStyle,
+    borderColor: errors[field] ? 'var(--accent)' : focusedField === field ? 'var(--ink)' : 'var(--border)',
+    boxShadow: focusedField === field ? '0 0 0 3px rgba(13,13,13,0.06)' : 'none',
+  })
+
+  const fieldProps = (field, extra = {}) => ({
+    style: getInputStyle(field),
+    value: form[field],
+    onChange: e => inp(field, e.target.value),
+    onFocus: () => setFocusedField(field),
+    onBlur: () => setFocusedField(null),
+    ...extra,
+  })
+
+  const validate = () => {
+    const e = {}
+    if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio'
+    if (!form.telefono.trim()) e.telefono = 'El teléfono es obligatorio'
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Email inválido'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
+  const handleSave = async () => {
+    if (!validate()) return
+    setLoading(true)
+    try {
+      const params = new URLSearchParams({ ...form, action: 'update', rowIndex: client.rowIndex })
+      const res = await fetch(`${API_BASE}?${params.toString()}`)
+      const data = await res.json()
+      if (data.success) {
+        onSave({ ...client, ...form })
+      } else {
+        alert(data.error || 'Error al actualizar')
+      }
+    } catch {
+      alert('Error al conectar con Apps Script')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{ animation: 'fadeUp 0.4s ease' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '32px' }}>
+        <button onClick={onCancel} style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px',
+          fontSize: '13px', fontWeight: '600', padding: '0', marginBottom: '16px',
+        }}>
+          <Icon d={icons.arrowLeft} size={15} /> Volver a clientes
+        </button>
+        <div style={{
+          display: 'inline-block', background: 'var(--accent-light)', color: 'var(--accent)',
+          fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase',
+          padding: '4px 10px', borderRadius: '20px', marginBottom: '10px'
+        }}>
+          Editando cliente
+        </div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+          {client.nombre}
+        </h1>
+        <p style={{ color: 'var(--muted)', marginTop: '6px', fontSize: '14px' }}>
+          Modifica los datos y guarda los cambios.
+        </p>
+      </div>
+
+      <div style={{
+        background: 'var(--white)', border: '1.5px solid var(--border)',
+        borderRadius: 'var(--radius-lg)', padding: '28px',
+        display: 'flex', flexDirection: 'column', gap: '24px', boxShadow: 'var(--shadow)',
+      }}>
+        {/* Datos del cliente */}
+        <div>
+          <div style={sectionTitle}>Datos del cliente</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <Field label="Nombre completo" icon="user" required>
+              <input {...fieldProps('nombre')} placeholder="Ej: María López" />
+              {errors.nombre && <span style={{ fontSize: '12px', color: 'var(--accent)' }}>{errors.nombre}</span>}
+            </Field>
+            <Field label="Identificación" icon="id" hint="Cédula o RUC">
+              <input {...fieldProps('identificacion')} placeholder="Ej: 0912345678" />
+            </Field>
+            <Field label="Teléfono" icon="phone" required>
+              <input {...fieldProps('telefono', { type: 'tel' })} placeholder="Ej: 0997002220" />
+              {errors.telefono && <span style={{ fontSize: '12px', color: 'var(--accent)' }}>{errors.telefono}</span>}
+            </Field>
+            <Field label="Email" icon="mail">
+              <input {...fieldProps('email', { type: 'email' })} placeholder="correo@ejemplo.com" />
+              {errors.email && <span style={{ fontSize: '12px', color: 'var(--accent)' }}>{errors.email}</span>}
+            </Field>
+          </div>
+        </div>
+
+        {/* Datos del negocio */}
+        <div>
+          <div style={sectionTitle}>Datos del negocio</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <Field label="Nombre del negocio" icon="store">
+              <input {...fieldProps('negocio')} placeholder="Ej: Farmacia del Parque" />
+            </Field>
+            <Field label="¿Cuántos locales?" icon="building" hint="Sucursales">
+              <input {...fieldProps('locales', { type: 'number', min: '1' })} placeholder="Ej: 3" />
+            </Field>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <Field label="Dirección" icon="map">
+                <input {...fieldProps('direccion')} placeholder="Calle, número, ciudad" />
+              </Field>
+            </div>
+          </div>
+        </div>
+
+        {/* Persona de contacto */}
+        <div>
+          <div style={sectionTitle}>Persona de contacto</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <Field label="Contacto" icon="contact">
+              <input {...fieldProps('contacto')} placeholder="Nombre del contacto" />
+            </Field>
+            <Field label="Teléfono de contacto" icon="phone">
+              <input {...fieldProps('telefonoContacto', { type: 'tel' })} placeholder="Ej: 0987654321" />
+            </Field>
+          </div>
+        </div>
+
+        {/* Botones */}
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button onClick={onCancel} style={{
+            flex: 1, padding: '13px', background: 'var(--cream)',
+            color: 'var(--ink)', border: '1.5px solid var(--border)',
+            borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700',
+            cursor: 'pointer', transition: 'background 0.15s',
+          }}>
+            Cancelar
+          </button>
+          <button onClick={handleSave} disabled={loading} style={{
+            flex: 2, padding: '13px',
+            background: loading ? 'var(--muted)' : 'var(--ink)',
+            color: 'white', border: 'none', borderRadius: 'var(--radius)',
+            fontSize: '14px', fontWeight: '700', letterSpacing: '0.04em',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            transition: 'background 0.2s', cursor: loading ? 'not-allowed' : 'pointer',
+          }}
+            onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--accent)' }}
+            onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--ink)' }}
+          >
+            {loading
+              ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando cambios...</>
+              : <><Icon d={icons.check} size={16} /> Guardar cambios</>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [view, setView] = useState('form')
+  const [view, setView] = useState('form') // 'form' | 'list' | 'edit'
   const [form, setForm] = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -225,10 +419,10 @@ export default function App() {
   const [toast, setToast] = useState(null)
   const [focusedField, setFocusedField] = useState(null)
   const [acciones, setAcciones] = useState([])
+  const [editingClient, setEditingClient] = useState(null)
 
   const showToast = (message, type = 'success') => setToast({ message, type })
 
-  // Cargar lista de acciones al montar
   useEffect(() => {
     fetch(`${API_BASE}?action=getAcciones`)
       .then(r => r.json())
@@ -258,8 +452,7 @@ export default function App() {
     const e = {}
     if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio'
     if (!form.telefono.trim()) e.telefono = 'El teléfono es obligatorio'
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      e.email = 'Email inválido'
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Email inválido'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -283,6 +476,17 @@ export default function App() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleEdit = (client) => {
+    setEditingClient(client)
+    setView('edit')
+  }
+
+  const handleSaveEdit = (updatedClient) => {
+    setClients(prev => prev.map(c => c.rowIndex === updatedClient.rowIndex ? updatedClient : c))
+    showToast(`✓ ${updatedClient.nombre} actualizado exitosamente`)
+    setView('list')
   }
 
   const inp = (field, value) => {
@@ -328,8 +532,8 @@ export default function App() {
             { key: 'list', icon: icons.list, label: 'Clientes' },
           ].map(({ key, icon, label }) => (
             <button key={key} onClick={() => setView(key)} style={{
-              background: view === key ? 'rgba(255,255,255,0.15)' : 'transparent',
-              border: 'none', color: view === key ? 'white' : 'rgba(255,255,255,0.5)',
+              background: (view === key || (view === 'edit' && key === 'list')) ? 'rgba(255,255,255,0.15)' : 'transparent',
+              border: 'none', color: (view === key || (view === 'edit' && key === 'list')) ? 'white' : 'rgba(255,255,255,0.5)',
               padding: '6px 14px', borderRadius: 'var(--radius)',
               display: 'flex', alignItems: 'center', gap: '6px',
               fontWeight: '600', fontSize: '13px', transition: 'all 0.15s', cursor: 'pointer',
@@ -341,6 +545,15 @@ export default function App() {
       </header>
 
       <main style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 20px' }}>
+
+        {/* ── EDIT VIEW ─────────────────────────────────────────────────────── */}
+        {view === 'edit' && editingClient && (
+          <EditForm
+            client={editingClient}
+            onSave={handleSaveEdit}
+            onCancel={() => setView('list')}
+          />
+        )}
 
         {/* ── FORM VIEW ─────────────────────────────────────────────────────── */}
         {view === 'form' && (
@@ -366,8 +579,6 @@ export default function App() {
               borderRadius: 'var(--radius-lg)', padding: '28px',
               display: 'flex', flexDirection: 'column', gap: '24px', boxShadow: 'var(--shadow)',
             }}>
-
-              {/* Datos del cliente */}
               <div>
                 <div style={sectionTitle}>Datos del cliente</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -389,7 +600,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Datos del negocio */}
               <div>
                 <div style={sectionTitle}>Datos del negocio</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -407,7 +617,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Persona de contacto */}
               <div>
                 <div style={sectionTitle}>Persona de contacto</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -420,7 +629,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Notas y seguimiento */}
               <div>
                 <div style={sectionTitle}>Notas y seguimiento</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -441,21 +649,13 @@ export default function App() {
                         onBlur={() => setFocusedField(null)}
                       >
                         <option value="">— Seleccionar —</option>
-                        {acciones.map(a => (
-                          <option key={a} value={a}>{a}</option>
-                        ))}
+                        {acciones.map(a => <option key={a} value={a}>{a}</option>)}
                       </select>
-                      {acciones.length === 0 && (
-                        <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
-                          Cargando acciones...
-                        </span>
-                      )}
                     </Field>
                   </div>
                 </div>
               </div>
 
-              {/* Submit */}
               <button onClick={handleSubmit} disabled={loading} style={{
                 width: '100%', padding: '13px',
                 background: loading ? 'var(--muted)' : 'var(--ink)',
@@ -464,8 +664,8 @@ export default function App() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                 transition: 'background 0.2s', marginTop: '4px', cursor: loading ? 'not-allowed' : 'pointer',
               }}
-                onMouseEnter={e => { if (!loading) e.target.style.background = 'var(--accent)' }}
-                onMouseLeave={e => { if (!loading) e.target.style.background = 'var(--ink)' }}
+                onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--accent)' }}
+                onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--ink)' }}
               >
                 {loading
                   ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando en Google Sheets...</>
@@ -517,7 +717,9 @@ export default function App() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {clients.map((c, i) => <ClientRow key={i} client={c} index={i} />)}
+                {clients.map((c, i) => (
+                  <ClientRow key={i} client={c} index={i} onEdit={handleEdit} />
+                ))}
               </div>
             )}
           </div>
