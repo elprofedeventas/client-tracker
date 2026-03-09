@@ -144,12 +144,18 @@ function Highlight({ text, query }) {
 function Dashboard() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
+    setLoading(true)
+    setError(false)
     fetch(`${API_BASE}?action=dashboard`)
       .then(r => r.json())
-      .then(res => { if (res.success) setData(res.data) })
-      .catch(() => {})
+      .then(res => {
+        if (res.success) setData(res.data)
+        else setError(true)
+      })
+      .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [])
 
@@ -185,6 +191,11 @@ function Dashboard() {
         <div style={{ textAlign: 'center', padding: '60px', color: 'var(--muted)' }}>
           <div style={{ fontSize: '24px', marginBottom: '12px', animation: 'pulse 1s infinite' }}>⏳</div>
           Cargando datos...
+        </div>
+      ) : error ? (
+        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--muted)' }}>
+          <div style={{ fontSize: '24px', marginBottom: '12px' }}>⚠️</div>
+          No se pudo cargar el dashboard. Verifica que el Apps Script esté desplegado.
         </div>
       ) : (
         <>
@@ -957,14 +968,9 @@ export default function App() {
         {/* ── CLIENTES ──────────────────────────────────────────────────────── */}
         {view === 'list' && (
           <div style={{ animation: 'fadeUp 0.4s ease' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <div>
-                <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', letterSpacing: '-0.02em' }}>Clientes</h1>
-                <p style={{ color: 'var(--muted)', fontSize: '14px', marginTop: '4px' }}>{searchQuery ? `${filteredClients.length} de ${clients.length} clientes` : `${clients.length} ${clients.length === 1 ? 'cliente' : 'clientes'} en total`}</p>
-              </div>
-              <button onClick={fetchClients} disabled={loadingList} style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 14px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
-                <span style={{ animation: loadingList ? 'pulse 1s infinite' : 'none' }}><Icon d={icons.refresh} size={15} /></span> Actualizar
-              </button>
+            <div style={{ marginBottom: '20px' }}>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', letterSpacing: '-0.02em' }}>Clientes</h1>
+              <p style={{ color: 'var(--muted)', fontSize: '14px', marginTop: '4px' }}>{searchQuery ? `${filteredClients.length} de ${clients.length} clientes` : `${clients.length} ${clients.length === 1 ? 'cliente' : 'clientes'} en total`}</p>
             </div>
             <div style={{ position: 'relative', marginBottom: '20px' }}>
               <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }}><Icon d={icons.search} size={16} /></span>
