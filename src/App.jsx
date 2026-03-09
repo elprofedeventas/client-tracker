@@ -145,6 +145,7 @@ function Dashboard() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [expanded, setExpanded] = useState(null)
 
   useEffect(() => {
     setLoading(true); setError(false)
@@ -170,21 +171,14 @@ function Dashboard() {
   const verde = '#16a34a'
   const rojo  = '#dc2626'
 
+  const toggle = (key) => setExpanded(prev => prev === key ? null : key)
+
   const statCards = [
     { label: 'Vendido',    value: fmt(vendido),    color: verde, bg: '#f0fdf4', icon: 'check',    estado: 'Vendido' },
     { label: 'Negociando', value: fmt(negociando), color: verde, bg: '#f0fdf4', icon: 'trending', estado: 'Negociando' },
     { label: 'Detenido',   value: fmt(detenido),   color: rojo,  bg: '#fef2f2', icon: 'alert',    estado: 'Detenido' },
     { label: 'Perdido',    value: fmt(perdido),    color: rojo,  bg: '#fef2f2', icon: 'x',        estado: 'Perdido' },
   ]
-
-  const SubCount = ({ estado }) => {
-    const cnt = c[estado] || { clientes: 0, ordenes: 0 }
-    return (
-      <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '500', marginLeft: '8px' }}>
-        {cnt.clientes} {cnt.clientes === 1 ? 'cliente' : 'clientes'} · {cnt.ordenes} {cnt.ordenes === 1 ? 'orden' : 'órdenes'}
-      </span>
-    )
-  }
 
   return (
     <div style={{ animation: 'fadeUp 0.4s ease' }}>
@@ -238,22 +232,55 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* Tarjetas de estado */}
+          {/* Tarjetas de estado expandibles */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '10px' }}>
-            {statCards.map(({ label, value, color, bg, icon, estado }) => (
-              <div key={label} style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Icon d={icons[icon]} size={17} stroke={color} />
+            {statCards.map(({ label, value, color, bg, icon, estado }) => {
+              const isOpen = expanded === estado
+              const ordenes = data?.ordenesMes?.[estado] || []
+              const cnt = c[estado] || { clientes: 0, ordenes: 0 }
+              return (
+                <div key={label} style={{ background: 'var(--white)', border: `1.5px solid ${isOpen ? color : 'var(--border)'}`, borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow)', overflow: 'hidden', transition: 'border-color 0.2s' }}>
+                  {/* Header */}
+                  <div onClick={() => toggle(estado)} style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Icon d={icons[icon]} size={17} stroke={color} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '500', marginLeft: '8px' }}>
+                          {cnt.clientes} {cnt.clientes === 1 ? 'cliente' : 'clientes'} · {cnt.ordenes} {cnt.ordenes === 1 ? 'orden' : 'órdenes'}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color }}>{value}</div>
+                      <div style={{ color: 'var(--muted)', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                        <Icon d="M6 9l6 6 6-9" size={16} />
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ minWidth: 0 }}>
-                    <span style={{ fontSize: '13px', fontWeight: '700', color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
-                    <SubCount estado={estado} />
-                  </div>
+                  {/* Lista expandida */}
+                  {isOpen && (
+                    <div style={{ borderTop: `1px solid ${bg}`, background: bg.replace(')', ', 0.4)').replace('rgb', 'rgba') }}>
+                      {ordenes.length === 0 ? (
+                        <div style={{ padding: '16px 20px', fontSize: '13px', color: 'var(--muted)', textAlign: 'center' }}>Sin órdenes en {label.toLowerCase()} este mes</div>
+                      ) : (
+                        ordenes.map((o, i) => (
+                          <div key={o.numOrden} style={{ padding: '10px 20px', borderBottom: i < ordenes.length-1 ? `1px solid var(--border)` : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--white)' }}>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.cliente}</div>
+                              <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{o.numOrden}{o.negocio ? ` · ${o.negocio}` : ''}</div>
+                            </div>
+                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '14px', color, flexShrink: 0, marginLeft: '12px' }}>{fmtMoney(o.total)}</div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color, flexShrink: 0 }}>{value}</div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Días sin prospectar */}
@@ -267,19 +294,49 @@ function Dashboard() {
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: rojo }}>{data?.diasSinProspectar ?? 0}</div>
           </div>
 
-          {/* Pistas */}
-          <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon d={icons.eye} size={17} stroke="#0ea5e9" />
+          {/* Pistas — expandible */}
+          {(() => {
+            const isOpen = expanded === 'Pistas'
+            const pistasList = data?.pistasList || []
+            return (
+              <div style={{ background: 'var(--white)', border: `1.5px solid ${isOpen ? '#0ea5e9' : 'var(--border)'}`, borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow)', overflow: 'hidden', transition: 'border-color 0.2s' }}>
+                <div onClick={() => toggle('Pistas')} style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Icon d={icons.eye} size={17} stroke="#0ea5e9" />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: '#0ea5e9', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pistas</span>
+                      <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '500', marginLeft: '8px' }}>{pistas} {pistas === 1 ? 'cliente' : 'clientes'}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: '#0ea5e9' }}>{pistas}</div>
+                    <div style={{ color: 'var(--muted)', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                      <Icon d="M6 9l6 6 6-9" size={16} />
+                    </div>
+                  </div>
+                </div>
+                {isOpen && (
+                  <div style={{ borderTop: '1px solid #e0f2fe' }}>
+                    {pistasList.length === 0 ? (
+                      <div style={{ padding: '16px 20px', fontSize: '13px', color: 'var(--muted)', textAlign: 'center' }}>Todos los clientes tienen órdenes este mes 🎉</div>
+                    ) : (
+                      pistasList.map((p, i) => (
+                        <div key={i} style={{ padding: '10px 20px', borderBottom: i < pistasList.length-1 ? '1px solid var(--border)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--white)' }}>
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--ink)' }}>{p.nombre}</div>
+                            {p.negocio && <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{p.negocio}</div>}
+                          </div>
+                          {p.telefono && <div style={{ fontSize: '12px', color: '#0ea5e9', fontWeight: '600' }}>{p.telefono}</div>}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#0ea5e9', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pistas</span>
-                <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '500' }}>{data?.pistas ?? 0} {(data?.pistas ?? 0) === 1 ? 'cliente' : 'clientes'}</span>
-              </div>
-            </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: '#0ea5e9' }}>{data?.pistas ?? 0}</div>
-          </div>
+            )
+          })()}
         </>
       )}
     </div>
