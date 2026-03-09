@@ -125,21 +125,15 @@ function ClientRow({ client, index }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div style={{
-            width: '38px', height: '38px', borderRadius: '50%',
-            background: 'var(--accent-light)',
+            width: '38px', height: '38px', borderRadius: '50%', background: 'var(--accent-light)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--accent)', fontFamily: 'var(--font-display)',
-            fontWeight: '800', fontSize: '14px', flexShrink: 0,
+            color: 'var(--accent)', fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '14px', flexShrink: 0,
           }}>
             {client.nombre?.charAt(0).toUpperCase()}
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '15px' }}>
-              {client.nombre}
-            </div>
-            <div style={{ fontSize: '13px', color: 'var(--muted)' }}>
-              {client.negocio || '—'} · {client.telefono}
-            </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '15px' }}>{client.nombre}</div>
+            <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{client.negocio || '—'} · {client.telefono}</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -164,8 +158,7 @@ function ClientRow({ client, index }) {
         <div style={{
           padding: '14px 18px 16px',
           display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-          gap: '12px', borderTop: '1px solid var(--cream)',
-          animation: 'fadeUp 0.2s ease',
+          gap: '12px', borderTop: '1px solid var(--cream)', animation: 'fadeUp 0.2s ease',
         }}>
           {[
             { icon: 'id', label: 'Identificación', val: client.identificacion },
@@ -176,11 +169,7 @@ function ClientRow({ client, index }) {
             { icon: 'phone', label: 'Tel. Contacto', val: client.telefonoContacto },
           ].map(({ icon, label, val }) => val ? (
             <div key={label}>
-              <div style={{
-                fontSize: '11px', color: 'var(--muted)', fontWeight: '600',
-                letterSpacing: '0.06em', textTransform: 'uppercase',
-                marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px'
-              }}>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Icon d={icons[icon]} size={12} />{label}
               </div>
               <div style={{ fontSize: '14px' }}>{val}</div>
@@ -195,10 +184,7 @@ function ClientRow({ client, index }) {
             }}>
               <Icon d={icons.alert} size={16} stroke="var(--accent)" />
               <div>
-                <div style={{
-                  fontSize: '11px', color: 'var(--accent)', fontWeight: '700',
-                  letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px'
-                }}>
+                <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px' }}>
                   Siguiente acción
                 </div>
                 <div style={{ fontSize: '14px', color: 'var(--ink)', fontWeight: '500' }}>
@@ -210,17 +196,10 @@ function ClientRow({ client, index }) {
 
           {client.notas && (
             <div style={{ gridColumn: '1 / -1' }}>
-              <div style={{
-                fontSize: '11px', color: 'var(--muted)', fontWeight: '600',
-                letterSpacing: '0.06em', textTransform: 'uppercase',
-                marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px'
-              }}>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Icon d={icons.note} size={12} />Notas
               </div>
-              <div style={{
-                fontSize: '14px', fontStyle: 'italic', color: 'var(--muted)',
-                background: 'var(--cream)', padding: '8px 12px', borderRadius: 'var(--radius)'
-              }}>
+              <div style={{ fontSize: '14px', fontStyle: 'italic', color: 'var(--muted)', background: 'var(--cream)', padding: '8px 12px', borderRadius: 'var(--radius)' }}>
                 "{client.notas}"
               </div>
             </div>
@@ -245,8 +224,17 @@ export default function App() {
   const [loadingList, setLoadingList] = useState(false)
   const [toast, setToast] = useState(null)
   const [focusedField, setFocusedField] = useState(null)
+  const [acciones, setAcciones] = useState([])
 
   const showToast = (message, type = 'success') => setToast({ message, type })
+
+  // Cargar lista de acciones al montar
+  useEffect(() => {
+    fetch(`${API_BASE}?action=getAcciones`)
+      .then(r => r.json())
+      .then(data => { if (data.success) setAcciones(data.data) })
+      .catch(() => {})
+  }, [])
 
   const fetchClients = useCallback(async () => {
     setLoadingList(true)
@@ -327,10 +315,7 @@ export default function App() {
         height: '60px', position: 'sticky', top: 0, zIndex: 100,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '28px', height: '28px', borderRadius: '6px', background: 'var(--accent)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+          <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Icon d={icons.user} size={15} stroke="white" />
           </div>
           <span style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '16px', color: 'white', letterSpacing: '-0.01em' }}>
@@ -379,8 +364,7 @@ export default function App() {
             <div style={{
               background: 'var(--white)', border: '1.5px solid var(--border)',
               borderRadius: 'var(--radius-lg)', padding: '28px',
-              display: 'flex', flexDirection: 'column', gap: '24px',
-              boxShadow: 'var(--shadow)',
+              display: 'flex', flexDirection: 'column', gap: '24px', boxShadow: 'var(--shadow)',
             }}>
 
               {/* Datos del cliente */}
@@ -449,7 +433,23 @@ export default function App() {
                       <input {...fieldProps('siguienteAccionFecha', { type: 'date' })} />
                     </Field>
                     <Field label="Acción a realizar" icon="alert">
-                      <input {...fieldProps('accion')} placeholder="Ej: Llamar, Visitar, Demo..." />
+                      <select
+                        style={{ ...getInputStyle('accion'), cursor: 'pointer' }}
+                        value={form.accion}
+                        onChange={e => inp('accion', e.target.value)}
+                        onFocus={() => setFocusedField('accion')}
+                        onBlur={() => setFocusedField(null)}
+                      >
+                        <option value="">— Seleccionar —</option>
+                        {acciones.map(a => (
+                          <option key={a} value={a}>{a}</option>
+                        ))}
+                      </select>
+                      {acciones.length === 0 && (
+                        <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                          Cargando acciones...
+                        </span>
+                      )}
                     </Field>
                   </div>
                 </div>
