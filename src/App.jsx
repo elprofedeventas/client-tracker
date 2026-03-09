@@ -147,50 +147,60 @@ function Dashboard() {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    setLoading(true)
-    setError(false)
+    setLoading(true); setError(false)
     fetch(`${API_BASE}?action=dashboard`)
       .then(r => r.json())
-      .then(res => {
-        if (res.success) setData(res.data)
-        else setError(true)
-      })
+      .then(res => { if (res.success) setData(res.data); else setError(true) })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [])
 
-  const vendido = data?.vendido || 0
-  const meta = data?.meta || 0
-  const pct = meta > 0 ? Math.min(100, Math.round((vendido / meta) * 100)) : 0
+  const now = getNowGuayaquil()
+  const mesLabel = MESES_LARGO[now.getMonth()].charAt(0).toUpperCase() + MESES_LARGO[now.getMonth()].slice(1)
+  const anio = now.getFullYear()
+
+  const vendido    = data?.vendido    || 0
+  const negociando = data?.negociando || 0
+  const detenido   = data?.detenido   || 0
+  const perdido    = data?.perdido    || 0
+  const meta       = data?.meta       || 0
+  const pct        = meta > 0 ? Math.min(100, Math.round((vendido / meta) * 100)) : 0
+  const c          = data?.conteos || {}
+
+  const verde = '#16a34a'
+  const rojo  = '#dc2626'
 
   const statCards = [
-    { label: 'Meta', value: fmt(meta), icon: 'target', color: '#6366f1', bg: '#eef2ff' },
-    { label: 'Vendido', value: fmt(vendido), icon: 'check', color: '#16a34a', bg: '#f0fdf4' },
-    { label: 'Negociando', value: fmt(data?.negociando), icon: 'trending', color: '#2563eb', bg: '#eff6ff' },
-    { label: 'Detenido', value: fmt(data?.detenido), icon: 'alert', color: '#d97706', bg: '#fffbeb' },
-    { label: 'Perdido', value: fmt(data?.perdido), icon: 'x', color: '#dc2626', bg: '#fef2f2' },
+    { label: 'Vendido',    value: fmt(vendido),    color: verde, bg: '#f0fdf4', icon: 'check',    estado: 'Vendido' },
+    { label: 'Negociando', value: fmt(negociando), color: verde, bg: '#f0fdf4', icon: 'trending', estado: 'Negociando' },
+    { label: 'Detenido',   value: fmt(detenido),   color: rojo,  bg: '#fef2f2', icon: 'alert',    estado: 'Detenido' },
+    { label: 'Perdido',    value: fmt(perdido),    color: rojo,  bg: '#fef2f2', icon: 'x',        estado: 'Perdido' },
   ]
+
+  const SubCount = ({ estado }) => {
+    const cnt = c[estado] || { clientes: 0, ordenes: 0 }
+    return (
+      <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '500', marginLeft: '8px' }}>
+        {cnt.clientes} {cnt.clientes === 1 ? 'cliente' : 'clientes'} · {cnt.ordenes} {cnt.ordenes === 1 ? 'orden' : 'órdenes'}
+      </span>
+    )
+  }
 
   return (
     <div style={{ animation: 'fadeUp 0.4s ease' }}>
-      {/* Fecha */}
-      <div style={{ marginBottom: '28px' }}>
-        <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: '500', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Icon d={icons.calendar} size={14} />
-          {getTodayLabel()}
-        </div>
+      {/* Título */}
+      <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-          Dashboard
+          Dashboard {mesLabel} {anio}
         </h1>
-        {data?.mesActual && (
-          <div style={{ marginTop: '4px', fontSize: '14px', color: 'var(--muted)' }}>{data.mesActual}</div>
-        )}
+        <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: '500', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Icon d={icons.calendar} size={13} />{getTodayLabel()}
+        </div>
       </div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px', color: 'var(--muted)' }}>
-          <div style={{ fontSize: '24px', marginBottom: '12px', animation: 'pulse 1s infinite' }}>⏳</div>
-          Cargando datos...
+          <div style={{ fontSize: '24px', marginBottom: '12px', animation: 'pulse 1s infinite' }}>⏳</div>Cargando datos...
         </div>
       ) : error ? (
         <div style={{ textAlign: 'center', padding: '60px', color: 'var(--muted)' }}>
@@ -199,61 +209,76 @@ function Dashboard() {
         </div>
       ) : (
         <>
-          {/* Barra de progreso meta */}
-          {meta > 0 && (
-            <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '18px 20px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Avance del mes</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '18px', color: pct >= 100 ? '#16a34a' : 'var(--ink)' }}>{pct}%</span>
+          {/* Meta */}
+          <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '10px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon d={icons.target} size={17} stroke="#6366f1" />
               </div>
-              <div style={{ background: 'var(--cream)', borderRadius: '100px', height: '10px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? '#16a34a' : pct >= 60 ? '#2563eb' : 'var(--accent)', borderRadius: '100px', transition: 'width 0.8s ease' }} />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '12px', color: 'var(--muted)' }}>
-                <span>{fmt(vendido)} vendido</span>
-                <span>Meta: {fmt(meta)}</span>
-              </div>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Meta {mesLabel} {anio}</div>
             </div>
-          )}
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: '#6366f1' }}>{fmt(meta)}</div>
+          </div>
 
-          {/* Cards de cifras — layout vertical */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
-            {statCards.map(({ label, value, icon, color, bg }) => (
+          {/* Avance del mes */}
+          <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '10px', boxShadow: 'var(--shadow)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Avance del mes</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '18px', color: pct >= 100 ? verde : 'var(--ink)' }}>{pct}%</span>
+            </div>
+            <div style={{ background: 'var(--cream)', borderRadius: '100px', height: '10px', overflow: 'hidden', marginBottom: '8px' }}>
+              <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? verde : pct >= 60 ? '#2563eb' : 'var(--brand)', borderRadius: '100px', transition: 'width 0.8s ease' }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: 'var(--muted)' }}>
+              <span style={{ fontWeight: '600', color: verde }}>{fmt(vendido)} vendido</span>
+              <span>·</span>
+              <span>{(c.Vendido?.clientes || 0)} {(c.Vendido?.clientes || 0) === 1 ? 'cliente' : 'clientes'}</span>
+              <span>·</span>
+              <span>{(c.Vendido?.ordenes || 0)} {(c.Vendido?.ordenes || 0) === 1 ? 'orden' : 'órdenes'}</span>
+            </div>
+          </div>
+
+          {/* Tarjetas de estado */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '10px' }}>
+            {statCards.map(({ label, value, color, bg, icon, estado }) => (
               <div key={label} style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                   <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Icon d={icons[icon]} size={17} stroke={color} />
                   </div>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {label === 'Meta' ? `Meta ${data?.mesActual || ''}` : label}
+                  <div style={{ minWidth: 0 }}>
+                    <span style={{ fontSize: '13px', fontWeight: '700', color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
+                    <SubCount estado={estado} />
                   </div>
                 </div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color }}>{value}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color, flexShrink: 0 }}>{value}</div>
               </div>
             ))}
           </div>
 
-          {/* Pistas y días sin prospectar — mismo estilo vertical */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon d={icons.eye} size={17} stroke="#0ea5e9" />
-                </div>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pistas</div>
+          {/* Días sin prospectar */}
+          <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '10px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon d={icons.clock} size={17} stroke={rojo} />
               </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: '#0ea5e9' }}>{data?.pistas ?? 0}</div>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: rojo, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Días sin prospectar</div>
             </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: rojo }}>{data?.diasSinProspectar ?? 0}</div>
+          </div>
 
-            <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: (data?.diasSinProspectar || 0) >= 3 ? '#fef2f2' : '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon d={icons.clock} size={17} stroke={(data?.diasSinProspectar || 0) >= 3 ? '#dc2626' : '#16a34a'} />
-                </div>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Días sin prospectar</div>
+          {/* Pistas */}
+          <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon d={icons.eye} size={17} stroke="#0ea5e9" />
               </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: (data?.diasSinProspectar || 0) >= 3 ? '#dc2626' : '#16a34a' }}>{data?.diasSinProspectar ?? 0}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#0ea5e9', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pistas</span>
+                <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '500' }}>{data?.pistas ?? 0} {(data?.pistas ?? 0) === 1 ? 'cliente' : 'clientes'}</span>
+              </div>
             </div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: '#0ea5e9' }}>{data?.pistas ?? 0}</div>
           </div>
         </>
       )}
