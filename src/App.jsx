@@ -221,34 +221,26 @@ function Dashboard() {
             ))}
           </div>
 
-          {/* Pistas y días sin prospectar */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '18px 20px', boxShadow: 'var(--shadow)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon d={icons.eye} size={14} stroke="#0ea5e9" />
+          {/* Pistas y días sin prospectar — mismo estilo vertical */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#f0f9ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon d={icons.eye} size={17} stroke="#0ea5e9" />
                 </div>
-                <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pistas</span>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pistas</div>
               </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '32px', color: '#0ea5e9' }}>
-                {data?.pistas ?? 0}
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>clientes sin órdenes</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: '#0ea5e9' }}>{data?.pistas ?? 0}</div>
             </div>
 
-            <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '18px 20px', boxShadow: 'var(--shadow)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: (data?.diasSinProspectar || 0) >= 3 ? '#fef2f2' : '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon d={icons.clock} size={14} stroke={(data?.diasSinProspectar || 0) >= 3 ? '#dc2626' : '#16a34a'} />
+            <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: (data?.diasSinProspectar || 0) >= 3 ? '#fef2f2' : '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon d={icons.clock} size={17} stroke={(data?.diasSinProspectar || 0) >= 3 ? '#dc2626' : '#16a34a'} />
                 </div>
-                <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sin prospectar</span>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Días sin prospectar</div>
               </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '32px', color: (data?.diasSinProspectar || 0) >= 3 ? '#dc2626' : '#16a34a' }}>
-                {data?.diasSinProspectar ?? 0}
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>
-                {(data?.diasSinProspectar || 0) === 1 ? 'día desde el último cliente' : 'días desde el último cliente'}
-              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: (data?.diasSinProspectar || 0) >= 3 ? '#dc2626' : '#16a34a' }}>{data?.diasSinProspectar ?? 0}</div>
             </div>
           </div>
         </>
