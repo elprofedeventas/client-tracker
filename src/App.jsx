@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 
 const API_BASE = '/api/proxy'
 
@@ -44,6 +44,7 @@ const icons = {
   alert: 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01',
   edit: 'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z',
   arrowLeft: 'M19 12H5M12 19l-7-7 7-7',
+  search: 'M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z',
 }
 
 function Field({ label, icon, required, children, hint }) {
@@ -100,7 +101,23 @@ function Toast({ message, type, onClose }) {
   )
 }
 
-function ClientRow({ client, index, onEdit }) {
+// ─── Highlight matching text ──────────────────────────────────────────────────
+function Highlight({ text, query }) {
+  if (!query || !text) return <>{text}</>
+  const idx = text.toString().toLowerCase().indexOf(query.toLowerCase())
+  if (idx === -1) return <>{text}</>
+  return (
+    <>
+      {text.toString().slice(0, idx)}
+      <mark style={{ background: 'var(--accent-light)', color: 'var(--accent)', borderRadius: '2px', padding: '0 2px' }}>
+        {text.toString().slice(idx, idx + query.length)}
+      </mark>
+      {text.toString().slice(idx + query.length)}
+    </>
+  )
+}
+
+function ClientRow({ client, index, onEdit, query }) {
   const [open, setOpen] = useState(false)
   const hasNextAction = client.siguienteAccionFecha || client.accion
 
@@ -108,7 +125,7 @@ function ClientRow({ client, index, onEdit }) {
     <div style={{
       background: 'var(--white)', border: '1.5px solid var(--border)',
       borderRadius: 'var(--radius-lg)', overflow: 'hidden',
-      animation: `fadeUp 0.3s ${index * 0.05}s ease both`, transition: 'box-shadow 0.2s',
+      animation: `fadeUp 0.2s ${Math.min(index, 5) * 0.04}s ease both`, transition: 'box-shadow 0.2s',
     }}
       onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
       onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
@@ -126,8 +143,12 @@ function ClientRow({ client, index, onEdit }) {
             {client.nombre?.charAt(0).toUpperCase()}
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '15px' }}>{client.nombre}</div>
-            <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{client.negocio || '—'} · {client.telefono}</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '15px' }}>
+              <Highlight text={client.nombre} query={query} />
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--muted)' }}>
+              <Highlight text={client.negocio || '—'} query={query} /> · {client.telefono}
+            </div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -149,10 +170,7 @@ function ClientRow({ client, index, onEdit }) {
       </div>
 
       {open && (
-        <div style={{
-          padding: '14px 18px 16px', borderTop: '1px solid var(--cream)',
-          animation: 'fadeUp 0.2s ease',
-        }}>
+        <div style={{ padding: '14px 18px 16px', borderTop: '1px solid var(--cream)', animation: 'fadeUp 0.2s ease' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', marginBottom: '14px' }}>
             {[
               { icon: 'id', label: 'Identificación', val: client.identificacion },
@@ -166,21 +184,17 @@ function ClientRow({ client, index, onEdit }) {
                 <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Icon d={icons[icon]} size={12} />{label}
                 </div>
-                <div style={{ fontSize: '14px' }}>{val}</div>
+                <div style={{ fontSize: '14px' }}>
+                  {label === 'Identificación' ? <Highlight text={val} query={query} /> : val}
+                </div>
               </div>
             ) : null)}
 
             {hasNextAction && (
-              <div style={{
-                gridColumn: '1 / -1', background: 'var(--accent-light)',
-                borderRadius: 'var(--radius)', padding: '10px 14px',
-                display: 'flex', alignItems: 'flex-start', gap: '10px',
-              }}>
+              <div style={{ gridColumn: '1 / -1', background: 'var(--accent-light)', borderRadius: 'var(--radius)', padding: '10px 14px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                 <Icon d={icons.alert} size={16} stroke="var(--accent)" />
                 <div>
-                  <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px' }}>
-                    Siguiente acción
-                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px' }}>Siguiente acción</div>
                   <div style={{ fontSize: '14px', color: 'var(--ink)', fontWeight: '500' }}>
                     {client.accion}{client.accion && client.siguienteAccionFecha ? ' — ' : ''}{client.siguienteAccionFecha}
                   </div>
@@ -200,25 +214,20 @@ function ClientRow({ client, index, onEdit }) {
             )}
           </div>
 
-          {/* Footer con fecha y botón editar */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '11px', color: 'var(--border)' }}>
-              Registrado: {client.fechaRegistro}
-            </span>
+            <span style={{ fontSize: '11px', color: 'var(--border)' }}>Registrado: {client.fechaRegistro}</span>
             <button
               onClick={e => { e.stopPropagation(); onEdit(client) }}
               style={{
                 background: 'var(--ink)', color: 'white', border: 'none',
                 borderRadius: 'var(--radius)', padding: '7px 14px',
                 fontSize: '12px', fontWeight: '700', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '6px',
-                transition: 'background 0.15s',
+                display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s',
               }}
               onMouseEnter={e => e.currentTarget.style.background = 'var(--accent)'}
               onMouseLeave={e => e.currentTarget.style.background = 'var(--ink)'}
             >
-              <Icon d={icons.edit} size={13} />
-              Editar
+              <Icon d={icons.edit} size={13} /> Editar
             </button>
           </div>
         </div>
@@ -230,14 +239,10 @@ function ClientRow({ client, index, onEdit }) {
 // ─── Edit Form ────────────────────────────────────────────────────────────────
 function EditForm({ client, onSave, onCancel }) {
   const [form, setForm] = useState({
-    nombre: client.nombre || '',
-    negocio: client.negocio || '',
-    identificacion: client.identificacion || '',
-    telefono: client.telefono || '',
-    email: client.email || '',
-    direccion: client.direccion || '',
-    locales: client.locales || '',
-    contacto: client.contacto || '',
+    nombre: client.nombre || '', negocio: client.negocio || '',
+    identificacion: client.identificacion || '', telefono: client.telefono || '',
+    email: client.email || '', direccion: client.direccion || '',
+    locales: client.locales || '', contacto: client.contacto || '',
     telefonoContacto: client.telefonoContacto || '',
   })
   const [errors, setErrors] = useState({})
@@ -256,12 +261,9 @@ function EditForm({ client, onSave, onCancel }) {
   })
 
   const fieldProps = (field, extra = {}) => ({
-    style: getInputStyle(field),
-    value: form[field],
+    style: getInputStyle(field), value: form[field],
     onChange: e => inp(field, e.target.value),
-    onFocus: () => setFocusedField(field),
-    onBlur: () => setFocusedField(null),
-    ...extra,
+    onFocus: () => setFocusedField(field), onBlur: () => setFocusedField(null), ...extra,
   })
 
   const validate = () => {
@@ -280,11 +282,8 @@ function EditForm({ client, onSave, onCancel }) {
       const params = new URLSearchParams({ ...form, action: 'update', rowIndex: client.rowIndex })
       const res = await fetch(`${API_BASE}?${params.toString()}`)
       const data = await res.json()
-      if (data.success) {
-        onSave({ ...client, ...form })
-      } else {
-        alert(data.error || 'Error al actualizar')
-      }
+      if (data.success) onSave({ ...client, ...form })
+      else alert(data.error || 'Error al actualizar')
     } catch {
       alert('Error al conectar con Apps Script')
     } finally {
@@ -294,36 +293,17 @@ function EditForm({ client, onSave, onCancel }) {
 
   return (
     <div style={{ animation: 'fadeUp 0.4s ease' }}>
-      {/* Header */}
       <div style={{ marginBottom: '32px' }}>
-        <button onClick={onCancel} style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px',
-          fontSize: '13px', fontWeight: '600', padding: '0', marginBottom: '16px',
-        }}>
+        <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', padding: '0', marginBottom: '16px' }}>
           <Icon d={icons.arrowLeft} size={15} /> Volver a clientes
         </button>
-        <div style={{
-          display: 'inline-block', background: 'var(--accent-light)', color: 'var(--accent)',
-          fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase',
-          padding: '4px 10px', borderRadius: '20px', marginBottom: '10px'
-        }}>
+        <div style={{ display: 'inline-block', background: 'var(--accent-light)', color: 'var(--accent)', fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '20px', marginBottom: '10px' }}>
           Editando cliente
         </div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
-          {client.nombre}
-        </h1>
-        <p style={{ color: 'var(--muted)', marginTop: '6px', fontSize: '14px' }}>
-          Modifica los datos y guarda los cambios.
-        </p>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', lineHeight: 1.1, letterSpacing: '-0.02em' }}>{client.nombre}</h1>
       </div>
 
-      <div style={{
-        background: 'var(--white)', border: '1.5px solid var(--border)',
-        borderRadius: 'var(--radius-lg)', padding: '28px',
-        display: 'flex', flexDirection: 'column', gap: '24px', boxShadow: 'var(--shadow)',
-      }}>
-        {/* Datos del cliente */}
+      <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '28px', display: 'flex', flexDirection: 'column', gap: '24px', boxShadow: 'var(--shadow)' }}>
         <div>
           <div style={sectionTitle}>Datos del cliente</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -344,8 +324,6 @@ function EditForm({ client, onSave, onCancel }) {
             </Field>
           </div>
         </div>
-
-        {/* Datos del negocio */}
         <div>
           <div style={sectionTitle}>Datos del negocio</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -362,8 +340,6 @@ function EditForm({ client, onSave, onCancel }) {
             </div>
           </div>
         </div>
-
-        {/* Persona de contacto */}
         <div>
           <div style={sectionTitle}>Persona de contacto</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -375,32 +351,15 @@ function EditForm({ client, onSave, onCancel }) {
             </Field>
           </div>
         </div>
-
-        {/* Botones */}
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={onCancel} style={{
-            flex: 1, padding: '13px', background: 'var(--cream)',
-            color: 'var(--ink)', border: '1.5px solid var(--border)',
-            borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700',
-            cursor: 'pointer', transition: 'background 0.15s',
-          }}>
+          <button onClick={onCancel} style={{ flex: 1, padding: '13px', background: 'var(--cream)', color: 'var(--ink)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
             Cancelar
           </button>
-          <button onClick={handleSave} disabled={loading} style={{
-            flex: 2, padding: '13px',
-            background: loading ? 'var(--muted)' : 'var(--ink)',
-            color: 'white', border: 'none', borderRadius: 'var(--radius)',
-            fontSize: '14px', fontWeight: '700', letterSpacing: '0.04em',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            transition: 'background 0.2s', cursor: loading ? 'not-allowed' : 'pointer',
-          }}
+          <button onClick={handleSave} disabled={loading} style={{ flex: 2, padding: '13px', background: loading ? 'var(--muted)' : 'var(--ink)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}
             onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--accent)' }}
             onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--ink)' }}
           >
-            {loading
-              ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando cambios...</>
-              : <><Icon d={icons.check} size={16} /> Guardar cambios</>
-            }
+            {loading ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando...</> : <><Icon d={icons.check} size={16} /> Guardar cambios</>}
           </button>
         </div>
       </div>
@@ -410,7 +369,7 @@ function EditForm({ client, onSave, onCancel }) {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [view, setView] = useState('form') // 'form' | 'list' | 'edit'
+  const [view, setView] = useState('form')
   const [form, setForm] = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -420,6 +379,7 @@ export default function App() {
   const [focusedField, setFocusedField] = useState(null)
   const [acciones, setAcciones] = useState([])
   const [editingClient, setEditingClient] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const showToast = (message, type = 'success') => setToast({ message, type })
 
@@ -447,6 +407,17 @@ export default function App() {
   useEffect(() => {
     if (view === 'list') fetchClients()
   }, [view, fetchClients])
+
+  // ── Filtrado en tiempo real ───────────────────────────────────────────────
+  const filteredClients = useMemo(() => {
+    if (!searchQuery.trim()) return clients
+    const q = searchQuery.toLowerCase().trim()
+    return clients.filter(c =>
+      c.nombre.toLowerCase().includes(q) ||
+      c.negocio.toLowerCase().includes(q) ||
+      c.identificacion.toLowerCase().includes(q)
+    )
+  }, [clients, searchQuery])
 
   const validate = () => {
     const e = {}
@@ -478,10 +449,7 @@ export default function App() {
     }
   }
 
-  const handleEdit = (client) => {
-    setEditingClient(client)
-    setView('edit')
-  }
+  const handleEdit = (client) => { setEditingClient(client); setView('edit') }
 
   const handleSaveEdit = (updatedClient) => {
     setClients(prev => prev.map(c => c.rowIndex === updatedClient.rowIndex ? updatedClient : c))
@@ -501,41 +469,26 @@ export default function App() {
   })
 
   const fieldProps = (field, extra = {}) => ({
-    style: getInputStyle(field),
-    value: form[field],
+    style: getInputStyle(field), value: form[field],
     onChange: e => inp(field, e.target.value),
-    onFocus: () => setFocusedField(field),
-    onBlur: () => setFocusedField(null),
-    ...extra,
+    onFocus: () => setFocusedField(field), onBlur: () => setFocusedField(null), ...extra,
   })
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--paper)' }}>
-
-      {/* Header */}
-      <header style={{
-        background: 'var(--ink)', padding: '0 24px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        height: '60px', position: 'sticky', top: 0, zIndex: 100,
-      }}>
+      <header style={{ background: 'var(--ink)', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '60px', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Icon d={icons.user} size={15} stroke="white" />
           </div>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '16px', color: 'white', letterSpacing: '-0.01em' }}>
-            ClientTracker
-          </span>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '16px', color: 'white', letterSpacing: '-0.01em' }}>ClientTracker</span>
         </div>
         <nav style={{ display: 'flex', gap: '4px' }}>
-          {[
-            { key: 'form', icon: icons.plus, label: 'Nuevo' },
-            { key: 'list', icon: icons.list, label: 'Clientes' },
-          ].map(({ key, icon, label }) => (
-            <button key={key} onClick={() => setView(key)} style={{
+          {[{ key: 'form', icon: icons.plus, label: 'Nuevo' }, { key: 'list', icon: icons.list, label: 'Clientes' }].map(({ key, icon, label }) => (
+            <button key={key} onClick={() => { setView(key); if (key === 'list') setSearchQuery('') }} style={{
               background: (view === key || (view === 'edit' && key === 'list')) ? 'rgba(255,255,255,0.15)' : 'transparent',
               border: 'none', color: (view === key || (view === 'edit' && key === 'list')) ? 'white' : 'rgba(255,255,255,0.5)',
-              padding: '6px 14px', borderRadius: 'var(--radius)',
-              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '6px 14px', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', gap: '6px',
               fontWeight: '600', fontSize: '13px', transition: 'all 0.15s', cursor: 'pointer',
             }}>
               <Icon d={icon} size={15} />{label}
@@ -548,37 +501,21 @@ export default function App() {
 
         {/* ── EDIT VIEW ─────────────────────────────────────────────────────── */}
         {view === 'edit' && editingClient && (
-          <EditForm
-            client={editingClient}
-            onSave={handleSaveEdit}
-            onCancel={() => setView('list')}
-          />
+          <EditForm client={editingClient} onSave={handleSaveEdit} onCancel={() => setView('list')} />
         )}
 
         {/* ── FORM VIEW ─────────────────────────────────────────────────────── */}
         {view === 'form' && (
           <div style={{ animation: 'fadeUp 0.4s ease' }}>
             <div style={{ marginBottom: '32px' }}>
-              <div style={{
-                display: 'inline-block', background: 'var(--accent-light)', color: 'var(--accent)',
-                fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase',
-                padding: '4px 10px', borderRadius: '20px', marginBottom: '10px'
-              }}>
+              <div style={{ display: 'inline-block', background: 'var(--accent-light)', color: 'var(--accent)', fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '20px', marginBottom: '10px' }}>
                 Nueva visita
               </div>
-              <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', lineHeight: 1.1, letterSpacing: '-0.02em' }}>
-                Registrar cliente
-              </h1>
-              <p style={{ color: 'var(--muted)', marginTop: '6px', fontSize: '14px' }}>
-                La fecha y hora se registran automáticamente al guardar.
-              </p>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', lineHeight: 1.1, letterSpacing: '-0.02em' }}>Registrar cliente</h1>
+              <p style={{ color: 'var(--muted)', marginTop: '6px', fontSize: '14px' }}>La fecha y hora se registran automáticamente al guardar.</p>
             </div>
 
-            <div style={{
-              background: 'var(--white)', border: '1.5px solid var(--border)',
-              borderRadius: 'var(--radius-lg)', padding: '28px',
-              display: 'flex', flexDirection: 'column', gap: '24px', boxShadow: 'var(--shadow)',
-            }}>
+            <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '28px', display: 'flex', flexDirection: 'column', gap: '24px', boxShadow: 'var(--shadow)' }}>
               <div>
                 <div style={sectionTitle}>Datos del cliente</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -599,7 +536,6 @@ export default function App() {
                   </Field>
                 </div>
               </div>
-
               <div>
                 <div style={sectionTitle}>Datos del negocio</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -616,7 +552,6 @@ export default function App() {
                   </div>
                 </div>
               </div>
-
               <div>
                 <div style={sectionTitle}>Persona de contacto</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -628,7 +563,6 @@ export default function App() {
                   </Field>
                 </div>
               </div>
-
               <div>
                 <div style={sectionTitle}>Notas y seguimiento</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -641,13 +575,9 @@ export default function App() {
                       <input {...fieldProps('siguienteAccionFecha', { type: 'date' })} />
                     </Field>
                     <Field label="Acción a realizar" icon="alert">
-                      <select
-                        style={{ ...getInputStyle('accion'), cursor: 'pointer' }}
-                        value={form.accion}
+                      <select style={{ ...getInputStyle('accion'), cursor: 'pointer' }} value={form.accion}
                         onChange={e => inp('accion', e.target.value)}
-                        onFocus={() => setFocusedField('accion')}
-                        onBlur={() => setFocusedField(null)}
-                      >
+                        onFocus={() => setFocusedField('accion')} onBlur={() => setFocusedField(null)}>
                         <option value="">— Seleccionar —</option>
                         {acciones.map(a => <option key={a} value={a}>{a}</option>)}
                       </select>
@@ -655,22 +585,10 @@ export default function App() {
                   </div>
                 </div>
               </div>
-
-              <button onClick={handleSubmit} disabled={loading} style={{
-                width: '100%', padding: '13px',
-                background: loading ? 'var(--muted)' : 'var(--ink)',
-                color: 'white', border: 'none', borderRadius: 'var(--radius)',
-                fontSize: '14px', fontWeight: '700', letterSpacing: '0.04em',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                transition: 'background 0.2s', marginTop: '4px', cursor: loading ? 'not-allowed' : 'pointer',
-              }}
+              <button onClick={handleSubmit} disabled={loading} style={{ width: '100%', padding: '13px', background: loading ? 'var(--muted)' : 'var(--ink)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'background 0.2s', marginTop: '4px', cursor: loading ? 'not-allowed' : 'pointer' }}
                 onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--accent)' }}
-                onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--ink)' }}
-              >
-                {loading
-                  ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando en Google Sheets...</>
-                  : <><Icon d={icons.check} size={16} /> Registrar cliente</>
-                }
+                onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--ink)' }}>
+                {loading ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando en Google Sheets...</> : <><Icon d={icons.check} size={16} /> Registrar cliente</>}
               </button>
             </div>
           </div>
@@ -679,26 +597,36 @@ export default function App() {
         {/* ── LIST VIEW ─────────────────────────────────────────────────────── */}
         {view === 'list' && (
           <div style={{ animation: 'fadeUp 0.4s ease' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '28px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '20px' }}>
               <div>
-                <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', letterSpacing: '-0.02em' }}>
-                  Clientes registrados
-                </h1>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', letterSpacing: '-0.02em' }}>Clientes</h1>
                 <p style={{ color: 'var(--muted)', fontSize: '14px', marginTop: '4px' }}>
-                  {clients.length} {clients.length === 1 ? 'cliente' : 'clientes'} en total
+                  {searchQuery ? `${filteredClients.length} de ${clients.length} clientes` : `${clients.length} ${clients.length === 1 ? 'cliente' : 'clientes'} en total`}
                 </p>
               </div>
-              <button onClick={fetchClients} disabled={loadingList} style={{
-                background: 'var(--white)', border: '1.5px solid var(--border)',
-                borderRadius: 'var(--radius)', padding: '8px 14px',
-                color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px',
-                fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-              }}>
-                <span style={{ animation: loadingList ? 'pulse 1s infinite' : 'none' }}>
-                  <Icon d={icons.refresh} size={15} />
-                </span>
+              <button onClick={fetchClients} disabled={loadingList} style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 14px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                <span style={{ animation: loadingList ? 'pulse 1s infinite' : 'none' }}><Icon d={icons.refresh} size={15} /></span>
                 Actualizar
               </button>
+            </div>
+
+            {/* Buscador */}
+            <div style={{ position: 'relative', marginBottom: '20px' }}>
+              <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }}>
+                <Icon d={icons.search} size={16} />
+              </span>
+              <input
+                type="text"
+                placeholder="Buscar por nombre, negocio o identificación..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ ...inputStyle, paddingLeft: '42px', paddingRight: searchQuery ? '42px' : '14px', fontSize: '14px' }}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', padding: '2px' }}>
+                  <Icon d={icons.x} size={16} />
+                </button>
+              )}
             </div>
 
             {loadingList ? (
@@ -706,19 +634,20 @@ export default function App() {
                 <div style={{ fontSize: '24px', marginBottom: '12px', animation: 'pulse 1s infinite' }}>⏳</div>
                 Cargando clientes...
               </div>
-            ) : clients.length === 0 ? (
-              <div style={{
-                textAlign: 'center', padding: '60px', background: 'var(--white)',
-                border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', color: 'var(--muted)',
-              }}>
-                <div style={{ fontSize: '36px', marginBottom: '12px' }}>📋</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', marginBottom: '6px' }}>Sin registros aún</div>
-                <div style={{ fontSize: '14px' }}>Registra tu primer cliente con el botón "Nuevo"</div>
+            ) : filteredClients.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px', background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', color: 'var(--muted)' }}>
+                <div style={{ fontSize: '36px', marginBottom: '12px' }}>{searchQuery ? '🔍' : '📋'}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', marginBottom: '6px' }}>
+                  {searchQuery ? `Sin resultados para "${searchQuery}"` : 'Sin registros aún'}
+                </div>
+                <div style={{ fontSize: '14px' }}>
+                  {searchQuery ? 'Intenta con otro término de búsqueda' : 'Registra tu primer cliente con el botón "Nuevo"'}
+                </div>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {clients.map((c, i) => (
-                  <ClientRow key={i} client={c} index={i} onEdit={handleEdit} />
+                {filteredClients.map((c, i) => (
+                  <ClientRow key={c.rowIndex} client={c} index={i} onEdit={handleEdit} query={searchQuery} />
                 ))}
               </div>
             )}
