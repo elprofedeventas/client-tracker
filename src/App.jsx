@@ -267,15 +267,42 @@ function Dashboard() {
                       {ordenes.length === 0 ? (
                         <div style={{ padding: '16px 20px', fontSize: '13px', color: 'var(--muted)', textAlign: 'center' }}>Sin órdenes en {label.toLowerCase()} este mes</div>
                       ) : (
-                        ordenes.map((o, i) => (
-                          <div key={o.numOrden} style={{ padding: '10px 20px', borderBottom: i < ordenes.length-1 ? `1px solid var(--border)` : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--white)' }}>
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.cliente}</div>
-                              <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{o.numOrden}{o.negocio ? ` · ${o.negocio}` : ''}</div>
+                        ordenes.map((o, i) => {
+                          // Calcular días en estado actual
+                          let diasEnEstado = null
+                          if (estado !== 'Vendido' && o.fechaCambioEstado) {
+                            const parseFCS = (s) => {
+                              if (!s) return null
+                              if (s instanceof Date) return s
+                              if (typeof s === 'string' && s.includes('/')) {
+                                const p = s.split(' ')[0].split('/')
+                                if (p.length === 3) return new Date(p[2], p[1]-1, p[0])
+                              }
+                              return null
+                            }
+                            const fcs = parseFCS(o.fechaCambioEstado)
+                            if (fcs) {
+                              const hoy = getNowGuayaquil(); hoy.setHours(0,0,0,0)
+                              diasEnEstado = Math.floor((hoy - fcs) / (1000*60*60*24))
+                            }
+                          }
+                          return (
+                            <div key={i} style={{ padding: '10px 20px', borderBottom: i < ordenes.length-1 ? `1px solid var(--border)` : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--white)' }}>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.cliente}</div>
+                                <div style={{ fontSize: '11px', color: 'var(--muted)', display: 'flex', gap: '8px', alignItems: 'center', marginTop: '2px' }}>
+                                  {o.negocio && <span>{o.negocio}</span>}
+                                  {diasEnEstado !== null && (
+                                    <span style={{ color: diasEnEstado >= 7 ? '#dc2626' : '#d97706', fontWeight: '600' }}>
+                                      {diasEnEstado === 0 ? 'Hoy' : `${diasEnEstado}d en ${estado.toLowerCase()}`}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '14px', color, flexShrink: 0, marginLeft: '12px' }}>{fmtMoney(o.total)}</div>
                             </div>
-                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '14px', color, flexShrink: 0, marginLeft: '12px' }}>{fmtMoney(o.total)}</div>
-                          </div>
-                        ))
+                          )
+                        })
                       )}
                     </div>
                   )}
