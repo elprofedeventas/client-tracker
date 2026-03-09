@@ -146,6 +146,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [expanded, setExpanded] = useState(null)
+  const [expandedOrden, setExpandedOrden] = useState(null)
 
   useEffect(() => {
     setLoading(true); setError(false)
@@ -287,7 +288,7 @@ function Dashboard() {
                             }
                           }
                           const ordenKey = `${estado}-${o.numOrden}`
-                          const detalleOpen = expanded === ordenKey
+                          const detalleOpen = expandedOrden === ordenKey
                           return (
                             <div key={i} style={{ borderBottom: i < ordenes.length-1 ? `1px solid var(--border)` : 'none', background: 'var(--white)' }}>
                               <div style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -301,7 +302,7 @@ function Dashboard() {
                                       </span>
                                     )}
                                     {o.numOrden && (
-                                      <span onClick={() => setExpanded(prev => prev === ordenKey ? estado : ordenKey)}
+                                      <span onClick={(e) => { e.stopPropagation(); setExpandedOrden(prev => prev === ordenKey ? null : ordenKey) }}
                                         style={{ color: 'var(--brand)', fontWeight: '700', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
                                         {o.numOrden} {detalleOpen ? '▲' : '▼'}
                                       </span>
