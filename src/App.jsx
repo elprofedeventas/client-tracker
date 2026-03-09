@@ -219,7 +219,7 @@ function Dashboard() {
 }
 
 // ─── ClientRow ────────────────────────────────────────────────────────────────
-function ClientRow({ client, index, onEdit, query }) {
+function ClientRow({ client, index, onEdit, onView, query }) {
   return (
     <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', animation: `fadeUp 0.2s ${Math.min(index, 5) * 0.04}s ease both`, transition: 'box-shadow 0.2s' }}
       onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
@@ -237,12 +237,103 @@ function ClientRow({ client, index, onEdit, query }) {
           </div>
         </div>
       </div>
-      <button onClick={() => onEdit(client)}
-        style={{ background: 'var(--ink)', color: 'white', border: 'none', borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s', flexShrink: 0, marginLeft: '12px' }}
-        onMouseEnter={e => e.currentTarget.style.background = 'var(--accent)'}
-        onMouseLeave={e => e.currentTarget.style.background = 'var(--ink)'}>
-        <Icon d={icons.edit} size={13} /> Editar
+      <div style={{ display: 'flex', gap: '8px', flexShrink: 0, marginLeft: '12px' }}>
+        <button onClick={() => onView(client)}
+          style={{ background: 'var(--cream)', color: 'var(--ink)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--border)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--cream)'}>
+          <Icon d={icons.eye} size={13} /> Ver
+        </button>
+        <button onClick={() => onEdit(client)}
+          style={{ background: 'var(--ink)', color: 'white', border: 'none', borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--accent)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--ink)'}>
+          <Icon d={icons.edit} size={13} /> Editar
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── ViewClient ───────────────────────────────────────────────────────────────
+function ViewClient({ client, onEdit, onBack }) {
+  const hasNextAction = client.siguienteAccionFecha || client.accion
+  const fields = [
+    { icon: 'id', label: 'Identificación', val: client.identificacion },
+    { icon: 'phone', label: 'Teléfono', val: client.telefono },
+    { icon: 'mail', label: 'Email', val: client.email },
+    { icon: 'map', label: 'Dirección', val: client.direccion },
+    { icon: 'building', label: 'Locales', val: client.locales },
+    { icon: 'contact', label: 'Contacto', val: client.contacto },
+    { icon: 'phone', label: 'Tel. Contacto', val: client.telefonoContacto },
+  ]
+
+  return (
+    <div style={{ animation: 'fadeUp 0.4s ease' }}>
+      {/* Back */}
+      <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', padding: '0', marginBottom: '24px' }}>
+        <Icon d={icons.arrowLeft} size={15} /> Volver a clientes
       </button>
+
+      {/* Header del cliente */}
+      <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px' }}>
+              {client.nombre?.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '22px', letterSpacing: '-0.01em', margin: 0 }}>{client.nombre}</h1>
+              {client.negocio && <div style={{ fontSize: '14px', color: 'var(--muted)', marginTop: '2px' }}>{client.negocio}</div>}
+            </div>
+          </div>
+          <button onClick={() => onEdit(client)}
+            style={{ background: 'var(--ink)', color: 'white', border: 'none', borderRadius: 'var(--radius)', padding: '8px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--accent)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'var(--ink)'}>
+            <Icon d={icons.edit} size={14} /> Editar
+          </button>
+        </div>
+
+        {/* Campos */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '14px' }}>
+          {fields.map(({ icon, label, val }) => val ? (
+            <div key={label}>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Icon d={icons[icon]} size={12} />{label}
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: '500' }}>{val}</div>
+            </div>
+          ) : null)}
+        </div>
+
+        <div style={{ marginTop: '14px', fontSize: '11px', color: 'var(--border)' }}>
+          Registrado: {client.fechaRegistro}
+        </div>
+      </div>
+
+      {/* Siguiente acción */}
+      {hasNextAction && (
+        <div style={{ background: 'var(--accent-light)', border: '1.5px solid var(--accent)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+          <Icon d={icons.alert} size={18} stroke="var(--accent)" />
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>Siguiente acción</div>
+            <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--ink)' }}>
+              {client.accion}{client.accion && client.siguienteAccionFecha ? ' — ' : ''}{client.siguienteAccionFecha}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notas */}
+      {client.notas && (
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Icon d={icons.note} size={13} />Notas
+          </div>
+          <div style={{ fontSize: '14px', color: 'var(--ink)', lineHeight: '1.6', fontStyle: 'italic' }}>"{client.notas}"</div>
+        </div>
+      )}
     </div>
   )
 }
@@ -339,6 +430,7 @@ export default function App() {
   const [focusedField, setFocusedField] = useState(null)
   const [acciones, setAcciones] = useState([])
   const [editingClient, setEditingClient] = useState(null)
+  const [viewingClient, setViewingClient] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
 
   const showToast = (message, type = 'success') => setToast({ message, type })
@@ -388,8 +480,9 @@ export default function App() {
     finally { setLoading(false) }
   }
 
-  const navigate = (v) => { setView(v); setMenuOpen(false); if (v !== 'edit') setEditingClient(null) }
-  const handleEdit = (c) => { setEditingClient(c); setView('edit') }
+  const navigate = (v) => { setView(v); setMenuOpen(false); if (v !== 'edit') setEditingClient(null); if (v !== 'view') setViewingClient(null) }
+  const handleEdit = (c) => { setEditingClient(c); setViewingClient(null); setView('edit') }
+  const handleView = (c) => { setViewingClient(c); setView('view') }
   const handleSaveEdit = (c) => { setClients(p => p.map(x => x.rowIndex === c.rowIndex ? c : x)); showToast(`✓ ${c.nombre} actualizado`); setView('list') }
 
   const inp = (f, v) => { setForm(p => ({ ...p, [f]: v })); if (errors[f]) setErrors(e => ({ ...e, [f]: null })) }
@@ -435,6 +528,11 @@ export default function App() {
 
         {/* ── DASHBOARD ─────────────────────────────────────────────────────── */}
         {view === 'dashboard' && <Dashboard />}
+
+        {/* ── VER CLIENTE ───────────────────────────────────────────────────── */}
+        {view === 'view' && viewingClient && (
+          <ViewClient client={viewingClient} onEdit={handleEdit} onBack={() => setView('list')} />
+        )}
 
         {/* ── EDIT ──────────────────────────────────────────────────────────── */}
         {view === 'edit' && editingClient && <EditForm client={editingClient} onSave={handleSaveEdit} onCancel={() => setView('list')} />}
@@ -529,7 +627,7 @@ export default function App() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {filteredClients.map((c, i) => <ClientRow key={c.rowIndex} client={c} index={i} onEdit={handleEdit} query={searchQuery} />)}
+                {filteredClients.map((c, i) => <ClientRow key={c.rowIndex} client={c} index={i} onEdit={handleEdit} onView={handleView} query={searchQuery} />)}
               </div>
             )}
           </div>
