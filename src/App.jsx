@@ -220,81 +220,29 @@ function Dashboard() {
 
 // ─── ClientRow ────────────────────────────────────────────────────────────────
 function ClientRow({ client, index, onEdit, query }) {
-  const [open, setOpen] = useState(false)
-  const hasNextAction = client.siguienteAccionFecha || client.accion
-
   return (
-    <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', animation: `fadeUp 0.2s ${Math.min(index, 5) * 0.04}s ease both`, transition: 'box-shadow 0.2s' }}
+    <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', animation: `fadeUp 0.2s ${Math.min(index, 5) * 0.04}s ease both`, transition: 'box-shadow 0.2s' }}
       onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
       onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
-      <div onClick={() => setOpen(!open)} style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '14px', flexShrink: 0 }}>
-            {client.nombre?.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '15px' }}><Highlight text={client.nombre} query={query} /></div>
-            <div style={{ fontSize: '13px', color: 'var(--muted)' }}><Highlight text={client.negocio || '—'} query={query} /> · {client.telefono}</div>
-          </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+        <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '14px', flexShrink: 0 }}>
+          {client.nombre?.charAt(0).toUpperCase()}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {hasNextAction && (
-            <div style={{ background: 'var(--accent-light)', color: 'var(--accent)', fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Icon d={icons.alert} size={11} />{client.siguienteAccionFecha}
-            </div>
-          )}
-          <span style={{ fontSize: '12px', color: 'var(--muted)' }}>{client.fechaRegistro}</span>
-          <span style={{ transform: open ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.2s', color: 'var(--muted)' }}><Icon d={icons.chevron} size={16} /></span>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <Highlight text={client.nombre} query={query} />
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <Highlight text={client.negocio || '—'} query={query} /> · {client.telefono}
+          </div>
         </div>
       </div>
-
-      {open && (
-        <div style={{ padding: '14px 18px 16px', borderTop: '1px solid var(--cream)', animation: 'fadeUp 0.2s ease' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', marginBottom: '14px' }}>
-            {[
-              { icon: 'id', label: 'Identificación', val: client.identificacion },
-              { icon: 'mail', label: 'Email', val: client.email },
-              { icon: 'map', label: 'Dirección', val: client.direccion },
-              { icon: 'building', label: 'Locales', val: client.locales },
-              { icon: 'contact', label: 'Contacto', val: client.contacto },
-              { icon: 'phone', label: 'Tel. Contacto', val: client.telefonoContacto },
-            ].map(({ icon, label, val }) => val ? (
-              <div key={label}>
-                <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Icon d={icons[icon]} size={12} />{label}
-                </div>
-                <div style={{ fontSize: '14px' }}>{label === 'Identificación' ? <Highlight text={val} query={query} /> : val}</div>
-              </div>
-            ) : null)}
-            {hasNextAction && (
-              <div style={{ gridColumn: '1 / -1', background: 'var(--accent-light)', borderRadius: 'var(--radius)', padding: '10px 14px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                <Icon d={icons.alert} size={16} stroke="var(--accent)" />
-                <div>
-                  <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '2px' }}>Siguiente acción</div>
-                  <div style={{ fontSize: '14px', color: 'var(--ink)', fontWeight: '500' }}>{client.accion}{client.accion && client.siguienteAccionFecha ? ' — ' : ''}{client.siguienteAccionFecha}</div>
-                </div>
-              </div>
-            )}
-            {client.notas && (
-              <div style={{ gridColumn: '1 / -1' }}>
-                <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Icon d={icons.note} size={12} />Notas
-                </div>
-                <div style={{ fontSize: '14px', fontStyle: 'italic', color: 'var(--muted)', background: 'var(--cream)', padding: '8px 12px', borderRadius: 'var(--radius)' }}>"{client.notas}"</div>
-              </div>
-            )}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '11px', color: 'var(--border)' }}>Registrado: {client.fechaRegistro}</span>
-            <button onClick={e => { e.stopPropagation(); onEdit(client) }}
-              style={{ background: 'var(--ink)', color: 'white', border: 'none', borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--accent)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'var(--ink)'}>
-              <Icon d={icons.edit} size={13} /> Editar
-            </button>
-          </div>
-        </div>
-      )}
+      <button onClick={() => onEdit(client)}
+        style={{ background: 'var(--ink)', color: 'white', border: 'none', borderRadius: 'var(--radius)', padding: '7px 14px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s', flexShrink: 0, marginLeft: '12px' }}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--accent)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'var(--ink)'}>
+        <Icon d={icons.edit} size={13} /> Editar
+      </button>
     </div>
   )
 }
@@ -567,11 +515,17 @@ export default function App() {
             </div>
             {loadingList ? (
               <div style={{ textAlign: 'center', padding: '60px', color: 'var(--muted)' }}><div style={{ fontSize: '24px', marginBottom: '12px', animation: 'pulse 1s infinite' }}>⏳</div>Cargando clientes...</div>
+            ) : !searchQuery.trim() ? (
+              <div style={{ textAlign: 'center', padding: '60px', color: 'var(--muted)' }}>
+                <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔍</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', marginBottom: '6px' }}>Escribe para buscar</div>
+                <div style={{ fontSize: '14px' }}>Busca por nombre, negocio o identificación</div>
+              </div>
             ) : filteredClients.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px', background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', color: 'var(--muted)' }}>
-                <div style={{ fontSize: '36px', marginBottom: '12px' }}>{searchQuery ? '🔍' : '📋'}</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', marginBottom: '6px' }}>{searchQuery ? `Sin resultados para "${searchQuery}"` : 'Sin registros aún'}</div>
-                <div style={{ fontSize: '14px' }}>{searchQuery ? 'Intenta con otro término' : 'Registra tu primer cliente desde el menú'}</div>
+                <div style={{ fontSize: '36px', marginBottom: '12px' }}>😕</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', marginBottom: '6px' }}>Sin resultados para "{searchQuery}"</div>
+                <div style={{ fontSize: '14px' }}>Intenta con otro término</div>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
