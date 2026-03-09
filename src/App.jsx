@@ -166,6 +166,7 @@ function Dashboard() {
   const perdido    = data?.perdido    || 0
   const meta       = data?.meta       || 0
   const pct        = meta > 0 ? Math.min(100, Math.round((vendido / meta) * 100)) : 0
+  const pistas     = data?.pistas     ?? 0
   const c          = data?.conteos || {}
 
   const verde = '#16a34a'
@@ -262,7 +263,7 @@ function Dashboard() {
                   </div>
                   {/* Lista expandida */}
                   {isOpen && (
-                    <div style={{ borderTop: `1px solid ${bg}`, background: bg.replace(')', ', 0.4)').replace('rgb', 'rgba') }}>
+                    <div style={{ borderTop: `1px solid var(--border)`, background: 'var(--paper)' }}>
                       {ordenes.length === 0 ? (
                         <div style={{ padding: '16px 20px', fontSize: '13px', color: 'var(--muted)', textAlign: 'center' }}>Sin órdenes en {label.toLowerCase()} este mes</div>
                       ) : (
