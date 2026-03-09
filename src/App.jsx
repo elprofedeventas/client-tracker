@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 
 const API_BASE = '/api/proxy'
 
-const today = () => new Date().toISOString().split('T')[0]
-
 const EMPTY_FORM = {
   nombre: '',
   negocio: '',
@@ -109,7 +107,6 @@ function Toast({ message, type, onClose }) {
 // ─── Client row ───────────────────────────────────────────────────────────────
 function ClientRow({ client, index }) {
   const [open, setOpen] = useState(false)
-
   const hasNextAction = client.siguienteAccionFecha || client.accion
 
   return (
@@ -122,7 +119,6 @@ function ClientRow({ client, index }) {
       onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
       onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
     >
-      {/* Row header */}
       <div onClick={() => setOpen(!open)} style={{
         padding: '14px 18px', display: 'flex', alignItems: 'center',
         justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none',
@@ -147,7 +143,6 @@ function ClientRow({ client, index }) {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Siguiente acción badge */}
           {hasNextAction && (
             <div style={{
               background: 'var(--accent-light)', color: 'var(--accent)',
@@ -158,17 +153,13 @@ function ClientRow({ client, index }) {
               {client.siguienteAccionFecha}
             </div>
           )}
-          <span style={{ fontSize: '12px', color: 'var(--muted)' }}>{client.fechaVisita}</span>
-          <span style={{
-            transform: open ? 'rotate(90deg)' : 'rotate(0)',
-            transition: 'transform 0.2s', color: 'var(--muted)'
-          }}>
+          <span style={{ fontSize: '12px', color: 'var(--muted)' }}>{client.fechaRegistro}</span>
+          <span style={{ transform: open ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.2s', color: 'var(--muted)' }}>
             <Icon d={icons.chevron} size={16} />
           </span>
         </div>
       </div>
 
-      {/* Expanded detail */}
       {open && (
         <div style={{
           padding: '14px 18px 16px',
@@ -183,7 +174,6 @@ function ClientRow({ client, index }) {
             { icon: 'building', label: 'Locales', val: client.locales },
             { icon: 'contact', label: 'Contacto', val: client.contacto },
             { icon: 'phone', label: 'Tel. Contacto', val: client.telefonoContacto },
-            { icon: 'clock', label: 'Fecha de Visita', val: client.fechaVisita },
           ].map(({ icon, label, val }) => val ? (
             <div key={label}>
               <div style={{
@@ -197,13 +187,10 @@ function ClientRow({ client, index }) {
             </div>
           ) : null)}
 
-          {/* Siguiente acción */}
-          {(client.siguienteAccionFecha || client.accion) && (
+          {hasNextAction && (
             <div style={{
-              gridColumn: '1 / -1',
-              background: 'var(--accent-light)',
-              borderRadius: 'var(--radius)',
-              padding: '10px 14px',
+              gridColumn: '1 / -1', background: 'var(--accent-light)',
+              borderRadius: 'var(--radius)', padding: '10px 14px',
               display: 'flex', alignItems: 'flex-start', gap: '10px',
             }}>
               <Icon d={icons.alert} size={16} stroke="var(--accent)" />
@@ -221,7 +208,6 @@ function ClientRow({ client, index }) {
             </div>
           )}
 
-          {/* Notas */}
           {client.notas && (
             <div style={{ gridColumn: '1 / -1' }}>
               <div style={{
@@ -322,12 +308,13 @@ export default function App() {
     boxShadow: focusedField === field ? '0 0 0 3px rgba(13,13,13,0.06)' : 'none',
   })
 
-  const fieldProps = (field) => ({
+  const fieldProps = (field, extra = {}) => ({
     style: getInputStyle(field),
     value: form[field],
     onChange: e => inp(field, e.target.value),
     onFocus: () => setFocusedField(field),
     onBlur: () => setFocusedField(null),
+    ...extra,
   })
 
   return (
@@ -357,8 +344,7 @@ export default function App() {
           ].map(({ key, icon, label }) => (
             <button key={key} onClick={() => setView(key)} style={{
               background: view === key ? 'rgba(255,255,255,0.15)' : 'transparent',
-              border: 'none',
-              color: view === key ? 'white' : 'rgba(255,255,255,0.5)',
+              border: 'none', color: view === key ? 'white' : 'rgba(255,255,255,0.5)',
               padding: '6px 14px', borderRadius: 'var(--radius)',
               display: 'flex', alignItems: 'center', gap: '6px',
               fontWeight: '600', fontSize: '13px', transition: 'all 0.15s', cursor: 'pointer',
@@ -386,7 +372,7 @@ export default function App() {
                 Registrar cliente
               </h1>
               <p style={{ color: 'var(--muted)', marginTop: '6px', fontSize: '14px' }}>
-                La fecha y hora de visita se registran automáticamente al guardar.
+                La fecha y hora se registran automáticamente al guardar.
               </p>
             </div>
 
@@ -409,11 +395,11 @@ export default function App() {
                     <input {...fieldProps('identificacion')} placeholder="Ej: 0912345678" />
                   </Field>
                   <Field label="Teléfono" icon="phone" required>
-                    <input {...fieldProps('telefono')} placeholder="Ej: 0997002220" type="tel" />
+                    <input {...fieldProps('telefono', { type: 'tel' })} placeholder="Ej: 0997002220" />
                     {errors.telefono && <span style={{ fontSize: '12px', color: 'var(--accent)' }}>{errors.telefono}</span>}
                   </Field>
                   <Field label="Email" icon="mail">
-                    <input {...fieldProps('email')} placeholder="correo@ejemplo.com" type="email" />
+                    <input {...fieldProps('email', { type: 'email' })} placeholder="correo@ejemplo.com" />
                     {errors.email && <span style={{ fontSize: '12px', color: 'var(--accent)' }}>{errors.email}</span>}
                   </Field>
                 </div>
@@ -422,16 +408,18 @@ export default function App() {
               {/* Datos del negocio */}
               <div>
                 <div style={sectionTitle}>Datos del negocio</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <Field label="Nombre del negocio" icon="store">
                     <input {...fieldProps('negocio')} placeholder="Ej: Farmacia del Parque" />
                   </Field>
                   <Field label="¿Cuántos locales?" icon="building" hint="Sucursales">
-                    <input {...fieldProps('locales')} placeholder="Ej: 3" type="number" min="1" />
+                    <input {...fieldProps('locales', { type: 'number', min: '1' })} placeholder="Ej: 3" />
                   </Field>
-                  <Field label="Dirección" icon="map">
-                    <input {...fieldProps('direccion')} placeholder="Calle, colonia, ciudad" style={{ ...getInputStyle('direccion'), gridColumn: '1 / -1' }} />
-                  </Field>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <Field label="Dirección" icon="map">
+                      <input {...fieldProps('direccion')} placeholder="Calle, número, ciudad" />
+                    </Field>
+                  </div>
                 </div>
               </div>
 
@@ -443,40 +431,27 @@ export default function App() {
                     <input {...fieldProps('contacto')} placeholder="Nombre del contacto" />
                   </Field>
                   <Field label="Teléfono de contacto" icon="phone">
-                    <input {...fieldProps('telefonoContacto')} placeholder="Ej: 0987654321" type="tel" />
+                    <input {...fieldProps('telefonoContacto', { type: 'tel' })} placeholder="Ej: 0987654321" />
                   </Field>
                 </div>
               </div>
 
-              {/* Detalles de la visita */}
+              {/* Notas y seguimiento */}
               <div>
-                <div style={sectionTitle}>Detalles de la visita</div>
+                <div style={sectionTitle}>Notas y seguimiento</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{
-                    background: 'var(--cream)', borderRadius: 'var(--radius)',
-                    padding: '10px 14px', fontSize: '13px', color: 'var(--muted)',
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                  }}>
-                    <Icon d={icons.clock} size={14} />
-                    La fecha y hora exacta de esta visita se registrará automáticamente al guardar.
-                  </div>
                   <Field label="Notas / Comentarios" icon="note">
                     <textarea {...fieldProps('notas')} style={{ ...getInputStyle('notas'), resize: 'vertical', minHeight: '90px', lineHeight: '1.5' }}
                       placeholder="Interés del cliente, próximos pasos, observaciones..." />
                   </Field>
-                </div>
-              </div>
-
-              {/* Siguiente acción */}
-              <div>
-                <div style={sectionTitle}>Seguimiento</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <Field label="Siguiente acción (fecha)" icon="calendar">
-                    <input {...fieldProps('siguienteAccionFecha')} type="date" />
-                  </Field>
-                  <Field label="Acción a realizar" icon="alert">
-                    <input {...fieldProps('accion')} placeholder="Ej: Llamar, Visitar, Demo..." />
-                  </Field>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <Field label="Siguiente acción (fecha)" icon="calendar">
+                      <input {...fieldProps('siguienteAccionFecha', { type: 'date' })} />
+                    </Field>
+                    <Field label="Acción a realizar" icon="alert">
+                      <input {...fieldProps('accion')} placeholder="Ej: Llamar, Visitar, Demo..." />
+                    </Field>
+                  </div>
                 </div>
               </div>
 
@@ -492,11 +467,10 @@ export default function App() {
                 onMouseEnter={e => { if (!loading) e.target.style.background = 'var(--accent)' }}
                 onMouseLeave={e => { if (!loading) e.target.style.background = 'var(--ink)' }}
               >
-                {loading ? (
-                  <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando en Google Sheets...</>
-                ) : (
-                  <><Icon d={icons.check} size={16} /> Registrar cliente</>
-                )}
+                {loading
+                  ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando en Google Sheets...</>
+                  : <><Icon d={icons.check} size={16} /> Registrar cliente</>
+                }
               </button>
             </div>
           </div>
@@ -518,9 +492,9 @@ export default function App() {
                 background: 'var(--white)', border: '1.5px solid var(--border)',
                 borderRadius: 'var(--radius)', padding: '8px 14px',
                 color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px',
-                fontSize: '13px', fontWeight: '600', transition: 'all 0.15s', cursor: 'pointer',
+                fontSize: '13px', fontWeight: '600', cursor: 'pointer',
               }}>
-                <span style={{ display: 'inline-block', animation: loadingList ? 'pulse 1s infinite' : 'none' }}>
+                <span style={{ animation: loadingList ? 'pulse 1s infinite' : 'none' }}>
                   <Icon d={icons.refresh} size={15} />
                 </span>
                 Actualizar
