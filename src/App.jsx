@@ -743,16 +743,9 @@ function OrdersView({ onViewOrder, onNewOrder }) {
 
   return (
     <div style={{ animation: 'fadeUp 0.4s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', letterSpacing: '-0.02em' }}>Órdenes</h1>
-          <p style={{ color: 'var(--muted)', fontSize: '14px', marginTop: '4px' }}>{filtradas.length} {filtradas.length === 1 ? 'orden' : 'órdenes'}</p>
-        </div>
-        <button onClick={onNewOrder} style={{ background: 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', padding: '9px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background 0.15s' }}
-          onMouseEnter={e => e.currentTarget.style.background = 'var(--accent)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'var(--brand-dark)'}>
-          <Icon d={icons.plus} size={15} /> Nueva orden
-        </button>
+      <div style={{ marginBottom: '20px' }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', letterSpacing: '-0.02em' }}>Órdenes</h1>
+        <p style={{ color: 'var(--muted)', fontSize: '14px', marginTop: '4px' }}>{filtradas.length} {filtradas.length === 1 ? 'orden' : 'órdenes'}</p>
       </div>
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
         {['Todos','Negociando','Detenido','Perdido','Vendido'].map(e => {
@@ -766,7 +759,7 @@ function OrdersView({ onViewOrder, onNewOrder }) {
         <div style={{ textAlign: 'center', padding: '60px', background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', color: 'var(--muted)' }}>
           <div style={{ fontSize: '36px', marginBottom: '12px' }}>📦</div>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', marginBottom: '6px' }}>Sin órdenes{filtroEstado !== 'Todos' ? ` en "${filtroEstado}"` : ''}</div>
-          <div style={{ fontSize: '14px' }}>Crea tu primera orden con el botón "Nueva orden"</div>
+          <div style={{ fontSize: '14px' }}>Crea una nueva orden desde el menú</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -854,10 +847,11 @@ export default function App() {
   const fp = (f, x = {}) => ({ style: gs(f), value: form[f], onChange: e => inp(f, e.target.value), onFocus: () => setFocusedField(f), onBlur: () => setFocusedField(null), ...x })
 
   const menuItems = [
-    { key: 'form',     icon: icons.plus,      label: '+ Nuevo cliente' },
-    { key: 'list',     icon: icons.list,       label: 'Clientes' },
-    { key: 'newOrder', icon: icons.orders,     label: 'Nueva orden' },
-    { key: 'orders',   icon: icons.dashboard,  label: 'Órdenes' },
+    { key: 'dashboard', icon: icons.dashboard, label: 'Dashboard' },
+    { key: 'form',      icon: icons.plus,      label: 'Nuevo cliente' },
+    { key: 'list',      icon: icons.list,       label: 'Clientes' },
+    { key: 'newOrder',  icon: icons.plus,       label: 'Nueva orden' },
+    { key: 'orders',    icon: icons.orders,     label: 'Órdenes' },
   ]
 
   return (
