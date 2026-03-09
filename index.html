@@ -1,15 +1,80 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Client Tracker</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
-</head>
-<body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.jsx"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orden PPP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet">
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        /* ── Paleta corporativa ── */
+        --brand:        #1e3a5f;
+        --brand-dark:   #152c4a;
+        --brand-light:  #e8f0f8;
+        --brand-mid:    #2e5080;
+        --accent:       #1e3a5f;
+        --accent-light: #e8f0f8;
+
+        --ink:    #0d1f35;
+        --muted:  #6b7f96;
+        --border: #c8d8e8;
+        --cream:  #f0f5fa;
+        --paper:  #f7f9fc;
+        --white:  #ffffff;
+
+        --success:    #16a34a;
+        --success-bg: #f0fdf4;
+        --error:      #dc2626;
+        --error-bg:   #fef2f2;
+
+        /* ── Tipografía ── */
+        --font: 'DM Sans', system-ui, -apple-system, sans-serif;
+        --font-display: 'DM Sans', system-ui, -apple-system, sans-serif;
+
+        /* ── Forma ── */
+        --radius:    8px;
+        --radius-lg: 12px;
+        --shadow:    0 1px 4px rgba(30,58,95,0.08), 0 2px 8px rgba(30,58,95,0.06);
+        --shadow-lg: 0 4px 16px rgba(30,58,95,0.14), 0 8px 32px rgba(30,58,95,0.08);
+      }
+
+      html, body, #root {
+        height: 100%;
+        font-family: var(--font);
+        background: var(--paper);
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        font-size: 16px;
+      }
+
+      input, textarea, select, button {
+        font-family: var(--font);
+      }
+
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.5; }
+      }
+
+      /* Scrollbar sutil */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>
