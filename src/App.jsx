@@ -787,8 +787,10 @@ function OrdersView({ onViewOrder }) {
       const f = parseFechaOrden(o.fecha)
       if (!f) return false
       if (modoHistorial && fechaInicio && fechaFin) {
-        const ini = new Date(fechaInicio); ini.setHours(0,0,0,0)
-        const fin = new Date(fechaFin); fin.setHours(23,59,59,999)
+        const [iy, im, id] = fechaInicio.split('-').map(Number)
+        const [fy, fm, fd] = fechaFin.split('-').map(Number)
+        const ini = new Date(iy, im-1, id, 0, 0, 0, 0)
+        const fin = new Date(fy, fm-1, fd, 23, 59, 59, 999)
         return f >= ini && f <= fin
       }
       return f.getMonth() === now.getMonth() && f.getFullYear() === anioActual
