@@ -705,7 +705,7 @@ function NewOrder({ onBack, onSaved, showToast }) {
         <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
           <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>Estado y notas</div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
-            {['Negociando','Detenido','Perdido','Vendido'].map(e => {
+            {['Negociando','Vendido'].map(e => {
               const c = ESTADO_COLORS[e]; const activo = estado === e
               return <button key={e} onClick={() => setEstado(e)} style={{ padding: '7px 16px', borderRadius: '20px', border: `1.5px solid ${activo ? c.color : 'var(--border)'}`, background: activo ? c.bg : 'var(--white)', color: activo ? c.color : 'var(--muted)', fontSize: '13px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>{e}</button>
             })}
@@ -854,10 +854,10 @@ export default function App() {
   const fp = (f, x = {}) => ({ style: gs(f), value: form[f], onChange: e => inp(f, e.target.value), onFocus: () => setFocusedField(f), onBlur: () => setFocusedField(null), ...x })
 
   const menuItems = [
-    { key: 'dashboard', icon: icons.dashboard, label: 'Dashboard' },
-    { key: 'form', icon: icons.plus, label: 'Nuevo' },
-    { key: 'list', icon: icons.list, label: 'Clientes' },
-    { key: 'orders', icon: icons.orders, label: 'Órdenes' },
+    { key: 'form',     icon: icons.plus,      label: '+ Nuevo cliente' },
+    { key: 'list',     icon: icons.list,       label: 'Clientes' },
+    { key: 'newOrder', icon: icons.orders,     label: 'Nueva orden' },
+    { key: 'orders',   icon: icons.dashboard,  label: 'Órdenes' },
   ]
 
   return (
@@ -877,7 +877,7 @@ export default function App() {
       {menuOpen && (
         <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: '68px', right: '16px', zIndex: 300, background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', minWidth: '200px', animation: 'fadeUp 0.2s ease' }}>
           {menuItems.map(({ key, icon, label }) => {
-              const isActive = view === key || (view === 'edit' && key === 'list') || (view === 'view' && key === 'list') || ((view === 'viewOrder' || view === 'newOrder') && key === 'orders')
+              const isActive = view === key || (view === 'edit' && key === 'list') || (view === 'view' && key === 'list') || (view === 'viewOrder' && key === 'orders')
               return (
                 <button key={key} onClick={() => navigate(key)} style={{ width: '100%', padding: '13px 18px', background: isActive ? 'var(--accent-light)' : 'transparent', border: 'none', borderBottom: '1px solid var(--cream)', color: isActive ? 'var(--accent)' : 'var(--ink)', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s' }}
                   onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--cream)' }}
