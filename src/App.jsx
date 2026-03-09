@@ -48,6 +48,41 @@ const icons = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n) => '$' + (n || 0).toLocaleString('es-EC', { minimumFractionDigits: 0 })
 
+const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+const MESES_LARGO = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+
+function formatFecha(raw, prefix = '') {
+  if (!raw) return ''
+  let d = null
+
+  // ISO: 2026-03-20T05:00:00.000Z
+  if (typeof raw === 'string' && raw.includes('T')) {
+    d = new Date(raw)
+  }
+  // dd/MM/yyyy o dd/MM/yyyy HH:mm
+  else if (typeof raw === 'string' && raw.includes('/')) {
+    const parts = raw.split(' ')[0].split('/')
+    if (parts.length === 3) d = new Date(parts[2], parts[1] - 1, parts[0])
+  }
+  // yyyy-MM-dd
+  else if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [y, m, day] = raw.split('-')
+    d = new Date(y, m - 1, day)
+  }
+  // Date object
+  else if (raw instanceof Date) {
+    d = raw
+  }
+
+  if (!d || isNaN(d)) return raw // si no se pudo parsear, devolver tal cual
+
+  const dia = DIAS[d.getDay()]
+  const num = d.getDate()
+  const mes = MESES_LARGO[d.getMonth()]
+  const anio = d.getFullYear()
+  return `${prefix}${dia} ${num} de ${mes} ${anio}`
+}
+
 function getNowGuayaquil() {
   return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guayaquil' }))
 }
@@ -308,7 +343,7 @@ function ViewClient({ client, onEdit, onBack }) {
         </div>
 
         <div style={{ marginTop: '14px', fontSize: '11px', color: 'var(--border)' }}>
-          Registrado: {client.fechaRegistro}
+          {formatFecha(client.fechaRegistro, 'Registrado ')}
         </div>
       </div>
 
@@ -319,7 +354,7 @@ function ViewClient({ client, onEdit, onBack }) {
           <div>
             <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>Siguiente acción</div>
             <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--ink)' }}>
-              {client.accion}{client.accion && client.siguienteAccionFecha ? ' — ' : ''}{client.siguienteAccionFecha}
+              {client.accion}{client.accion && client.siguienteAccionFecha ? ' — ' : ''}{formatFecha(client.siguienteAccionFecha)}
             </div>
           </div>
         </div>
