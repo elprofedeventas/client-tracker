@@ -748,29 +748,141 @@ function NewOrder({ onBack, onSaved, showToast }) {
   )
 }
 
-function OrdersView({ onViewOrder, onNewOrder }) {
+function OrdersView({ onViewOrder }) {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [filtroEstado, setFiltroEstado] = useState('Todos')
+  const [meta, setMeta] = useState(0)
+  const [historialOpen, setHistorialOpen] = useState(false)
+  const [fechaInicio, setFechaInicio] = useState('')
+  const [fechaFin, setFechaFin] = useState('')
+  const [modoHistorial, setModoHistorial] = useState(false)
+
+  // Mes actual en Guayaquil
+  const now = getNowGuayaquil()
+  const mesNombre = MESES_LARGO[now.getMonth()]
+  const anioActual = now.getFullYear()
+  const mesActualLabel = mesNombre.charAt(0).toUpperCase() + mesNombre.slice(1)
 
   useEffect(() => {
     fetch(`${API_BASE}?action=getOrdenes`).then(r => r.json()).then(d => { if (d.success) setOrders(d.data) }).catch(() => {}).finally(() => setLoading(false))
+    fetch(`${API_BASE}?action=dashboard`).then(r => r.json()).then(d => { if (d.success) setMeta(d.data.meta || 0) }).catch(() => {})
   }, [])
 
-  const filtradas = filtroEstado === 'Todos' ? orders : orders.filter(o => o.estado === filtroEstado)
+  // Parsear fecha de orden a Date
+  const parseFechaOrden = (raw) => {
+    if (!raw) return null
+    if (raw instanceof Date) return raw
+    if (typeof raw === 'string' && raw.includes('/')) {
+      const parts = raw.split(' ')[0].split('/')
+      if (parts.length === 3) return new Date(parts[2], parts[1]-1, parts[0])
+    }
+    if (typeof raw === 'string' && raw.includes('T')) return new Date(raw)
+    return null
+  }
+
+  // Filtrar por mes actual o rango historial
+  const ordenesMes = useMemo(() => {
+    return orders.filter(o => {
+      const f = parseFechaOrden(o.fecha)
+      if (!f) return false
+      if (modoHistorial && fechaInicio && fechaFin) {
+        const ini = new Date(fechaInicio); ini.setHours(0,0,0,0)
+        const fin = new Date(fechaFin); fin.setHours(23,59,59,999)
+        return f >= ini && f <= fin
+      }
+      return f.getMonth() === now.getMonth() && f.getFullYear() === anioActual
+    })
+  }, [orders, modoHistorial, fechaInicio, fechaFin])
+
+  const filtradas = filtroEstado === 'Todos' ? ordenesMes : ordenesMes.filter(o => o.estado === filtroEstado)
+
+  // Totales del filtro activo
+  const totalMonto = filtradas.reduce((s, o) => s + (parseFloat(o.total) || 0), 0)
+  const totalCantidad = filtradas.length
+
+  const aplicarHistorial = () => {
+    if (fechaInicio && fechaFin) { setModoHistorial(true); setHistorialOpen(false) }
+  }
+  const limpiarHistorial = () => { setModoHistorial(false); setFechaInicio(''); setFechaFin(''); setHistorialOpen(false) }
+
+  const periodoLabel = modoHistorial && fechaInicio && fechaFin
+    ? `${formatFecha(fechaInicio)} — ${formatFecha(fechaFin)}`
+    : `${mesActualLabel} ${anioActual}`
 
   return (
     <div style={{ animation: 'fadeUp 0.4s ease' }}>
-      <div style={{ marginBottom: '20px' }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', letterSpacing: '-0.02em' }}>Órdenes</h1>
-        <p style={{ color: 'var(--muted)', fontSize: '14px', marginTop: '4px' }}>{filtradas.length} {filtradas.length === 1 ? 'orden' : 'órdenes'}</p>
+      {/* Título */}
+      <div style={{ marginBottom: '16px' }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', letterSpacing: '-0.02em' }}>
+          Órdenes de {mesActualLabel}
+        </h1>
+        {modoHistorial && (
+          <div style={{ fontSize: '13px', color: 'var(--brand)', fontWeight: '600', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Icon d={icons.calendar} size={13} /> Historial: {periodoLabel}
+            <button onClick={limpiarHistorial} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: '0 2px', fontSize: '12px', fontWeight: '700' }}>✕ Volver al mes</button>
+          </div>
+        )}
       </div>
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
-        {['Todos','Negociando','Detenido','Perdido','Vendido'].map(e => {
-          const activo = filtroEstado === e; const c = ESTADO_COLORS[e] || {}
-          return <button key={e} onClick={() => setFiltroEstado(e)} style={{ padding: '6px 14px', borderRadius: '20px', border: `1.5px solid ${activo ? (e === 'Todos' ? 'var(--brand)' : c.color) : 'var(--border)'}`, background: activo ? (e === 'Todos' ? 'var(--brand)' : c.bg) : 'var(--white)', color: activo ? (e === 'Todos' ? 'white' : c.color) : 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>{e}</button>
-        })}
+
+      {/* Meta card */}
+      {meta > 0 && (
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: '16px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon d={icons.target} size={15} stroke="#6366f1" />
+            </div>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Meta {mesActualLabel}</span>
+          </div>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '18px', color: '#6366f1' }}>{fmtMoney(meta)}</span>
+        </div>
+      )}
+
+      {/* Botones de estado + Historial */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {['Todos','Negociando','Detenido','Perdido','Vendido'].map(e => {
+            const activo = filtroEstado === e; const c = ESTADO_COLORS[e] || {}
+            return <button key={e} onClick={() => setFiltroEstado(e)} style={{ padding: '6px 12px', borderRadius: '20px', border: `1.5px solid ${activo ? (e === 'Todos' ? 'var(--brand)' : c.color) : 'var(--border)'}`, background: activo ? (e === 'Todos' ? 'var(--brand)' : c.bg) : 'var(--white)', color: activo ? (e === 'Todos' ? 'white' : c.color) : 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}>{e}</button>
+          })}
+        </div>
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <button onClick={() => setHistorialOpen(!historialOpen)} style={{ padding: '6px 12px', borderRadius: '20px', border: `1.5px solid ${modoHistorial ? 'var(--brand)' : 'var(--border)'}`, background: modoHistorial ? 'var(--brand-light)' : 'var(--white)', color: modoHistorial ? 'var(--brand)' : 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap' }}>
+            <Icon d={icons.calendar} size={13} /> Historial
+          </button>
+          {historialOpen && (
+            <div style={{ position: 'absolute', right: 0, top: '36px', zIndex: 100, background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px', boxShadow: 'var(--shadow-lg)', minWidth: '240px', animation: 'fadeUp 0.15s ease' }}>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>Rango de fechas</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600' }}>Desde</label>
+                  <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} style={{ ...inputStyle, padding: '7px 10px', fontSize: '13px', marginTop: '4px' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600' }}>Hasta</label>
+                  <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} style={{ ...inputStyle, padding: '7px 10px', fontSize: '13px', marginTop: '4px' }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={limpiarHistorial} style={{ flex: 1, padding: '8px', background: 'var(--cream)', color: 'var(--muted)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>Limpiar</button>
+                <button onClick={aplicarHistorial} disabled={!fechaInicio || !fechaFin} style={{ flex: 2, padding: '8px', background: !fechaInicio || !fechaFin ? 'var(--muted)' : 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '12px', fontWeight: '700', cursor: !fechaInicio || !fechaFin ? 'not-allowed' : 'pointer' }}>Aplicar</button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Total del filtro activo */}
+      <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: '16px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: '600' }}>
+          {filtroEstado === 'Todos' ? 'Todas las órdenes' : filtroEstado} · {totalCantidad} {totalCantidad === 1 ? 'orden' : 'órdenes'}
+        </div>
+        <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: filtroEstado !== 'Todos' && ESTADO_COLORS[filtroEstado] ? ESTADO_COLORS[filtroEstado].color : 'var(--brand)' }}>
+          {fmtMoney(totalMonto)}
+        </div>
+      </div>
+
+      {/* Lista */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px', color: 'var(--muted)' }}><div style={{ fontSize: '24px', marginBottom: '12px', animation: 'pulse 1s infinite' }}>⏳</div>Cargando órdenes...</div>
       ) : filtradas.length === 0 ? (
@@ -1008,7 +1120,7 @@ export default function App() {
 
         {/* ── ÓRDENES ───────────────────────────────────────────────────────── */}
         {view === 'orders' && (
-          <OrdersView onViewOrder={handleViewOrder} onNewOrder={() => setView('newOrder')} />
+          <OrdersView onViewOrder={handleViewOrder} />
         )}
 
         {/* ── VER ORDEN ─────────────────────────────────────────────────────── */}
