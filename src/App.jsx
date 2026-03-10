@@ -425,7 +425,6 @@ function Dashboard() {
                     ) : (
                       pistasList.map((p, i) => {
                         let diasEnPista = null
-                        console.log('PISTA fechaRegistro:', p.nombre, JSON.stringify(p.fechaRegistro))
                         if (p.fechaRegistro) {
                           const parseFR = (s) => {
                             if (!s) return null
