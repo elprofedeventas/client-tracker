@@ -666,7 +666,28 @@ function EditForm({ client, onSave, onCancel }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <Field label="Siguiente acción (fecha)" icon="calendar">
-                <input {...fp('siguienteAccionFecha')} placeholder="Ej: 15/04/2026" />
+                <input
+                  type="date"
+                  style={{ ...gs('siguienteAccionFecha') }}
+                  value={(() => {
+                    const v = form.siguienteAccionFecha
+                    if (!v) return ''
+                    // Convertir dd/MM/yyyy o dd/MM/yyyy HH:mm → yyyy-MM-dd
+                    if (typeof v === 'string' && v.includes('/')) {
+                      const p = v.split(' ')[0].split('/')
+                      if (p.length === 3) return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`
+                    }
+                    return v
+                  })()}
+                  onChange={e => {
+                    const iso = e.target.value // yyyy-MM-dd
+                    if (!iso) { inp('siguienteAccionFecha', ''); return }
+                    const [y, m, d] = iso.split('-')
+                    inp('siguienteAccionFecha', `${d}/${m}/${y}`)
+                  }}
+                  onFocus={() => setFocusedField('siguienteAccionFecha')}
+                  onBlur={() => setFocusedField(null)}
+                />
               </Field>
               <Field label="Acción a realizar" icon="check">
                 <select style={{ ...gs('accion'), cursor: 'pointer' }} value={form.accion} onChange={e => inp('accion', e.target.value)} onFocus={() => setFocusedField('accion')} onBlur={() => setFocusedField(null)}>
