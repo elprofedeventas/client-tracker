@@ -250,13 +250,14 @@ function Dashboard() {
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <span style={{ fontSize: '13px', fontWeight: '700', color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
-                        <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '500', marginLeft: '8px' }}>
-                          {cnt.clientes} {cnt.clientes === 1 ? 'cliente' : 'clientes'} · {cnt.ordenes} {cnt.ordenes === 1 ? 'orden' : 'órdenes'}
-                        </span>
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color }}>{value}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color }}>{value}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '500' }}>{cnt.clientes} {cnt.clientes === 1 ? 'cliente' : 'clientes'}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '500' }}>{cnt.ordenes} {cnt.ordenes === 1 ? 'orden' : 'órdenes'}</div>
+                      </div>
                       <div style={{ color: 'var(--muted)', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
                         <Icon d="M6 9l6 6 6-9" size={16} />
                       </div>
