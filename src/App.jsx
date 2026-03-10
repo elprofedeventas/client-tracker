@@ -360,8 +360,8 @@ function Dashboard() {
                                             <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--ink)' }}>{item.nombre}</div>
                                             <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
                                               {item.cantidad} × {fmtMoney(item.precioUnitario)}
-                                              {item.descuento > 0 && ` · ${item.descuento}% desc`}
-                                              {` · IVA ${item.iva}%`}
+                                              {item.descuento > 0 && ` · ${item.descuento > 1 ? item.descuento : item.descuento * 100}% desc`}
+                                              {` · IVA ${item.iva > 1 ? item.iva : item.iva * 100}%`}
                                             </div>
                                           </div>
                                           <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--brand)', fontFamily: 'var(--font-display)', flexShrink: 0, marginLeft: '10px' }}>{fmtMoney(item.total)}</div>
