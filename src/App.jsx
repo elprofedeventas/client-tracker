@@ -310,24 +310,24 @@ function Dashboard() {
                                 <div style={{ minWidth: 0 }}>
                                   <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.cliente}</div>
                                   <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '1px' }}>{o.negocio}</div>
-                                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
                                     {o.numOrden && (
                                       <span onClick={(e) => { e.stopPropagation(); setExpandedOrden(prev => { const s = new Set(prev); s.has(ordenKey) ? s.delete(ordenKey) : s.add(ordenKey); return s }) }}
                                         style={{ color: 'var(--brand)', fontWeight: '700', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
                                         {o.numOrden} {detalleOpen ? '▲' : '▼'}
                                       </span>
                                     )}
-                                    {diasParaVender !== null && (
-                                      <span style={{ color: verde, fontWeight: '600' }}>
-                                        Lo vendí en {diasParaVender === 0 ? 'el mismo día' : `${diasParaVender} ${diasParaVender === 1 ? 'día' : 'días'}`}
-                                      </span>
-                                    )}
-                                    {diasEnEstado !== null && (
-                                      <span style={{ color: diasEnEstado >= 7 ? '#dc2626' : '#d97706', fontWeight: '600' }}>
-                                        {diasEnEstado === 0 ? 'Hoy' : `${diasEnEstado}d en ${estado.toLowerCase()}`}
-                                      </span>
-                                    )}
                                   </div>
+                                  {diasParaVender !== null && (
+                                    <div style={{ fontSize: '11px', color: verde, fontWeight: '600', marginTop: '2px' }}>
+                                      Lo vendí en {diasParaVender === 0 ? 'el mismo día' : `${diasParaVender} ${diasParaVender === 1 ? 'día' : 'días'}`}
+                                    </div>
+                                  )}
+                                  {diasEnEstado !== null && (
+                                    <div style={{ fontSize: '11px', fontWeight: '600', marginTop: '2px', color: diasEnEstado >= 7 ? '#dc2626' : '#d97706' }}>
+                                      {diasEnEstado === 0 ? 'Hoy' : `${diasEnEstado}d en ${estado.toLowerCase()}`}
+                                    </div>
+                                  )}
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0, marginLeft: '12px' }}>
                                   <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '14px', color }}>{fmtMoney(o.total)}</div>
