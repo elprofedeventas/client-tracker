@@ -4,7 +4,7 @@ const API_BASE = '/api/proxy'
 
 const EMPTY_FORM = {
   nombre: '', negocio: '', identificacion: '', telefono: '',
-  email: '', direccion: '', locales: '', contacto: '',
+  email: '', direccion: '', contacto: '',
   telefonoContacto: '', notas: '', siguienteAccionFecha: '', accion: '',
 }
 
@@ -287,7 +287,7 @@ function Dashboard() {
                             const fcs = parseFecha(o.fechaCambioEstado)
                             if (fcs) {
                               const hoy = getNowGuayaquil(); hoy.setHours(0,0,0,0)
-                              diasEnEstado = Math.floor((hoy - fcs) / (1000*60*60*24))
+                              diasEnEstado = Math.max(0, Math.floor((hoy - fcs) / (1000*60*60*24)))
                             }
                           }
 
@@ -516,7 +516,6 @@ function ViewClient({ client, onEdit, onBack }) {
     { icon: 'phone', label: 'Teléfono', val: client.telefono },
     { icon: 'mail', label: 'Email', val: client.email },
     { icon: 'map', label: 'Dirección', val: client.direccion },
-    { icon: 'building', label: 'Locales', val: client.locales },
     { icon: 'contact', label: 'Contacto', val: client.contacto },
     { icon: 'phone', label: 'Tel. Contacto', val: client.telefonoContacto },
   ]
@@ -593,7 +592,7 @@ function ViewClient({ client, onEdit, onBack }) {
 
 // ─── EditForm ─────────────────────────────────────────────────────────────────
 function EditForm({ client, onSave, onCancel }) {
-  const [form, setForm] = useState({ nombre: client.nombre || '', negocio: client.negocio || '', identificacion: client.identificacion || '', telefono: client.telefono || '', email: client.email || '', direccion: client.direccion || '', locales: client.locales || '', contacto: client.contacto || '', telefonoContacto: client.telefonoContacto || '' })
+  const [form, setForm] = useState({ nombre: client.nombre || '', negocio: client.negocio || '', identificacion: client.identificacion || '', telefono: client.telefono || '', email: client.email || '', direccion: client.direccion || '', contacto: client.contacto || '', telefonoContacto: client.telefonoContacto || '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [focusedField, setFocusedField] = useState(null)
@@ -646,7 +645,6 @@ function EditForm({ client, onSave, onCancel }) {
           <div style={sectionTitle}>Datos del negocio</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <Field label="Nombre del negocio" icon="store"><input {...fp('negocio')} placeholder="Ej: Farmacia del Parque" /></Field>
-            <Field label="¿Cuántos locales?" icon="building" hint="Sucursales"><input {...fp('locales', { type: 'number', min: '1' })} placeholder="Ej: 3" /></Field>
             <div style={{ gridColumn: '1 / -1' }}><Field label="Dirección" icon="map"><input {...fp('direccion')} placeholder="Calle, número, ciudad" /></Field></div>
           </div>
         </div>
@@ -1261,7 +1259,6 @@ export default function App() {
                 <div style={sectionTitle}>Datos del negocio</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <Field label="Nombre del negocio" icon="store"><input {...fp('negocio')} placeholder="Ej: Farmacia del Parque" /></Field>
-                  <Field label="¿Cuántos locales?" icon="building" hint="Sucursales"><input {...fp('locales', { type: 'number', min: '1' })} placeholder="Ej: 3" /></Field>
                   <div style={{ gridColumn: '1 / -1' }}><Field label="Dirección" icon="map"><input {...fp('direccion')} placeholder="Calle, número, ciudad" /></Field></div>
                 </div>
               </div>
