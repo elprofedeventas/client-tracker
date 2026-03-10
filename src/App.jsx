@@ -592,10 +592,16 @@ function ViewClient({ client, onEdit, onBack }) {
 
 // ─── EditForm ─────────────────────────────────────────────────────────────────
 function EditForm({ client, onSave, onCancel }) {
-  const [form, setForm] = useState({ nombre: client.nombre || '', negocio: client.negocio || '', identificacion: client.identificacion || '', telefono: client.telefono || '', email: client.email || '', direccion: client.direccion || '', contacto: client.contacto || '', telefonoContacto: client.telefonoContacto || '' })
+  const [form, setForm] = useState({ nombre: client.nombre || '', negocio: client.negocio || '', identificacion: client.identificacion || '', telefono: client.telefono || '', email: client.email || '', direccion: client.direccion || '', contacto: client.contacto || '', telefonoContacto: client.telefonoContacto || '', notas: client.notas || '', siguienteAccionFecha: client.siguienteAccionFecha || '', accion: client.accion || '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [focusedField, setFocusedField] = useState(null)
+  const [acciones, setAcciones] = useState([])
+
+  useEffect(() => {
+    fetch(`${API_BASE}?action=getAcciones`)
+      .then(r => r.json()).then(d => { if (d.success) setAcciones(d.data) }).catch(() => {})
+  }, [])
 
   const inp = (f, v) => { setForm(p => ({ ...p, [f]: v })); if (errors[f]) setErrors(e => ({ ...e, [f]: null })) }
   const gs = (f) => ({ ...inputStyle, borderColor: errors[f] ? 'var(--accent)' : focusedField === f ? 'var(--brand)' : 'var(--border)', boxShadow: focusedField === f ? '0 0 0 3px rgba(30,58,95,0.12)' : 'none' })
@@ -653,6 +659,25 @@ function EditForm({ client, onSave, onCancel }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <Field label="Contacto" icon="contact"><input {...fp('contacto')} placeholder="Nombre del contacto" /></Field>
             <Field label="Teléfono de contacto" icon="phone"><input {...fp('telefonoContacto', { type: 'tel' })} placeholder="Ej: 0987654321" /></Field>
+          </div>
+        </div>
+        <div>
+          <div style={sectionTitle}>Seguimiento</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <Field label="Siguiente acción (fecha)" icon="calendar">
+                <input {...fp('siguienteAccionFecha')} placeholder="Ej: 15/04/2026" />
+              </Field>
+              <Field label="Acción a realizar" icon="check">
+                <select style={{ ...gs('accion'), cursor: 'pointer' }} value={form.accion} onChange={e => inp('accion', e.target.value)} onFocus={() => setFocusedField('accion')} onBlur={() => setFocusedField(null)}>
+                  <option value="">Seleccionar...</option>
+                  {acciones.map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </Field>
+            </div>
+            <Field label="Notas / Comentarios" icon="notes">
+              <textarea {...fp('notas')} placeholder="Observaciones del cliente..." style={{ ...gs('notas'), resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px' }} />
+            </Field>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
