@@ -166,7 +166,7 @@ function Dashboard() {
   const detenido   = data?.detenido   || 0
   const perdido    = data?.perdido    || 0
   const meta       = data?.meta       || 0
-  const pct        = meta > 0 ? Math.min(100, Math.round((vendido / meta) * 100)) : 0
+  const pct        = meta > 0 ? Math.round((vendido / meta) * 100) : 0
   const pistas     = data?.pistas     ?? 0
   const c          = data?.conteos || {}
 
@@ -223,7 +223,7 @@ function Dashboard() {
               <span style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '18px', color: pct >= 100 ? verde : 'var(--ink)' }}>{pct}%</span>
             </div>
             <div style={{ background: 'var(--cream)', borderRadius: '100px', height: '10px', overflow: 'hidden', marginBottom: '8px' }}>
-              <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? verde : pct >= 60 ? '#2563eb' : 'var(--brand)', borderRadius: '100px', transition: 'width 0.8s ease' }} />
+              <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, background: pct >= 100 ? verde : pct >= 60 ? '#2563eb' : 'var(--brand)', borderRadius: '100px', transition: 'width 0.8s ease' }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: 'var(--muted)' }}>
               <span style={{ fontWeight: '600', color: verde }}>{fmt(vendido)} vendido</span>
