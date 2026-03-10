@@ -390,11 +390,10 @@ function Dashboard() {
                     </div>
                     <div>
                       <span style={{ fontSize: '13px', fontWeight: '700', color: '#0ea5e9', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pistas</span>
-                      <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '500', marginLeft: '8px' }}>{pistas} {pistas === 1 ? 'cliente' : 'clientes'}</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: '#0ea5e9' }}>{pistas}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: '#0ea5e9' }}>{pistas} {pistas === 1 ? 'cliente' : 'clientes'}</div>
                     <div style={{ color: 'var(--muted)', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
                       <Icon d="M6 9l6 6 6-9" size={16} />
                     </div>
