@@ -423,11 +423,29 @@ function Dashboard() {
                     {pistasList.length === 0 ? (
                       <div style={{ padding: '16px 20px', fontSize: '13px', color: 'var(--muted)', textAlign: 'center' }}>Todos los clientes tienen órdenes este mes 🎉</div>
                     ) : (
-                      pistasList.map((p, i) => (
+                      pistasList.map((p, i) => {
+                        let diasEnPista = null
+                        if (p.fechaRegistro) {
+                          const parseFR = (s) => {
+                            if (!s) return null
+                            if (s instanceof Date) return s
+                            if (s.includes('T')) return new Date(s)
+                            if (s.includes('/')) { const pts = s.split(' ')[0].split('/'); if (pts.length === 3) return new Date(pts[2], pts[1]-1, pts[0]) }
+                            return null
+                          }
+                          const fr = parseFR(p.fechaRegistro)
+                          if (fr) { const hoy = getNowGuayaquil(); hoy.setHours(0,0,0,0); fr.setHours(0,0,0,0); diasEnPista = Math.max(0, Math.floor((hoy - fr) / (1000*60*60*24))) }
+                        }
+                        return (
                         <div key={i} style={{ padding: '10px 20px', borderBottom: i < pistasList.length-1 ? '1px solid var(--border)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--white)' }}>
                           <div>
                             <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--ink)' }}>{p.nombre}</div>
                             {p.negocio && <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{p.negocio}</div>}
+                            {diasEnPista !== null && (
+                              <div style={{ fontSize: '11px', fontWeight: '600', marginTop: '2px', color: diasEnPista >= 14 ? '#dc2626' : '#d97706' }}>
+                                {diasEnPista === 0 ? 'Registrado hoy' : `${diasEnPista} ${diasEnPista === 1 ? 'día' : 'días'} en pista.`}
+                              </div>
+                            )}
                           </div>
                           {(p.telefono || p.email) && (
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0, marginLeft: '12px' }}>
@@ -458,7 +476,8 @@ function Dashboard() {
                             </div>
                           )}
                         </div>
-                      ))
+                        )
+                      })}
                     )}
                   </div>
                 )}
