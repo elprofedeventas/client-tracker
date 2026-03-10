@@ -5,7 +5,7 @@ const API_BASE = '/api/proxy'
 const EMPTY_FORM = {
   nombre: '', negocio: '', identificacion: '', telefono: '',
   email: '', direccion: '', contacto: '',
-  telefonoContacto: '', notas: '', siguienteAccionFecha: '', accion: '',
+  telefonoContacto: '', notas: '',
 }
 
 const Icon = ({ d, size = 18, stroke = 'currentColor', fill = 'none' }) => (
@@ -529,7 +529,6 @@ function ClientRow({ client, index, onEdit, onView, query }) {
 
 // ─── ViewClient ───────────────────────────────────────────────────────────────
 function ViewClient({ client, onEdit, onBack }) {
-  const hasNextAction = client.siguienteAccionFecha || client.accion
   const fields = [
     { icon: 'id', label: 'Identificación', val: client.identificacion },
     { icon: 'phone', label: 'Teléfono', val: client.telefono },
@@ -583,19 +582,6 @@ function ViewClient({ client, onEdit, onBack }) {
         </div>
       </div>
 
-      {/* Siguiente acción */}
-      {hasNextAction && (
-        <div style={{ background: 'var(--accent-light)', border: '1.5px solid var(--accent)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-          <Icon d={icons.alert} size={18} stroke="var(--accent)" />
-          <div>
-            <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '700', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>Siguiente acción</div>
-            <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--ink)' }}>
-              {client.accion}{client.accion && client.siguienteAccionFecha ? ' — ' : ''}{formatFecha(client.siguienteAccionFecha)}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Notas */}
       {client.notas && (
         <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
@@ -611,16 +597,10 @@ function ViewClient({ client, onEdit, onBack }) {
 
 // ─── EditForm ─────────────────────────────────────────────────────────────────
 function EditForm({ client, onSave, onCancel }) {
-  const [form, setForm] = useState({ nombre: client.nombre || '', negocio: client.negocio || '', identificacion: client.identificacion || '', telefono: client.telefono || '', email: client.email || '', direccion: client.direccion || '', contacto: client.contacto || '', telefonoContacto: client.telefonoContacto || '', notas: client.notas || '', siguienteAccionFecha: client.siguienteAccionFecha || '', accion: client.accion || '' })
+  const [form, setForm] = useState({ nombre: client.nombre || '', negocio: client.negocio || '', identificacion: client.identificacion || '', telefono: client.telefono || '', email: client.email || '', direccion: client.direccion || '', contacto: client.contacto || '', telefonoContacto: client.telefonoContacto || '', notas: client.notas || '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [focusedField, setFocusedField] = useState(null)
-  const [acciones, setAcciones] = useState([])
-
-  useEffect(() => {
-    fetch(`${API_BASE}?action=getAcciones`)
-      .then(r => r.json()).then(d => { if (d.success) setAcciones(d.data) }).catch(() => {})
-  }, [])
 
   const inp = (f, v) => { setForm(p => ({ ...p, [f]: v })); if (errors[f]) setErrors(e => ({ ...e, [f]: null })) }
   const gs = (f) => ({ ...inputStyle, borderColor: errors[f] ? 'var(--accent)' : focusedField === f ? 'var(--brand)' : 'var(--border)', boxShadow: focusedField === f ? '0 0 0 3px rgba(30,58,95,0.12)' : 'none' })
@@ -681,60 +661,10 @@ function EditForm({ client, onSave, onCancel }) {
           </div>
         </div>
         <div>
-          <div style={sectionTitle}>Seguimiento</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              <Field label="Siguiente acción (fecha)" icon="calendar">
-                <input
-                  type="date"
-                  style={{ ...gs('siguienteAccionFecha') }}
-                  value={(() => {
-                    const v = form.siguienteAccionFecha
-                    if (!v) return ''
-                    // Date object
-                    if (v instanceof Date) {
-                      const y = v.getFullYear(), m = String(v.getMonth()+1).padStart(2,'0'), d = String(v.getDate()).padStart(2,'0')
-                      return `${y}-${m}-${d}`
-                    }
-                    const s = v.toString().trim()
-                    // ISO: 2026-03-20T...
-                    if (s.includes('T')) {
-                      const dt = new Date(s)
-                      if (!isNaN(dt)) { const y = dt.getFullYear(), m = String(dt.getMonth()+1).padStart(2,'0'), d = String(dt.getDate()).padStart(2,'0'); return `${y}-${m}-${d}` }
-                    }
-                    // yyyy-MM-dd
-                    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
-                    // dd/MM/yyyy o dd/MM/yyyy HH:mm
-                    if (s.includes('/')) {
-                      const p = s.split(' ')[0].split('/')
-                      if (p.length === 3) return `${p[2].padStart(4,'0')}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`
-                    }
-                    return ''
-                  })()}
-                  onChange={e => {
-                    const iso = e.target.value // yyyy-MM-dd
-                    if (!iso) { inp('siguienteAccionFecha', ''); return }
-                    const [y, m, d] = iso.split('-')
-                    inp('siguienteAccionFecha', `${d}/${m}/${y}`)
-                  }}
-                  onFocus={() => setFocusedField('siguienteAccionFecha')}
-                  onBlur={() => setFocusedField(null)}
-                />
-                {form.siguienteAccionFecha && (
-                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{formatFecha(form.siguienteAccionFecha)}</div>
-                )}
-              </Field>
-              <Field label="Acción a realizar" icon="check">
-                <select style={{ ...gs('accion'), cursor: 'pointer' }} value={form.accion} onChange={e => inp('accion', e.target.value)} onFocus={() => setFocusedField('accion')} onBlur={() => setFocusedField(null)}>
-                  <option value="">Seleccionar...</option>
-                  {acciones.map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
-              </Field>
-            </div>
-            <Field label="Notas / Comentarios" icon="notes">
-              <textarea {...fp('notas')} placeholder="Observaciones del cliente..." style={{ ...gs('notas'), resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px' }} />
-            </Field>
-          </div>
+          <div style={sectionTitle}>Notas / Comentarios</div>
+          <Field label="Notas / Comentarios" icon="note">
+            <textarea {...fp('notas')} placeholder="Observaciones del cliente..." style={{ ...gs('notas'), resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px' }} />
+          </Field>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <button onClick={onCancel} style={{ flex: 1, padding: '13px', background: 'var(--cream)', color: 'var(--ink)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>Cancelar</button>
@@ -868,10 +798,14 @@ function NewOrder({ onBack, onSaved, showToast }) {
   const [items, setItems] = useState([])
   const [estado, setEstado] = useState('Negociando')
   const [notas, setNotas] = useState('')
+  const [siguienteAccionFecha, setSiguienteAccionFecha] = useState('')
+  const [accion, setAccion] = useState('')
+  const [acciones, setAcciones] = useState([])
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     fetch(`${API_BASE}?action=getProductos`).then(r => r.json()).then(d => { if (d.success) setProductos(d.data) }).catch(() => {})
+    fetch(`${API_BASE}?action=getAcciones`).then(r => r.json()).then(d => { if (d.success) setAcciones(d.data) }).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -907,7 +841,7 @@ function NewOrder({ onBack, onSaved, showToast }) {
     setSaving(true)
     try {
       const lineItems = items.map(({ producto, cantidad, descuento }) => ({ codigo: producto.codigo, nombre: producto.nombre, cantidad, precioUnitario: producto.precio, iva: producto.iva, descuento }))
-      const params = new URLSearchParams({ action: 'createOrden', clienteNombre: clienteSeleccionado.nombre, clienteNegocio: clienteSeleccionado.negocio||'', estado, notas, items: JSON.stringify(lineItems) })
+      const params = new URLSearchParams({ action: 'createOrden', clienteNombre: clienteSeleccionado.nombre, clienteNegocio: clienteSeleccionado.negocio||'', estado, notas, siguienteAccionFecha: siguienteAccionFecha||'', accion: accion||'', items: JSON.stringify(lineItems) })
       const res = await fetch(`${API_BASE}?${params}`)
       const data = await res.json()
       if (data.success) { showToast(`✓ Orden ${data.numOrden} creada`); onSaved() }
@@ -1018,6 +952,24 @@ function NewOrder({ onBack, onSaved, showToast }) {
             })}
           </div>
           <textarea value={notas} onChange={e => setNotas(e.target.value)} placeholder="Notas de la orden..." style={{ ...inputStyle, resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px' }} />
+        </div>
+        {/* Siguiente acción */}
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.calendar} size={13} />Seguimiento</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Siguiente acción (fecha)</div>
+              <input type="date" value={siguienteAccionFecha} onChange={e => setSiguienteAccionFecha(e.target.value)} style={{ ...inputStyle, fontSize: '14px' }} />
+              {siguienteAccionFecha && <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{formatFecha(siguienteAccionFecha)}</div>}
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Acción a realizar</div>
+              <select value={accion} onChange={e => setAccion(e.target.value)} style={{ ...inputStyle, cursor: 'pointer', fontSize: '14px' }}>
+                <option value="">— Seleccionar —</option>
+                {acciones.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+          </div>
         </div>
         {/* Resumen */}
         {items.length > 0 && (
@@ -1351,19 +1303,8 @@ export default function App() {
                 </div>
               </div>
               <div>
-                <div style={sectionTitle}>Notas y seguimiento</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <Field label="Notas / Comentarios" icon="note"><textarea {...fp('notas')} style={{ ...gs('notas'), resize: 'vertical', minHeight: '90px', lineHeight: '1.5' }} placeholder="Interés del cliente, próximos pasos, observaciones..." /></Field>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <Field label="Siguiente acción (fecha)" icon="calendar"><input {...fp('siguienteAccionFecha', { type: 'date' })} /></Field>
-                    <Field label="Acción a realizar" icon="alert">
-                      <select style={{ ...gs('accion'), cursor: 'pointer' }} value={form.accion} onChange={e => inp('accion', e.target.value)} onFocus={() => setFocusedField('accion')} onBlur={() => setFocusedField(null)}>
-                        <option value="">— Seleccionar —</option>
-                        {acciones.map(a => <option key={a} value={a}>{a}</option>)}
-                      </select>
-                    </Field>
-                  </div>
-                </div>
+                <div style={sectionTitle}>Notas / Comentarios</div>
+                <Field label="Notas / Comentarios" icon="note"><textarea {...fp('notas')} style={{ ...gs('notas'), resize: 'vertical', minHeight: '90px', lineHeight: '1.5' }} placeholder="Interés del cliente, próximos pasos, observaciones..." /></Field>
               </div>
               <button onClick={handleSubmit} disabled={loading} style={{ width: '100%', padding: '13px', background: loading ? 'var(--muted)' : 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'background 0.2s', marginTop: '4px', cursor: loading ? 'not-allowed' : 'pointer' }}
                 onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--brand-dark)' }}
