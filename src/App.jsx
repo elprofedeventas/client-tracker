@@ -672,12 +672,25 @@ function EditForm({ client, onSave, onCancel }) {
                   value={(() => {
                     const v = form.siguienteAccionFecha
                     if (!v) return ''
-                    // Convertir dd/MM/yyyy o dd/MM/yyyy HH:mm → yyyy-MM-dd
-                    if (typeof v === 'string' && v.includes('/')) {
-                      const p = v.split(' ')[0].split('/')
-                      if (p.length === 3) return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`
+                    // Date object
+                    if (v instanceof Date) {
+                      const y = v.getFullYear(), m = String(v.getMonth()+1).padStart(2,'0'), d = String(v.getDate()).padStart(2,'0')
+                      return `${y}-${m}-${d}`
                     }
-                    return v
+                    const s = v.toString().trim()
+                    // ISO: 2026-03-20T...
+                    if (s.includes('T')) {
+                      const dt = new Date(s)
+                      if (!isNaN(dt)) { const y = dt.getFullYear(), m = String(dt.getMonth()+1).padStart(2,'0'), d = String(dt.getDate()).padStart(2,'0'); return `${y}-${m}-${d}` }
+                    }
+                    // yyyy-MM-dd
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+                    // dd/MM/yyyy o dd/MM/yyyy HH:mm
+                    if (s.includes('/')) {
+                      const p = s.split(' ')[0].split('/')
+                      if (p.length === 3) return `${p[2].padStart(4,'0')}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`
+                    }
+                    return ''
                   })()}
                   onChange={e => {
                     const iso = e.target.value // yyyy-MM-dd
@@ -688,6 +701,9 @@ function EditForm({ client, onSave, onCancel }) {
                   onFocus={() => setFocusedField('siguienteAccionFecha')}
                   onBlur={() => setFocusedField(null)}
                 />
+                {form.siguienteAccionFecha && (
+                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{formatFecha(form.siguienteAccionFecha)}</div>
+                )}
               </Field>
               <Field label="Acción a realizar" icon="check">
                 <select style={{ ...gs('accion'), cursor: 'pointer' }} value={form.accion} onChange={e => inp('accion', e.target.value)} onFocus={() => setFocusedField('accion')} onBlur={() => setFocusedField(null)}>
