@@ -145,7 +145,7 @@ function Dashboard() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const [expanded, setExpanded] = useState(null)
+  const [expanded, setExpanded] = useState(new Set())
   const [expandedOrden, setExpandedOrden] = useState(new Set())
 
   useEffect(() => {
@@ -173,7 +173,7 @@ function Dashboard() {
   const verde = '#16a34a'
   const rojo  = '#dc2626'
 
-  const toggle = (key) => setExpanded(prev => prev === key ? null : key)
+  const toggle = (key) => setExpanded(prev => { const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s })
 
   const statCards = [
     { label: 'Vendido',    value: fmt(vendido),    color: verde, bg: '#f0fdf4', icon: 'check',    estado: 'Vendido' },
@@ -237,7 +237,7 @@ function Dashboard() {
           {/* Tarjetas de estado expandibles */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '10px' }}>
             {statCards.map(({ label, value, color, bg, icon, estado }) => {
-              const isOpen = expanded === estado
+              const isOpen = expanded.has(estado)
               const ordenes = data?.ordenesMes?.[estado] || []
               const cnt = c[estado] || { clientes: 0, ordenes: 0 }
               return (
@@ -378,7 +378,7 @@ function Dashboard() {
 
           {/* Pistas — expandible */}
           {(() => {
-            const isOpen = expanded === 'Pistas'
+            const isOpen = expanded.has('Pistas')
             const pistasList = data?.pistasList || []
             return (
               <div style={{ background: 'var(--white)', border: `1.5px solid ${isOpen ? '#0ea5e9' : 'var(--border)'}`, borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow)', overflow: 'hidden', transition: 'border-color 0.2s' }}>
