@@ -270,24 +270,38 @@ function Dashboard() {
                         <div style={{ padding: '16px 20px', fontSize: '13px', color: 'var(--muted)', textAlign: 'center' }}>Sin órdenes en {label.toLowerCase()} este mes</div>
                       ) : (
                         ordenes.map((o, i) => {
-                          // Calcular días en estado actual
+                          const parseFecha = (s) => {
+                            if (!s) return null
+                            if (s instanceof Date) return s
+                            if (typeof s === 'string' && s.includes('/')) {
+                              const p = s.split(' ')[0].split('/')
+                              if (p.length === 3) return new Date(p[2], p[1]-1, p[0])
+                            }
+                            if (typeof s === 'string' && s.includes('T')) return new Date(s)
+                            return null
+                          }
+
+                          // Días en estado actual (Negociando/Detenido/Perdido)
                           let diasEnEstado = null
                           if (estado !== 'Vendido' && o.fechaCambioEstado) {
-                            const parseFCS = (s) => {
-                              if (!s) return null
-                              if (s instanceof Date) return s
-                              if (typeof s === 'string' && s.includes('/')) {
-                                const p = s.split(' ')[0].split('/')
-                                if (p.length === 3) return new Date(p[2], p[1]-1, p[0])
-                              }
-                              return null
-                            }
-                            const fcs = parseFCS(o.fechaCambioEstado)
+                            const fcs = parseFecha(o.fechaCambioEstado)
                             if (fcs) {
                               const hoy = getNowGuayaquil(); hoy.setHours(0,0,0,0)
                               diasEnEstado = Math.floor((hoy - fcs) / (1000*60*60*24))
                             }
                           }
+
+                          // Días para cerrar venta (Vendido)
+                          let diasParaVender = null
+                          if (estado === 'Vendido') {
+                            const fCreacion = parseFecha(o.fecha)
+                            const fVendido  = parseFecha(o.fechaCambioEstado)
+                            if (fCreacion && fVendido) {
+                              fCreacion.setHours(0,0,0,0); fVendido.setHours(0,0,0,0)
+                              diasParaVender = Math.max(0, Math.floor((fVendido - fCreacion) / (1000*60*60*24)))
+                            }
+                          }
+
                           const ordenKey = `${estado}-${o.numOrden}`
                           const detalleOpen = expandedOrden.has(ordenKey)
                           return (
@@ -295,17 +309,22 @@ function Dashboard() {
                               <div style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <div style={{ minWidth: 0 }}>
                                   <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.cliente}</div>
-                                  <div style={{ fontSize: '11px', color: 'var(--muted)', display: 'flex', gap: '8px', alignItems: 'center', marginTop: '2px', flexWrap: 'wrap' }}>
-                                    {o.negocio && <span>{o.negocio}</span>}
-                                    {diasEnEstado !== null && (
-                                      <span style={{ color: diasEnEstado >= 7 ? '#dc2626' : '#d97706', fontWeight: '600' }}>
-                                        {diasEnEstado === 0 ? 'Hoy' : `${diasEnEstado}d en ${estado.toLowerCase()}`}
-                                      </span>
-                                    )}
+                                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '1px' }}>{o.negocio}</div>
+                                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                                     {o.numOrden && (
                                       <span onClick={(e) => { e.stopPropagation(); setExpandedOrden(prev => { const s = new Set(prev); s.has(ordenKey) ? s.delete(ordenKey) : s.add(ordenKey); return s }) }}
                                         style={{ color: 'var(--brand)', fontWeight: '700', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
                                         {o.numOrden} {detalleOpen ? '▲' : '▼'}
+                                      </span>
+                                    )}
+                                    {diasParaVender !== null && (
+                                      <span style={{ color: verde, fontWeight: '600' }}>
+                                        Lo vendí en {diasParaVender === 0 ? 'el mismo día' : `${diasParaVender} ${diasParaVender === 1 ? 'día' : 'días'}`}
+                                      </span>
+                                    )}
+                                    {diasEnEstado !== null && (
+                                      <span style={{ color: diasEnEstado >= 7 ? '#dc2626' : '#d97706', fontWeight: '600' }}>
+                                        {diasEnEstado === 0 ? 'Hoy' : `${diasEnEstado}d en ${estado.toLowerCase()}`}
                                       </span>
                                     )}
                                   </div>
