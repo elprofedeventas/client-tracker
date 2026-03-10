@@ -325,7 +325,7 @@ function Dashboard() {
                                   )}
                                   {diasEnEstado !== null && (
                                     <div style={{ fontSize: '11px', fontWeight: '600', marginTop: '2px', color: diasEnEstado >= 7 ? '#dc2626' : '#d97706' }}>
-                                      {diasEnEstado === 0 ? 'Hoy' : `${diasEnEstado}d en ${estado.toLowerCase()}`}
+                                      {diasEnEstado === 0 ? `Hoy en ${estado.toLowerCase()}` : `${diasEnEstado} ${diasEnEstado === 1 ? 'día' : 'días'} ${estado.toLowerCase()}.`}
                                     </div>
                                   )}
                                 </div>
