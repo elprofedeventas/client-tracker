@@ -1043,6 +1043,7 @@ function OrdersView({ onViewOrder }) {
   // Totales del filtro activo
   const totalMonto = filtradas.reduce((s, o) => s + (parseFloat(o.total) || 0), 0)
   const totalCantidad = filtradas.length
+  const totalClientes = new Set(filtradas.map(o => o.clienteNombre)).size
 
   const aplicarHistorial = () => {
     if (fechaInicio && fechaFin) { setModoHistorial(true); setHistorialOpen(false) }
@@ -1084,9 +1085,19 @@ function OrdersView({ onViewOrder }) {
       {/* Botones de estado + Historial */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', gap: '8px' }}>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          {['Todos','Negociando','Detenido','Perdido','Vendido'].map(e => {
-            const activo = filtroEstado === e; const c = ESTADO_COLORS[e] || {}
-            return <button key={e} onClick={() => setFiltroEstado(e)} style={{ padding: '6px 12px', borderRadius: '20px', border: `1.5px solid ${activo ? (e === 'Todos' ? 'var(--brand)' : c.color) : 'var(--border)'}`, background: activo ? (e === 'Todos' ? 'var(--brand)' : c.bg) : 'var(--white)', color: activo ? (e === 'Todos' ? 'white' : c.color) : 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}>{e}</button>
+          {['Vendido','Negociando','Detenido','Perdido','Todos'].map(e => {
+            const activo = filtroEstado === e
+            const verde = ESTADO_COLORS['Vendido']
+            const rojo  = ESTADO_COLORS['Perdido']
+            const colorActivo = e === 'Todos' ? { bg: 'var(--brand)', color: 'white', border: 'var(--brand)' }
+              : (e === 'Vendido' || e === 'Negociando') ? { bg: verde.bg, color: verde.color, border: verde.color }
+              : { bg: rojo.bg, color: rojo.color, border: rojo.color }
+            return <button key={e} onClick={() => setFiltroEstado(e)} style={{
+              padding: '6px 12px', borderRadius: '20px', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap', fontSize: '12px', fontWeight: '700',
+              border: `1.5px solid ${activo ? colorActivo.border : 'var(--border)'}`,
+              background: activo ? colorActivo.bg : 'var(--white)',
+              color: activo ? colorActivo.color : 'var(--muted)',
+            }}>{e}</button>
           })}
         </div>
         <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -1118,7 +1129,7 @@ function OrdersView({ onViewOrder }) {
       {/* Total del filtro activo */}
       <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: '16px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: '600' }}>
-          {filtroEstado === 'Todos' ? 'Todas las órdenes' : filtroEstado} · {totalCantidad} {totalCantidad === 1 ? 'orden' : 'órdenes'}
+          {filtroEstado === 'Todos' ? 'Todas las órdenes' : filtroEstado} · {totalClientes} {totalClientes === 1 ? 'cliente' : 'clientes'} · {totalCantidad} {totalCantidad === 1 ? 'orden' : 'órdenes'}
         </div>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: filtroEstado !== 'Todos' && ESTADO_COLORS[filtroEstado] ? ESTADO_COLORS[filtroEstado].color : 'var(--brand)' }}>
           {fmtMoney(totalMonto)}
