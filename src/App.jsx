@@ -478,7 +478,7 @@ function Dashboard() {
                           )}
                         </div>
                         )
-                      })}
+                      })
                     )}
                   </div>
                 )}
