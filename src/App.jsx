@@ -998,8 +998,12 @@ function ViewOrder({ order, onBack, onChangeEstado, showToast, backLabel = 'Volv
   const [editNotas, setEditNotas] = useState(false)
   const [editSeguimiento, setEditSeguimiento] = useState(false)
 
+  const [ordenesCliente, setOrdenesCliente] = useState([])
   useEffect(() => {
-    fetch(`${API_BASE}?action=getAcciones`).then(r => r.json()).then(d => { if (d.success) setAcciones(d.data) }).catch(() => {})
+    fetch(`${API_BASE}?action=getOrdenes`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setOrdenesCliente(d.data.filter(o => norm(o.clienteNombre) === norm(order.clienteNombre))) })
+      .catch(() => {})
   }, [])
 
   const handleEstado = async (nuevoEstado) => {
@@ -1197,11 +1201,32 @@ function ViewOrder({ order, onBack, onChangeEstado, showToast, backLabel = 'Volv
           {savingDetalle ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando...</> : <><Icon d={icons.check} size={16} /> Guardar cambios</>}
         </button>
       )}
+      {/* Totales del cliente por estado */}
+      {ordenesCliente.length > 0 && (
+        <div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '14px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
+            Órdenes de {order.clienteNombre}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px' }}>
+            {['Vendido','Negociando','Detenido','Perdido'].map(e => {
+              const c = ESTADO_COLORS[e]
+              const lista = ordenesCliente.filter(o => o.estado === e)
+              const total = lista.reduce((s, o) => s + (parseFloat(o.total)||0), 0)
+              const esActual = order.estado === e
+              return (
+                <div key={e} style={{ background: esActual ? c.bg : 'var(--cream)', border: `1.5px solid ${esActual ? c.border : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '8px 10px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: '700', color: esActual ? c.color : 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>{e}</div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '13px', color: esActual ? c.color : 'var(--ink)' }}>{fmtMoney(total)}</div>
+                  <div style={{ fontSize: '10px', color: esActual ? c.color : 'var(--muted)', marginTop: '1px' }}>{lista.length} {lista.length === 1 ? 'orden' : 'órdenes'}</div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-
-// Acciones que muestran teléfono+email
 const ACCION_PHONE_EMAIL = ['Mensaje','Solicitar Referidos','Enviar Propuesta','Seguimiento','Resolver Objeción','Cerrar Venta','Post Venta','Venta Cruzada','Venta Ascendente']
 
 function ActividadesView({ onViewOrder }) {
