@@ -1440,19 +1440,15 @@ function ActividadesView({ onViewOrder }) {
           : modoHistorial && fechaInicio && fechaFin ? `${formatFecha(fechaInicio)} — ${formatFecha(fechaFin)}`
           : 'Historial'
         return (
-          <div style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:'14px', boxShadow:'var(--shadow)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', flexWrap:'wrap' }}>
+          <div style={{ background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:'14px', boxShadow:'var(--shadow)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', flexWrap:'wrap' }}>
             <div style={{ display:'flex', gap:'20px', flexWrap:'wrap' }}>
               <div>
-                <div style={{ fontSize:'10px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>{modoLabel}</div>
-                <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'20px' }}>{actividades.length} <span style={{ fontSize:'13px', fontWeight:'600', color:'var(--muted)' }}>{actividades.length === 1 ? 'actividad' : 'actividades'}</span></div>
+                <div style={{ fontSize:'10px', fontWeight:'700', color:'#16a34a', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>{modoLabel}</div>
+                <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'20px', color:'var(--ink)' }}>{actividades.length} <span style={{ fontSize:'13px', fontWeight:'600', color:'#16a34a' }}>{actividades.length === 1 ? 'actividad' : 'actividades'}</span></div>
               </div>
-              <div style={{ borderLeft:'1.5px solid var(--border)', paddingLeft:'20px' }}>
-                <div style={{ fontSize:'10px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>Total pipeline</div>
-                <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'20px' }}>{fmtMoney(totalMonto)}</div>
-              </div>
-              <div style={{ borderLeft:'1.5px solid var(--border)', paddingLeft:'20px' }}>
-                <div style={{ fontSize:'10px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>Clientes</div>
-                <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'20px' }}>{clientes}</div>
+              <div style={{ borderLeft:'1.5px solid #bbf7d0', paddingLeft:'20px' }}>
+                <div style={{ fontSize:'10px', fontWeight:'700', color:'#16a34a', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>Total en órdenes</div>
+                <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'20px', color:'var(--ink)' }}>{fmtMoney(totalMonto)}</div>
               </div>
             </div>
           </div>
