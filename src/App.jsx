@@ -1198,12 +1198,41 @@ Total:             ${fmtMoney(order.total)}`
       <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.calendar} size={13} />Seguimiento</div>
-          <button onClick={() => setEditSeguimiento(v => !v)} style={{ background: 'none', border: `1.5px solid ${editSeguimiento ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '4px 10px', fontSize: '11px', fontWeight: '700', color: editSeguimiento ? 'var(--brand)' : 'var(--muted)', cursor: 'pointer', transition: 'all 0.15s' }}>
-            {editSeguimiento ? 'Cancelar' : 'Editar'}
-          </button>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            {siguienteAccionFecha && accion && !editSeguimiento && (() => {
+              // Armar fechas para Google Calendar (formato YYYYMMDDTHHmmss)
+              const soloFecha = siguienteAccionFecha.toString().trim().split(' ')[0]
+              let dateStr = ''
+              if (soloFecha.includes('/')) {
+                const [d, m, y] = soloFecha.split('/')
+                dateStr = `${y}${m.padStart(2,'0')}${d.padStart(2,'0')}`
+              } else if (soloFecha.includes('-')) {
+                dateStr = soloFecha.replace(/-/g, '')
+              }
+              const [hh, mm] = horaAccion ? horaAccion.split(':') : ['09', '00']
+              const startDT = `${dateStr}T${hh.padStart(2,'0')}${mm.padStart(2,'0')}00`
+              // Evento de 1 hora por defecto
+              const endHH = String(parseInt(hh) + 1).padStart(2, '0')
+              const endDT = `${dateStr}T${endHH}${mm.padStart(2,'0')}00`
+              const titulo = encodeURIComponent(`${accion} — ${order.clienteNombre}`)
+              const detalle = encodeURIComponent(`Orden: ${order.numOrden}\nCliente: ${order.clienteNombre}${order.clienteNegocio ? '\nNegocio: ' + order.clienteNegocio : ''}${notasSeguimiento ? '\n\n' + notasSeguimiento : ''}`)
+              const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titulo}&dates=${startDT}/${endDT}&details=${detalle}`
+              return (
+                <a href={calUrl} target="_blank" rel="noopener noreferrer"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', background: '#4285f4', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '11px', fontWeight: '700', textDecoration: 'none', transition: 'background 0.15s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#1a73e8'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#4285f4'}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+                  Agendar
+                </a>
+              )
+            })()}
+            <button onClick={() => setEditSeguimiento(v => !v)} style={{ background: 'none', border: `1.5px solid ${editSeguimiento ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '4px 10px', fontSize: '11px', fontWeight: '700', color: editSeguimiento ? 'var(--brand)' : 'var(--muted)', cursor: 'pointer', transition: 'all 0.15s' }}>
+              {editSeguimiento ? 'Cancelar' : 'Editar'}
+            </button>
+          </div>
         </div>
         {editSeguimiento ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div>
                 <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Siguiente acción (fecha)</div>
