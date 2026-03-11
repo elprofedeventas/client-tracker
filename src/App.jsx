@@ -239,6 +239,17 @@ function Dashboard() {
   const [error, setError] = useState(false)
   const [expanded, setExpanded] = useState(new Set())
   const [expandedOrden, setExpandedOrden] = useState(new Set())
+  const [sortDash, setSortDash] = useState({})
+
+  const getSortDash = (estado) => sortDash[estado] || { field: 'fecha', dir: 'asc' }
+  const toggleSortDash = (e, estado, field) => {
+    e.stopPropagation()
+    setSortDash(prev => {
+      const cur = prev[estado] || { field: 'fecha', dir: 'asc' }
+      const dir = cur.field === field ? (cur.dir === 'asc' ? 'desc' : 'asc') : (field === 'total' ? 'desc' : 'asc')
+      return { ...prev, [estado]: { field, dir } }
+    })
+  }
 
   useEffect(() => {
     setLoading(true); setError(false)
@@ -360,18 +371,41 @@ function Dashboard() {
                     <div style={{ borderTop: `1px solid var(--border)`, background: 'var(--paper)' }}>
                       {ordenes.length === 0 ? (
                         <div style={{ padding: '16px 20px', fontSize: '13px', color: 'var(--muted)', textAlign: 'center' }}>Sin órdenes en {label.toLowerCase()} este mes</div>
-                      ) : (
-                        ordenes.map((o, i) => {
+                      ) : (() => {
+                          const { field, dir } = getSortDash(estado)
                           const parseFecha = (s) => {
-                            if (!s) return null
+                            if (!s) return new Date(0)
                             if (s instanceof Date) return s
                             if (typeof s === 'string' && s.includes('/')) {
                               const p = s.split(' ')[0].split('/')
                               if (p.length === 3) return new Date(p[2], p[1]-1, p[0])
                             }
                             if (typeof s === 'string' && s.includes('T')) return new Date(s)
-                            return null
+                            return new Date(0)
                           }
+                          const sorted = [...ordenes].sort((a, b) => {
+                            if (field === 'fecha') {
+                              const fa = parseFecha(a.fecha), fb = parseFecha(b.fecha)
+                              return dir === 'asc' ? fa - fb : fb - fa
+                            }
+                            return dir === 'asc' ? (a.total||0) - (b.total||0) : (b.total||0) - (a.total||0)
+                          })
+                          return (
+                            <>
+                              {/* Botones sort */}
+                              <div style={{ display: 'flex', gap: '6px', padding: '10px 20px 6px', borderBottom: '1px solid var(--cream)' }}>
+                                {[['fecha','Fecha'],['total','$']].map(([f, lbl]) => {
+                                  const active = field === f
+                                  const arrow = dir === 'asc' ? '↑' : '↓'
+                                  return (
+                                    <button key={f} onClick={(e) => toggleSortDash(e, estado, f)}
+                                      style={{ padding: '3px 10px', borderRadius: '20px', border: `1.5px solid ${active ? color : 'var(--border)'}`, background: active ? bg : 'var(--white)', color: active ? color : 'var(--muted)', fontSize: '11px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>
+                                      {lbl} {active ? arrow : '↕'}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                              {sorted.map((o, i) => {
 
                           // Días en estado actual (Negociando/Detenido/Perdido)
                           let diasEnEstado = null
@@ -468,8 +502,10 @@ function Dashboard() {
                               )}
                             </div>
                           )
-                        })
-                      )}
+                        })}
+                            </>
+                          )
+                        })()}
                     </div>
                   )}
                 </div>
