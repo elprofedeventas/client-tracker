@@ -2007,8 +2007,8 @@ function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
   const [fechaFin, setFechaFin] = useState('')
   const [modoHistorial, setModoHistorial] = useState(false)
   const [searchOrden, setSearchOrden] = useState('')
-  const [sortField, setSortField] = useState('total')   // 'total' | 'fecha'
-  const [sortDir, setSortDir] = useState('desc')         // 'asc' | 'desc'
+  const [sortField, setSortField] = useState('fecha')
+  const [sortDir, setSortDir] = useState('asc')
 
   const toggleSort = (field) => {
     if (sortField === field) setSortDir(d => d === 'desc' ? 'asc' : 'desc')
