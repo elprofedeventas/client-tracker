@@ -620,15 +620,48 @@ function ClientRow({ client, index, onEdit, onView, query }) {
 }
 
 // ─── ViewClient ───────────────────────────────────────────────────────────────
-function ViewClient({ client, onEdit, onBack }) {
+function ViewClient({ client, onEdit, onBack, onViewOrder }) {
   const fields = [
-    { icon: 'id', label: 'Identificación', val: client.identificacion },
-    { icon: 'phone', label: 'Teléfono', val: client.telefono },
-    { icon: 'mail', label: 'Email', val: client.email },
-    { icon: 'map', label: 'Dirección', val: client.direccion },
-    { icon: 'contact', label: 'Contacto', val: client.contacto },
-    { icon: 'phone', label: 'Tel. Contacto', val: client.telefonoContacto },
+    { icon: 'id',      label: 'Identificación', val: client.identificacion },
+    { icon: 'phone',   label: 'Teléfono',        val: client.telefono },
+    { icon: 'mail',    label: 'Email',            val: client.email },
+    { icon: 'map',     label: 'Dirección',        val: client.direccion },
+    { icon: 'contact', label: 'Contacto',         val: client.contacto },
+    { icon: 'phone',   label: 'Tel. Contacto',    val: client.telefonoContacto },
   ]
+
+  const [ordenes, setOrdenes] = useState([])
+  const [loadingOrdenes, setLoadingOrdenes] = useState(true)
+  const [filtroEstado, setFiltroEstado] = useState('Vendido')
+  const [sortDir, setSortDir] = useState('desc') // desc fecha por defecto
+
+  useEffect(() => {
+    fetch(`${API_BASE}?action=getOrdenes`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setOrdenes(d.data.filter(o => norm(o.clienteNombre) === norm(client.nombre))) })
+      .catch(() => {})
+      .finally(() => setLoadingOrdenes(false))
+  }, [])
+
+  const cntEstado = (e) => ordenes.filter(o => o.estado === e).length
+
+  const parseF = (v) => {
+    if (!v) return new Date(0)
+    const str = v.toString().trim()
+    if (str.includes('/')) { const [dp] = str.split(' '); const [d,m,y] = dp.split('/'); return new Date(y,m-1,d) }
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) return new Date(str)
+    return new Date(0)
+  }
+
+  const ordenesFiltradas = useMemo(() => {
+    const list = ordenes.filter(o => o.estado === filtroEstado)
+    return [...list].sort((a, b) => {
+      const fa = parseF(a.fecha), fb = parseF(b.fecha)
+      return sortDir === 'desc' ? fb - fa : fa - fb
+    })
+  }, [ordenes, filtroEstado, sortDir])
+
+  const totalFiltrado = ordenesFiltradas.reduce((s, o) => s + (parseFloat(o.total)||0), 0)
 
   return (
     <div style={{ animation: 'fadeUp 0.4s ease' }}>
@@ -699,13 +732,83 @@ function ViewClient({ client, onEdit, onBack }) {
 
       {/* Notas */}
       {client.notas && (
-        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
           <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Icon d={icons.note} size={13} />Notas
           </div>
           <div style={{ fontSize: '14px', color: 'var(--ink)', lineHeight: '1.6', fontStyle: 'italic' }}>"{client.notas}"</div>
         </div>
       )}
+
+      {/* Órdenes del cliente */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '16px' }}>Órdenes</div>
+          {/* Botón $ sort */}
+          <button onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+            style={{ padding: '4px 11px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--white)', color: 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>
+            $ {sortDir === 'desc' ? '↓' : '↑'}
+          </button>
+        </div>
+
+        {/* Filtros de estado */}
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
+          {['Vendido','Negociando','Detenido','Perdido'].map(e => {
+            const c = ESTADO_COLORS[e]
+            const activo = filtroEstado === e
+            const cnt = cntEstado(e)
+            return (
+              <button key={e} onClick={() => setFiltroEstado(e)}
+                style={{ padding: '5px 12px', borderRadius: '20px', border: `1.5px solid ${activo ? c.color : 'var(--border)'}`, background: activo ? c.bg : 'var(--white)', color: activo ? c.color : 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>
+                {e} ({cnt})
+              </button>
+            )
+          })}
+        </div>
+
+        {loadingOrdenes ? (
+          <div style={{ textAlign: 'center', padding: '30px', color: 'var(--muted)', fontSize: '13px' }}>
+            <span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Cargando órdenes...
+          </div>
+        ) : ordenesFiltradas.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '30px 20px', background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', color: 'var(--muted)' }}>
+            <div style={{ fontSize: '11px', fontWeight: '600' }}>Sin órdenes en estado {filtroEstado}</div>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {ordenesFiltradas.map((o, i) => {
+                const c = ESTADO_COLORS[o.estado]
+                return (
+                  <div key={o.numOrden}
+                    onClick={() => onViewOrder(o)}
+                    style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '12px 16px', cursor: 'pointer', transition: 'box-shadow 0.15s', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', animation: `fadeUp 0.2s ${Math.min(i,5)*0.04}s ease both` }}
+                    onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
+                    onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', marginBottom: '2px' }}>{o.numOrden} · {formatFecha(o.fecha)}</div>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                        {(o.items||[]).slice(0,2).map((item, j) => (
+                          <span key={j} style={{ fontSize: '12px', color: 'var(--ink)', background: 'var(--cream)', padding: '1px 7px', borderRadius: '20px' }}>{item.nombre}</span>
+                        ))}
+                        {(o.items||[]).length > 2 && <span style={{ fontSize: '12px', color: 'var(--muted)' }}>+{o.items.length - 2} más</span>}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '15px' }}>{fmtMoney(o.total)}</div>
+                      <span style={{ fontSize: '10px', fontWeight: '700', padding: '1px 6px', borderRadius: '20px', background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>{o.estado}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{ marginTop: '10px', padding: '10px 14px', background: 'var(--cream)', borderRadius: 'var(--radius)', display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '700' }}>
+              <span style={{ color: 'var(--muted)' }}>{ordenesFiltradas.length} {ordenesFiltradas.length === 1 ? 'orden' : 'órdenes'}</span>
+              <span>{fmtMoney(totalFiltrado)}</span>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
 }
@@ -851,7 +954,7 @@ function OrderRow({ order, index, onView }) {
   )
 }
 
-function ViewOrder({ order, onBack, onChangeEstado, showToast }) {
+function ViewOrder({ order, onBack, onChangeEstado, showToast, backLabel = 'Volver a órdenes' }) {
   const [estado, setEstado] = useState(order.estado)
   const [saving, setSaving] = useState(false)
   const [notas, setNotas] = useState(order.notas || '')
@@ -915,7 +1018,7 @@ function ViewOrder({ order, onBack, onChangeEstado, showToast }) {
   return (
     <div style={{ animation: 'fadeUp 0.4s ease' }}>
       <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', padding: '0', marginBottom: '24px' }}>
-        <Icon d={icons.arrowLeft} size={15} /> Volver a órdenes
+        <Icon d={icons.arrowLeft} size={15} /> {backLabel}
       </button>
       {/* Encabezado + estado */}
       <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
@@ -1960,7 +2063,7 @@ export default function App() {
 
         {/* ── VER CLIENTE ───────────────────────────────────────────────────── */}
         {view === 'view' && viewingClient && (
-          <ViewClient client={viewingClient} onEdit={handleEdit} onBack={() => setView('list')} />
+          <ViewClient client={viewingClient} onEdit={handleEdit} onBack={() => setView('list')} onViewOrder={(o) => handleViewOrder(o, 'view')} />
         )}
 
         {/* ── EDIT ──────────────────────────────────────────────────────────── */}
@@ -2057,7 +2160,7 @@ export default function App() {
 
         {/* ── VER ORDEN ─────────────────────────────────────────────────────── */}
         {view === 'viewOrder' && viewingOrder && (
-          <ViewOrder order={viewingOrder} onBack={() => setView(orderOrigin)} onChangeEstado={handleChangeEstado} showToast={showToast} />
+          <ViewOrder order={viewingOrder} onBack={() => setView(orderOrigin)} onChangeEstado={handleChangeEstado} showToast={showToast} backLabel={orderOrigin === 'view' ? 'Volver al cliente' : 'Volver a órdenes'} />
         )}
 
         {/* ── NUEVA ORDEN ───────────────────────────────────────────────────── */}
