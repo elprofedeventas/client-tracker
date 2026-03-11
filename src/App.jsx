@@ -573,7 +573,16 @@ function ViewClient({ client, onEdit, onBack }) {
               <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Icon d={icons[icon]} size={12} />{label}
               </div>
-              <div style={{ fontSize: '14px', fontWeight: '500' }}>{val}</div>
+              {label === 'Dirección' ? (
+                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(val)}`} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: '14px', fontWeight: '500', color: 'var(--brand)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                  onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+                  {val} <Icon d={icons.map} size={13} />
+                </a>
+              ) : (
+                <div style={{ fontSize: '14px', fontWeight: '500' }}>{val}</div>
+              )}
             </div>
           ) : null)}
         </div>
