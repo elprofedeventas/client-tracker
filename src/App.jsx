@@ -673,6 +673,12 @@ function ViewClient({ client, onEdit, onBack, onViewOrder }) {
   }, [ordenes, filtroEstado, sortDir, sortField])
 
   const totalFiltrado = ordenesFiltradas.reduce((s, o) => s + (parseFloat(o.total)||0), 0)
+  const [listaVisible, setListaVisible] = useState(false)
+
+  const handleCuadro = (e) => {
+    if (filtroEstado === e) setListaVisible(v => !v)
+    else { setFiltroEstado(e); setListaVisible(true) }
+  }
 
   return (
     <div style={{ animation: 'fadeUp 0.4s ease' }}>
@@ -755,7 +761,7 @@ function ViewClient({ client, onEdit, onBack, onViewOrder }) {
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '16px' }}>Órdenes</div>
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div style={{ display: 'flex', gap: '6px', opacity: listaVisible ? 1 : 0.4, pointerEvents: listaVisible ? 'auto' : 'none', transition: 'opacity 0.2s' }}>
             {[['fecha','Fecha'],['total','$']].map(([field, label]) => {
               const active = sortField === field
               const arrow = sortDir === 'asc' ? '↑' : '↓'
@@ -784,8 +790,11 @@ function ViewClient({ client, onEdit, onBack, onViewOrder }) {
                   const c = ESTADO_COLORS[e]
                   const activo = filtroEstado === e
                   return (
-                    <div key={e} onClick={() => setFiltroEstado(e)} style={{ background: activo ? c.bg : 'var(--cream)', border: `1.5px solid ${activo ? c.border : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '8px 10px', cursor: 'pointer', transition: 'all 0.15s' }}>
-                      <div style={{ fontSize: '10px', fontWeight: '700', color: activo ? c.color : 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>{e}</div>
+                    <div key={e} onClick={() => handleCuadro(e)} style={{ background: activo && listaVisible ? c.bg : activo ? c.bg : 'var(--cream)', border: `1.5px solid ${activo ? c.border : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '8px 10px', cursor: 'pointer', transition: 'all 0.15s' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                        <div style={{ fontSize: '10px', fontWeight: '700', color: activo ? c.color : 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{e}</div>
+                        {activo && <span style={{ fontSize: '10px', color: c.color, transition: 'transform 0.2s', display: 'inline-block', transform: listaVisible ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>}
+                      </div>
                       <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '13px', color: activo ? c.color : 'var(--ink)' }}>{fmtMoney(totalPorEstado(e))}</div>
                       <div style={{ fontSize: '10px', color: activo ? c.color : 'var(--muted)', marginTop: '1px' }}>{cntEstado(e)} {cntEstado(e) === 1 ? 'orden' : 'órdenes'}</div>
                     </div>
@@ -794,7 +803,7 @@ function ViewClient({ client, onEdit, onBack, onViewOrder }) {
               </div>
             )}
 
-            {ordenesFiltradas.length === 0 ? (
+            {listaVisible && (ordenesFiltradas.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '30px 20px', background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', color: 'var(--muted)' }}>
                 <div style={{ fontSize: '11px', fontWeight: '600' }}>Sin órdenes en estado {filtroEstado}</div>
               </div>
@@ -831,7 +840,7 @@ function ViewClient({ client, onEdit, onBack, onViewOrder }) {
                   <span>{fmtMoney(totalFiltrado)}</span>
                 </div>
               </>
-            )}
+            ))}
           </>
         )}
       </div>
