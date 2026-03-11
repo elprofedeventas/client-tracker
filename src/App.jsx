@@ -754,6 +754,8 @@ function ViewOrder({ order, onBack, onChangeEstado, showToast }) {
   const [accion, setAccion] = useState(order.accion || '')
   const [acciones, setAcciones] = useState([])
   const [savingDetalle, setSavingDetalle] = useState(false)
+  const [editNotas, setEditNotas] = useState(false)
+  const [editSeguimiento, setEditSeguimiento] = useState(false)
 
   useEffect(() => {
     fetch(`${API_BASE}?action=getAcciones`).then(r => r.json()).then(d => { if (d.success) setAcciones(d.data) }).catch(() => {})
@@ -857,44 +859,74 @@ function ViewOrder({ order, onBack, onChangeEstado, showToast }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontFamily: 'var(--font-display)', fontWeight: '800' }}><span>Total</span><span>{fmtMoney(order.total)}</span></div>
         </div>
       </div>
-      {/* Notas editables */}
+      {/* Notas */}
       <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
-        <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.note} size={13} />Notas de la orden</div>
-        <textarea value={notas} onChange={e => setNotas(e.target.value)} placeholder="Notas de la orden..."
-          style={{ ...inputStyle, resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px', width: '100%', boxSizing: 'border-box' }} />
-      </div>
-      {/* Seguimiento editable */}
-      <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
-        <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.calendar} size={13} />Seguimiento</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-          <div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Siguiente acción (fecha)</div>
-            <input type="date" value={fechaParaInput(siguienteAccionFecha)}
-              onChange={e => {
-                const iso = e.target.value
-                if (!iso) { setSiguienteAccionFecha(''); return }
-                const [y, m, d] = iso.split('-')
-                setSiguienteAccionFecha(`${d}/${m}/${y}`)
-              }}
-              style={{ ...inputStyle, fontSize: '14px' }} />
-            {siguienteAccionFecha && <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{formatFecha(siguienteAccionFecha)}</div>}
-          </div>
-          <div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Acción a realizar</div>
-            <select value={accion} onChange={e => setAccion(e.target.value)} style={{ ...inputStyle, cursor: 'pointer', fontSize: '14px' }}>
-              <option value="">— Seleccionar —</option>
-              {acciones.map(a => <option key={a} value={a}>{a}</option>)}
-            </select>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.note} size={13} />Notas de la orden</div>
+          <button onClick={() => setEditNotas(v => !v)} style={{ background: 'none', border: `1.5px solid ${editNotas ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '4px 10px', fontSize: '11px', fontWeight: '700', color: editNotas ? 'var(--brand)' : 'var(--muted)', cursor: 'pointer', transition: 'all 0.15s' }}>
+            {editNotas ? 'Cancelar' : 'Editar'}
+          </button>
         </div>
+        {editNotas
+          ? <textarea value={notas} onChange={e => setNotas(e.target.value)} placeholder="Notas de la orden..." autoFocus
+              style={{ ...inputStyle, resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px', width: '100%', boxSizing: 'border-box' }} />
+          : notas
+            ? <div style={{ fontSize: '14px', fontStyle: 'italic', color: 'var(--muted)', lineHeight: '1.6' }}>"{notas}"</div>
+            : <div style={{ fontSize: '13px', color: 'var(--border)' }}>Sin notas</div>
+        }
       </div>
-      {/* Botón guardar */}
-      <button onClick={handleSaveDetalle} disabled={savingDetalle}
-        style={{ width: '100%', padding: '13px', background: savingDetalle ? 'var(--muted)' : 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', cursor: savingDetalle ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'background 0.2s' }}
-        onMouseEnter={e => { if (!savingDetalle) e.currentTarget.style.background = 'var(--brand-dark)' }}
-        onMouseLeave={e => { if (!savingDetalle) e.currentTarget.style.background = 'var(--brand)' }}>
-        {savingDetalle ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando...</> : <><Icon d={icons.check} size={16} /> Guardar cambios</>}
-      </button>
+      {/* Seguimiento */}
+      <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.calendar} size={13} />Seguimiento</div>
+          <button onClick={() => setEditSeguimiento(v => !v)} style={{ background: 'none', border: `1.5px solid ${editSeguimiento ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '4px 10px', fontSize: '11px', fontWeight: '700', color: editSeguimiento ? 'var(--brand)' : 'var(--muted)', cursor: 'pointer', transition: 'all 0.15s' }}>
+            {editSeguimiento ? 'Cancelar' : 'Editar'}
+          </button>
+        </div>
+        {editSeguimiento ? (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Siguiente acción (fecha)</div>
+              <input type="date" value={fechaParaInput(siguienteAccionFecha)}
+                onChange={e => {
+                  const iso = e.target.value
+                  if (!iso) { setSiguienteAccionFecha(''); return }
+                  const [y, m, d] = iso.split('-')
+                  setSiguienteAccionFecha(`${d}/${m}/${y}`)
+                }}
+                style={{ ...inputStyle, fontSize: '14px' }} />
+              {siguienteAccionFecha && <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{formatFecha(siguienteAccionFecha)}</div>}
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Acción a realizar</div>
+              <select value={accion} onChange={e => setAccion(e.target.value)} style={{ ...inputStyle, cursor: 'pointer', fontSize: '14px' }}>
+                <option value="">— Seleccionar —</option>
+                {acciones.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Siguiente acción (fecha)</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: siguienteAccionFecha ? 'var(--ink)' : 'var(--border)' }}>{siguienteAccionFecha ? formatFecha(siguienteAccionFecha) : '—'}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Acción a realizar</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: accion ? 'var(--ink)' : 'var(--border)' }}>{accion || '—'}</div>
+            </div>
+          </div>
+        )}
+      </div>
+      {/* Botón guardar — solo visible si hay algo en modo edición */}
+      {(editNotas || editSeguimiento) && (
+        <button onClick={async () => { await handleSaveDetalle(); setEditNotas(false); setEditSeguimiento(false) }} disabled={savingDetalle}
+          style={{ width: '100%', padding: '13px', background: savingDetalle ? 'var(--muted)' : 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', cursor: savingDetalle ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'background 0.2s' }}
+          onMouseEnter={e => { if (!savingDetalle) e.currentTarget.style.background = 'var(--brand-dark)' }}
+          onMouseLeave={e => { if (!savingDetalle) e.currentTarget.style.background = 'var(--brand)' }}>
+          {savingDetalle ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando...</> : <><Icon d={icons.check} size={16} /> Guardar cambios</>}
+        </button>
+      )}
     </div>
   )
 }
