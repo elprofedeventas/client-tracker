@@ -1061,12 +1061,13 @@ function ActividadesView({ onViewOrder }) {
       list = list.filter(o => norm(o.clienteNombre).includes(q) || norm(o.clienteNegocio||'').includes(q) || norm(o.numOrden).includes(q) || norm(o.accion||'').includes(q))
     }
 
-    if (modo !== 'sinFecha') {
-      list = [...list].sort((a, b) => {
-        if (sortField === 'fecha') return sortDir === 'asc' ? a._fecha - b._fecha : b._fecha - a._fecha
-        return sortDir === 'asc' ? (a.total||0) - (b.total||0) : (b.total||0) - (a.total||0)
-      })
-    }
+    list = [...list].sort((a, b) => {
+      if (sortField === 'fecha') {
+        const fa = a._fecha || new Date(0), fb = b._fecha || new Date(0)
+        return sortDir === 'asc' ? fa - fb : fb - fa
+      }
+      return sortDir === 'asc' ? (a.total||0) - (b.total||0) : (b.total||0) - (a.total||0)
+    })
     return list
   }, [conFecha, sinFechaList, modo, modoHistorial, fechaInicio, fechaFin, filtroAccion, busqueda, sortField, sortDir])
 
@@ -1158,11 +1159,11 @@ function ActividadesView({ onViewOrder }) {
                 <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'10px' }}>
                   <div>
                     <label style={{ fontSize:'11px', color:'var(--muted)', fontWeight:'600' }}>Desde</label>
-                    <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} style={{ ...inputStyle, padding:'7px 10px', fontSize:'13px', marginTop:'4px' }} />
+                    <input type="date" lang="es-EC" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} style={{ ...inputStyle, padding:'7px 10px', fontSize:'13px', marginTop:'4px' }} />
                   </div>
                   <div>
                     <label style={{ fontSize:'11px', color:'var(--muted)', fontWeight:'600' }}>Hasta</label>
-                    <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} style={{ ...inputStyle, padding:'7px 10px', fontSize:'13px', marginTop:'4px' }} />
+                    <input type="date" lang="es-EC" value={fechaFin} onChange={e => setFechaFin(e.target.value)} style={{ ...inputStyle, padding:'7px 10px', fontSize:'13px', marginTop:'4px' }} />
                   </div>
                 </div>
                 <div style={{ display:'flex', gap:'8px' }}>
@@ -1190,13 +1191,11 @@ function ActividadesView({ onViewOrder }) {
         {busqueda && <button onClick={() => setBusqueda('')} style={{ position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--muted)', display:'flex', padding:'2px' }}><Icon d={icons.x} size={16} /></button>}
       </div>
 
-      {/* Controles de orden — solo cuando no es sinFecha */}
-      {modo !== 'sinFecha' && (
-        <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'16px', flexWrap:'wrap' }}>
-          <SortBtn field="fecha" label="Fecha" />
-          <SortBtn field="total" label="$" />
-        </div>
-      )}
+      {/* Controles de orden */}
+      <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'16px', flexWrap:'wrap' }}>
+        <SortBtn field="fecha" label="Fecha" />
+        <SortBtn field="total" label="$" />
+      </div>
 
       {/* Lista */}
       {actividades.length === 0 ? (
@@ -1670,11 +1669,11 @@ function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
                 <div>
                   <label style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600' }}>Desde</label>
-                  <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} style={{ ...inputStyle, padding: '7px 10px', fontSize: '13px', marginTop: '4px' }} />
+                  <input type="date" lang="es-EC" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} style={{ ...inputStyle, padding: '7px 10px', fontSize: '13px', marginTop: '4px' }} />
                 </div>
                 <div>
                   <label style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600' }}>Hasta</label>
-                  <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} style={{ ...inputStyle, padding: '7px 10px', fontSize: '13px', marginTop: '4px' }} />
+                  <input type="date" lang="es-EC" value={fechaFin} onChange={e => setFechaFin(e.target.value)} style={{ ...inputStyle, padding: '7px 10px', fontSize: '13px', marginTop: '4px' }} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
