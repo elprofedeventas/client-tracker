@@ -1430,6 +1430,35 @@ function ActividadesView({ onViewOrder }) {
         <SortBtn field="total" label="$" />
       </div>
 
+      {/* Tarjeta de totales */}
+      {actividades.length > 0 && (() => {
+        const totalMonto = actividades.reduce((s, o) => s + (parseFloat(o.total)||0), 0)
+        const clientes   = new Set(actividades.map(o => o.clienteNombre)).size
+        const modoLabel  = modo === 'pendientes' ? 'Pendientes este mes'
+          : modo === 'vencidas' ? `Vencidas en ${mesNombre}`
+          : modo === 'sinFecha' ? 'Sin fecha de seguimiento'
+          : modoHistorial && fechaInicio && fechaFin ? `${formatFecha(fechaInicio)} — ${formatFecha(fechaFin)}`
+          : 'Historial'
+        return (
+          <div style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:'14px', boxShadow:'var(--shadow)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', flexWrap:'wrap' }}>
+            <div style={{ display:'flex', gap:'20px', flexWrap:'wrap' }}>
+              <div>
+                <div style={{ fontSize:'10px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>{modoLabel}</div>
+                <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'20px' }}>{actividades.length} <span style={{ fontSize:'13px', fontWeight:'600', color:'var(--muted)' }}>{actividades.length === 1 ? 'actividad' : 'actividades'}</span></div>
+              </div>
+              <div style={{ borderLeft:'1.5px solid var(--border)', paddingLeft:'20px' }}>
+                <div style={{ fontSize:'10px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>Total pipeline</div>
+                <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'20px' }}>{fmtMoney(totalMonto)}</div>
+              </div>
+              <div style={{ borderLeft:'1.5px solid var(--border)', paddingLeft:'20px' }}>
+                <div style={{ fontSize:'10px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>Clientes</div>
+                <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'20px' }}>{clientes}</div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Lista */}
       {actividades.length === 0 ? (
         <div style={{ textAlign:'center', padding:'60px 20px', background:'var(--white)', border:'1.5px dashed var(--border)', borderRadius:'var(--radius-lg)', color:'var(--muted)' }}>
