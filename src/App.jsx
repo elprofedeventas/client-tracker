@@ -751,7 +751,14 @@ function ViewOrder({ order, onBack, onChangeEstado, showToast }) {
   const [saving, setSaving] = useState(false)
   const [notas, setNotas] = useState(order.notas || '')
   const [siguienteAccionFecha, setSiguienteAccionFecha] = useState(order.siguienteAccionFecha || '')
+  const [horaAccion, setHoraAccion] = useState(() => {
+    // Extraer hora si viene en formato "dd/MM/yyyy HH:mm"
+    const v = order.siguienteAccionFecha || ''
+    if (v.includes(' ')) return v.split(' ')[1] || ''
+    return ''
+  })
   const [accion, setAccion] = useState(order.accion || '')
+  const [notasSeguimiento, setNotasSeguimiento] = useState(order.notasSeguimiento || '')
   const [acciones, setAcciones] = useState([])
   const [savingDetalle, setSavingDetalle] = useState(false)
   const [editNotas, setEditNotas] = useState(false)
@@ -775,7 +782,10 @@ function ViewOrder({ order, onBack, onChangeEstado, showToast }) {
   const handleSaveDetalle = async () => {
     setSavingDetalle(true)
     try {
-      const params = new URLSearchParams({ action: 'updateOrdenDetalle', rowIndex: order.rowIndex, notas, siguienteAccionFecha, accion })
+      const fechaHora = siguienteAccionFecha
+        ? (horaAccion ? siguienteAccionFecha.split(' ')[0] + ' ' + horaAccion : siguienteAccionFecha.split(' ')[0])
+        : ''
+      const params = new URLSearchParams({ action: 'updateOrdenDetalle', rowIndex: order.rowIndex, notas, siguienteAccionFecha: fechaHora, accion, notasSeguimiento })
       const res = await fetch(`${API_BASE}?${params}`)
       const data = await res.json()
       if (data.success) showToast('✓ Guardado')
@@ -787,9 +797,10 @@ function ViewOrder({ order, onBack, onChangeEstado, showToast }) {
   // Convertir fecha almacenada (dd/MM/yyyy) a yyyy-MM-dd para input date
   const fechaParaInput = (v) => {
     if (!v) return ''
-    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v
-    if (v.includes('/')) {
-      const p = v.split(' ')[0].split('/')
+    const solo = v.toString().trim().split(' ')[0] // quitar hora si viene "dd/MM/yyyy HH:mm"
+    if (/^\d{4}-\d{2}-\d{2}$/.test(solo)) return solo
+    if (solo.includes('/')) {
+      const p = solo.split('/')
       if (p.length === 3) return `${p[2].padStart(4,'0')}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`
     }
     return ''
@@ -884,37 +895,61 @@ function ViewOrder({ order, onBack, onChangeEstado, showToast }) {
           </button>
         </div>
         {editSeguimiento ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Siguiente acción (fecha)</div>
-              <input type="date" value={fechaParaInput(siguienteAccionFecha)}
-                onChange={e => {
-                  const iso = e.target.value
-                  if (!iso) { setSiguienteAccionFecha(''); return }
-                  const [y, m, d] = iso.split('-')
-                  setSiguienteAccionFecha(`${d}/${m}/${y}`)
-                }}
-                style={{ ...inputStyle, fontSize: '14px' }} />
-              {siguienteAccionFecha && <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{formatFecha(siguienteAccionFecha)}</div>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Siguiente acción (fecha)</div>
+                <input type="date" value={fechaParaInput(siguienteAccionFecha)}
+                  onChange={e => {
+                    const iso = e.target.value
+                    if (!iso) { setSiguienteAccionFecha(''); return }
+                    const [y, m, d] = iso.split('-')
+                    setSiguienteAccionFecha(`${d}/${m}/${y}`)
+                  }}
+                  style={{ ...inputStyle, fontSize: '14px' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Hora</div>
+                <input type="time" value={horaAccion} onChange={e => setHoraAccion(e.target.value)} style={{ ...inputStyle, fontSize: '14px' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Acción a realizar</div>
+                <select value={accion} onChange={e => setAccion(e.target.value)} style={{ ...inputStyle, cursor: 'pointer', fontSize: '14px' }}>
+                  <option value="">— Seleccionar —</option>
+                  {acciones.map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
             </div>
             <div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Acción a realizar</div>
-              <select value={accion} onChange={e => setAccion(e.target.value)} style={{ ...inputStyle, cursor: 'pointer', fontSize: '14px' }}>
-                <option value="">— Seleccionar —</option>
-                {acciones.map(a => <option key={a} value={a}>{a}</option>)}
-              </select>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Notas de seguimiento</div>
+              <textarea value={notasSeguimiento} onChange={e => setNotasSeguimiento(e.target.value)} placeholder="Detalles del seguimiento, acuerdos, próximos pasos..."
+                style={{ ...inputStyle, resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px', width: '100%', boxSizing: 'border-box' }} />
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Siguiente acción (fecha)</div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: siguienteAccionFecha ? 'var(--ink)' : 'var(--border)' }}>{siguienteAccionFecha ? formatFecha(siguienteAccionFecha) : '—'}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Siguiente acción (fecha)</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: siguienteAccionFecha ? 'var(--ink)' : 'var(--border)' }}>
+                  {siguienteAccionFecha ? formatFecha(siguienteAccionFecha) : '—'}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Hora</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: horaAccion ? 'var(--ink)' : 'var(--border)' }}>{horaAccion || '—'}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Acción a realizar</div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: accion ? 'var(--ink)' : 'var(--border)' }}>{accion || '—'}</div>
+              </div>
             </div>
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Acción a realizar</div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: accion ? 'var(--ink)' : 'var(--border)' }}>{accion || '—'}</div>
-            </div>
+            {notasSeguimiento && (
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Notas de seguimiento</div>
+                <div style={{ fontSize: '14px', color: 'var(--ink)', lineHeight: '1.6', fontStyle: 'italic' }}>"{notasSeguimiento}"</div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -941,7 +976,9 @@ function NewOrder({ onBack, onSaved, showToast }) {
   const [estado, setEstado] = useState('Negociando')
   const [notas, setNotas] = useState('')
   const [siguienteAccionFecha, setSiguienteAccionFecha] = useState('')
+  const [horaAccion, setHoraAccion] = useState('')
   const [accion, setAccion] = useState('')
+  const [notasSeguimiento, setNotasSeguimiento] = useState('')
   const [acciones, setAcciones] = useState([])
   const [saving, setSaving] = useState(false)
 
@@ -983,7 +1020,7 @@ function NewOrder({ onBack, onSaved, showToast }) {
     setSaving(true)
     try {
       const lineItems = items.map(({ producto, cantidad, descuento }) => ({ codigo: producto.codigo, nombre: producto.nombre, cantidad, precioUnitario: producto.precio, iva: producto.iva, descuento }))
-      const params = new URLSearchParams({ action: 'createOrden', clienteNombre: clienteSeleccionado.nombre, clienteNegocio: clienteSeleccionado.negocio||'', estado, notas, siguienteAccionFecha: siguienteAccionFecha||'', accion: accion||'', items: JSON.stringify(lineItems) })
+      const params = new URLSearchParams({ action: 'createOrden', clienteNombre: clienteSeleccionado.nombre, clienteNegocio: clienteSeleccionado.negocio||'', estado, notas, siguienteAccionFecha: siguienteAccionFecha||'', horaAccion: horaAccion||'', accion: accion||'', notasSeguimiento: notasSeguimiento||'', items: JSON.stringify(lineItems) })
       const res = await fetch(`${API_BASE}?${params}`)
       const data = await res.json()
       if (data.success) { showToast(`✓ Orden ${data.numOrden} creada`); onSaved() }
@@ -1098,11 +1135,14 @@ function NewOrder({ onBack, onSaved, showToast }) {
         {/* Siguiente acción */}
         <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
           <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.calendar} size={13} />Seguimiento</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
             <div>
               <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Siguiente acción (fecha)</div>
               <input type="date" value={siguienteAccionFecha} onChange={e => setSiguienteAccionFecha(e.target.value)} style={{ ...inputStyle, fontSize: '14px' }} />
-              {siguienteAccionFecha && <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{formatFecha(siguienteAccionFecha)}</div>}
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Hora</div>
+              <input type="time" value={horaAccion} onChange={e => setHoraAccion(e.target.value)} style={{ ...inputStyle, fontSize: '14px' }} />
             </div>
             <div>
               <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Acción a realizar</div>
@@ -1111,6 +1151,10 @@ function NewOrder({ onBack, onSaved, showToast }) {
                 {acciones.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Notas de seguimiento</div>
+            <textarea value={notasSeguimiento} onChange={e => setNotasSeguimiento(e.target.value)} placeholder="Detalles del seguimiento, acuerdos, próximos pasos..." style={{ ...inputStyle, resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px' }} />
           </div>
         </div>
         {/* Resumen */}
