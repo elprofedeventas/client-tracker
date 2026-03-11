@@ -44,6 +44,7 @@ const icons = {
   trending: 'M23 6l-9.5 9.5-5-5L1 18M17 6h6v6',
   clock: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 6v6l4 2',
   eye: 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+  activity: 'M22 12h-4l-3 9L9 3l-3 9H2',
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -967,6 +968,139 @@ function ViewOrder({ order, onBack, onChangeEstado, showToast }) {
   )
 }
 
+function ActividadesView({ onViewOrder }) {
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`${API_BASE}?action=getOrdenes`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setOrders(d.data) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  // Parsear fecha de seguimiento a Date para comparar
+  const parseFechaSeguimiento = (v) => {
+    if (!v) return null
+    const str = v.toString().trim()
+    // dd/MM/yyyy o dd/MM/yyyy HH:mm
+    if (str.includes('/')) {
+      const [datePart, timePart] = str.split(' ')
+      const [d, m, y] = datePart.split('/')
+      if (timePart) {
+        const [hh, mm] = timePart.split(':')
+        return new Date(y, m - 1, d, hh, mm)
+      }
+      return new Date(y, m - 1, d)
+    }
+    // yyyy-MM-dd
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) return new Date(str)
+    return null
+  }
+
+  const hoy = getNowGuayaquil()
+  hoy.setHours(0, 0, 0, 0)
+
+  const actividades = useMemo(() => {
+    const ESTADOS = ['Negociando', 'Detenido', 'Perdido']
+    return orders
+      .filter(o => ESTADOS.includes(o.estado) && o.siguienteAccionFecha)
+      .map(o => ({ ...o, _fecha: parseFechaSeguimiento(o.siguienteAccionFecha) }))
+      .filter(o => o._fecha !== null)
+      .sort((a, b) => a._fecha - b._fecha)
+  }, [orders])
+
+  const sinFecha = useMemo(() => {
+    const ESTADOS = ['Negociando', 'Detenido', 'Perdido']
+    return orders.filter(o => ESTADOS.includes(o.estado) && !o.siguienteAccionFecha)
+  }, [orders])
+
+  const getDiffLabel = (fecha) => {
+    const d = new Date(fecha); d.setHours(0, 0, 0, 0)
+    const diff = Math.round((d - hoy) / 86400000)
+    if (diff < 0) return { label: `Hace ${Math.abs(diff)} día${Math.abs(diff) !== 1 ? 's' : ''}`, color: '#dc2626', bg: '#fef2f2' }
+    if (diff === 0) return { label: 'Hoy', color: '#d97706', bg: '#fffbeb' }
+    if (diff === 1) return { label: 'Mañana', color: '#2563eb', bg: '#eff6ff' }
+    return { label: `En ${diff} días`, color: 'var(--muted)', bg: 'var(--cream)' }
+  }
+
+  if (loading) return (
+    <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--muted)' }}>
+      <div style={{ fontSize: '28px', marginBottom: '12px', animation: 'pulse 1s infinite' }}>⏳</div>
+      Cargando actividades...
+    </div>
+  )
+
+  return (
+    <div style={{ animation: 'fadeUp 0.4s ease' }}>
+      <div style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', letterSpacing: '-0.02em' }}>Actividades</h1>
+        <p style={{ color: 'var(--muted)', fontSize: '14px', marginTop: '4px' }}>
+          {actividades.length} {actividades.length === 1 ? 'actividad programada' : 'actividades programadas'}
+          {sinFecha.length > 0 && ` · ${sinFecha.length} sin fecha`}
+        </p>
+      </div>
+
+      {actividades.length === 0 && sinFecha.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', color: 'var(--muted)' }}>
+          <div style={{ fontSize: '36px', marginBottom: '12px' }}>📭</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', marginBottom: '6px' }}>Sin actividades pendientes</div>
+          <div style={{ fontSize: '14px' }}>Las órdenes activas con fecha de seguimiento aparecerán aquí</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {actividades.map((order, i) => {
+            const diff = getDiffLabel(order._fecha)
+            const c = ESTADO_COLORS[order.estado]
+            return (
+              <div key={order.numOrden}
+                onClick={() => onViewOrder(order)}
+                style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', cursor: 'pointer', transition: 'box-shadow 0.15s', animation: `fadeUp 0.2s ${Math.min(i,5)*0.04}s ease both` }}
+                onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
+                onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    {/* Pill de proximidad + estado */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '20px', background: diff.bg, color: diff.color }}>{diff.label}</span>
+                      <span style={{ fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '20px', background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>{order.estado}</span>
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '15px' }}>{order.clienteNombre}</div>
+                    {order.clienteNegocio && <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{order.clienteNegocio}</div>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Icon d={icons.calendar} size={12} />
+                        {formatFecha(order.siguienteAccionFecha)}
+                        {order.siguienteAccionFecha?.includes(' ') && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <Icon d={icons.clock} size={12} />
+                            {order.siguienteAccionFecha.split(' ')[1]}
+                          </span>
+                        )}
+                      </span>
+                      {order.accion && (
+                        <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--brand)', background: 'var(--brand-light)', padding: '1px 7px', borderRadius: '20px' }}>{order.accion}</span>
+                      )}
+                    </div>
+                    {order.notasSeguimiento && (
+                      <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '5px', fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>"{order.notasSeguimiento}"</div>
+                    )}
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '15px' }}>{fmtMoney(order.total)}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>{order.numOrden}</div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function NewOrder({ onBack, onSaved, showToast }) {
   const [clienteSearch, setClienteSearch] = useState('')
   const [clientes, setClientes] = useState([])
@@ -1403,6 +1537,7 @@ export default function App() {
   const [editingClient, setEditingClient] = useState(null)
   const [viewingClient, setViewingClient] = useState(null)
   const [viewingOrder, setViewingOrder] = useState(null)
+  const [orderOrigin, setOrderOrigin] = useState('orders')
   const [orders, setOrders] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -1457,7 +1592,7 @@ export default function App() {
   const handleEdit = (c) => { setEditingClient(c); setViewingClient(null); setView('edit') }
   const handleView = (c) => { setViewingClient(c); setView('view') }
   const handleSaveEdit = (c) => { setClients(p => p.map(x => x.rowIndex === c.rowIndex ? c : x)); showToast(`✓ ${c.nombre} actualizado`); setView('list') }
-  const handleViewOrder = (o) => { setViewingOrder(o); setView('viewOrder') }
+  const handleViewOrder = (o, origin = 'orders') => { setViewingOrder(o); setOrderOrigin(origin); setView('viewOrder') }
   const handleChangeEstado = (rowIndex, estado) => setOrders(p => p.map(o => o.rowIndex === rowIndex ? { ...o, estado } : o))
 
   const inp = (f, v) => { setForm(p => ({ ...p, [f]: v })); if (errors[f]) setErrors(e => ({ ...e, [f]: null })) }
@@ -1465,11 +1600,12 @@ export default function App() {
   const fp = (f, x = {}) => ({ style: gs(f), value: form[f], onChange: e => inp(f, e.target.value), onFocus: () => setFocusedField(f), onBlur: () => setFocusedField(null), ...x })
 
   const menuItems = [
-    { key: 'dashboard', icon: icons.dashboard, label: 'Dashboard' },
-    { key: 'form',      icon: icons.plus,      label: 'Nuevo cliente' },
-    { key: 'list',      icon: icons.list,       label: 'Clientes' },
-    { key: 'newOrder',  icon: icons.plus,       label: 'Nueva orden' },
-    { key: 'orders',    icon: icons.orders,     label: 'Órdenes' },
+    { key: 'dashboard',   icon: icons.dashboard,  label: 'Dashboard' },
+    { key: 'activities',  icon: icons.activity,   label: 'Actividades' },
+    { key: 'form',        icon: icons.plus,        label: 'Nuevo cliente' },
+    { key: 'list',        icon: icons.list,        label: 'Clientes' },
+    { key: 'newOrder',    icon: icons.plus,        label: 'Nueva orden' },
+    { key: 'orders',      icon: icons.orders,      label: 'Órdenes' },
   ]
 
   return (
@@ -1489,7 +1625,7 @@ export default function App() {
       {menuOpen && (
         <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: '68px', right: '16px', zIndex: 300, background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', minWidth: '200px', animation: 'fadeUp 0.2s ease' }}>
           {menuItems.map(({ key, icon, label }) => {
-              const isActive = view === key || (view === 'edit' && key === 'list') || (view === 'view' && key === 'list') || (view === 'viewOrder' && key === 'orders')
+              const isActive = view === key || (view === 'edit' && key === 'list') || (view === 'view' && key === 'list') || (view === 'viewOrder' && key === 'orders') || (view === 'viewOrder' && key === 'activities')
               return (
                 <button key={key} onClick={() => navigate(key)} style={{ width: '100%', padding: '13px 18px', background: isActive ? 'var(--accent-light)' : 'transparent', border: 'none', borderBottom: '1px solid var(--cream)', color: isActive ? 'var(--accent)' : 'var(--ink)', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s' }}
                   onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--cream)' }}
@@ -1594,14 +1730,19 @@ export default function App() {
           </div>
         )}
 
+        {/* ── ACTIVIDADES ───────────────────────────────────────────────────── */}
+        {view === 'activities' && (
+          <ActividadesView onViewOrder={(o) => handleViewOrder(o, 'activities')} />
+        )}
+
         {/* ── ÓRDENES ───────────────────────────────────────────────────────── */}
         {view === 'orders' && (
-          <OrdersView key={ordersKey} onViewOrder={handleViewOrder} filtroInicial={ordersFiltro} onFiltroChange={setOrdersFiltro} />
+          <OrdersView key={ordersKey} onViewOrder={(o) => handleViewOrder(o, 'orders')} filtroInicial={ordersFiltro} onFiltroChange={setOrdersFiltro} />
         )}
 
         {/* ── VER ORDEN ─────────────────────────────────────────────────────── */}
         {view === 'viewOrder' && viewingOrder && (
-          <ViewOrder order={viewingOrder} onBack={() => setView('orders')} onChangeEstado={handleChangeEstado} showToast={showToast} />
+          <ViewOrder order={viewingOrder} onBack={() => setView(orderOrigin)} onChangeEstado={handleChangeEstado} showToast={showToast} />
         )}
 
         {/* ── NUEVA ORDEN ───────────────────────────────────────────────────── */}
