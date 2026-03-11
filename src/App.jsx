@@ -711,13 +711,17 @@ function EstadoBadge({ estado }) {
 
 function OrderRow({ order, index, onView }) {
   return (
-    <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', animation: `fadeUp 0.2s ${Math.min(index,5)*0.04}s ease both` }}>
+    <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', animation: `fadeUp 0.2s ${Math.min(index,5)*0.04}s ease both`, cursor: 'pointer', transition: 'box-shadow 0.15s' }}
+      onClick={() => onView(order)}
+      onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
+      onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '12px', color: 'var(--muted)', marginBottom: '2px' }}>{order.numOrden}</div>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.clienteNombre}</div>
         <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '3px' }}>{order.clienteNegocio || '—'} · {formatFecha(order.fecha)}</div>
         {order.clienteTelefono && (
           <a href={`https://wa.me/593${order.clienteTelefono.replace(/\D/g,'').replace(/^0/,'')}`} target="_blank" rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '600', color: '#16a34a', textDecoration: 'none', marginRight: '10px' }}
             onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
             onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
@@ -726,6 +730,7 @@ function OrderRow({ order, index, onView }) {
         )}
         {order.clienteEmail && (
           <a href={`mailto:${order.clienteEmail}`}
+            onClick={e => e.stopPropagation()}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '600', color: 'var(--brand)', textDecoration: 'none' }}
             onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
             onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
@@ -733,22 +738,26 @@ function OrderRow({ order, index, onView }) {
           </a>
         )}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0, marginLeft: '12px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0, marginLeft: '12px' }}>
         <EstadoBadge estado={order.estado} />
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '16px' }}>{fmtMoney(order.total)}</div>
-        <button onClick={() => onView(order)} style={{ padding: '5px 12px', background: 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'background 0.15s' }}
-          onMouseEnter={e => e.currentTarget.style.background = 'var(--brand-dark)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'var(--brand)'}>
-          Ver
-        </button>
       </div>
     </div>
   )
 }
 
-function ViewOrder({ order, onBack, onChangeEstado }) {
+function ViewOrder({ order, onBack, onChangeEstado, showToast }) {
   const [estado, setEstado] = useState(order.estado)
   const [saving, setSaving] = useState(false)
+  const [notas, setNotas] = useState(order.notas || '')
+  const [siguienteAccionFecha, setSiguienteAccionFecha] = useState(order.siguienteAccionFecha || '')
+  const [accion, setAccion] = useState(order.accion || '')
+  const [acciones, setAcciones] = useState([])
+  const [savingDetalle, setSavingDetalle] = useState(false)
+
+  useEffect(() => {
+    fetch(`${API_BASE}?action=getAcciones`).then(r => r.json()).then(d => { if (d.success) setAcciones(d.data) }).catch(() => {})
+  }, [])
 
   const handleEstado = async (nuevoEstado) => {
     setSaving(true)
@@ -761,11 +770,35 @@ function ViewOrder({ order, onBack, onChangeEstado }) {
     finally { setSaving(false) }
   }
 
+  const handleSaveDetalle = async () => {
+    setSavingDetalle(true)
+    try {
+      const params = new URLSearchParams({ action: 'updateOrdenDetalle', rowIndex: order.rowIndex, notas, siguienteAccionFecha, accion })
+      const res = await fetch(`${API_BASE}?${params}`)
+      const data = await res.json()
+      if (data.success) showToast('✓ Guardado')
+      else showToast(data.error || 'Error al guardar', 'error')
+    } catch { showToast('Error de conexión', 'error') }
+    finally { setSavingDetalle(false) }
+  }
+
+  // Convertir fecha almacenada (dd/MM/yyyy) a yyyy-MM-dd para input date
+  const fechaParaInput = (v) => {
+    if (!v) return ''
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v
+    if (v.includes('/')) {
+      const p = v.split(' ')[0].split('/')
+      if (p.length === 3) return `${p[2].padStart(4,'0')}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`
+    }
+    return ''
+  }
+
   return (
     <div style={{ animation: 'fadeUp 0.4s ease' }}>
       <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', padding: '0', marginBottom: '24px' }}>
         <Icon d={icons.arrowLeft} size={15} /> Volver a órdenes
       </button>
+      {/* Encabezado + estado */}
       <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px', gap: '12px' }}>
           <div>
@@ -802,6 +835,7 @@ function ViewOrder({ order, onBack, onChangeEstado }) {
           </div>
         </div>
       </div>
+      {/* Productos */}
       <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
         <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '14px' }}>Productos</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -823,31 +857,44 @@ function ViewOrder({ order, onBack, onChangeEstado }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontFamily: 'var(--font-display)', fontWeight: '800' }}><span>Total</span><span>{fmtMoney(order.total)}</span></div>
         </div>
       </div>
-      {/* Notas */}
+      {/* Notas editables */}
       <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
-        <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.note} size={13} />Notas de la orden</div>
-        {order.notas
-          ? <div style={{ fontSize: '14px', fontStyle: 'italic', color: 'var(--muted)' }}>"{order.notas}"</div>
-          : <div style={{ fontSize: '13px', color: 'var(--border)' }}>Sin notas</div>}
+        <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.note} size={13} />Notas de la orden</div>
+        <textarea value={notas} onChange={e => setNotas(e.target.value)} placeholder="Notas de la orden..."
+          style={{ ...inputStyle, resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px', width: '100%', boxSizing: 'border-box' }} />
       </div>
-      {/* Seguimiento */}
-      <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow)' }}>
+      {/* Seguimiento editable */}
+      <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
         <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.calendar} size={13} />Seguimiento</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
           <div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Siguiente acción (fecha)</div>
-            <div style={{ fontSize: '14px', fontWeight: '600', color: order.siguienteAccionFecha ? 'var(--ink)' : 'var(--border)' }}>
-              {order.siguienteAccionFecha ? formatFecha(order.siguienteAccionFecha) : '—'}
-            </div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Siguiente acción (fecha)</div>
+            <input type="date" value={fechaParaInput(siguienteAccionFecha)}
+              onChange={e => {
+                const iso = e.target.value
+                if (!iso) { setSiguienteAccionFecha(''); return }
+                const [y, m, d] = iso.split('-')
+                setSiguienteAccionFecha(`${d}/${m}/${y}`)
+              }}
+              style={{ ...inputStyle, fontSize: '14px' }} />
+            {siguienteAccionFecha && <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>{formatFecha(siguienteAccionFecha)}</div>}
           </div>
           <div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Acción a realizar</div>
-            <div style={{ fontSize: '14px', fontWeight: '600', color: order.accion ? 'var(--ink)' : 'var(--border)' }}>
-              {order.accion || '—'}
-            </div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Acción a realizar</div>
+            <select value={accion} onChange={e => setAccion(e.target.value)} style={{ ...inputStyle, cursor: 'pointer', fontSize: '14px' }}>
+              <option value="">— Seleccionar —</option>
+              {acciones.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
           </div>
         </div>
       </div>
+      {/* Botón guardar */}
+      <button onClick={handleSaveDetalle} disabled={savingDetalle}
+        style={{ width: '100%', padding: '13px', background: savingDetalle ? 'var(--muted)' : 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', cursor: savingDetalle ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'background 0.2s' }}
+        onMouseEnter={e => { if (!savingDetalle) e.currentTarget.style.background = 'var(--brand-dark)' }}
+        onMouseLeave={e => { if (!savingDetalle) e.currentTarget.style.background = 'var(--brand)' }}>
+        {savingDetalle ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando...</> : <><Icon d={icons.check} size={16} /> Guardar cambios</>}
+      </button>
     </div>
   )
 }
@@ -1474,7 +1521,7 @@ export default function App() {
 
         {/* ── VER ORDEN ─────────────────────────────────────────────────────── */}
         {view === 'viewOrder' && viewingOrder && (
-          <ViewOrder order={viewingOrder} onBack={() => setView('orders')} onChangeEstado={handleChangeEstado} />
+          <ViewOrder order={viewingOrder} onBack={() => setView('orders')} onChangeEstado={handleChangeEstado} showToast={showToast} />
         )}
 
         {/* ── NUEVA ORDEN ───────────────────────────────────────────────────── */}
