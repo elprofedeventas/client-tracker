@@ -769,20 +769,7 @@ function ViewClient({ client, onEdit, onBack, onViewOrder }) {
           </div>
         </div>
 
-        {/* Filtros de estado */}
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
-          {['Vendido','Negociando','Detenido','Perdido'].map(e => {
-            const c = ESTADO_COLORS[e]
-            const activo = filtroEstado === e
-            const cnt = cntEstado(e)
-            return (
-              <button key={e} onClick={() => setFiltroEstado(e)}
-                style={{ padding: '5px 12px', borderRadius: '20px', border: `1.5px solid ${activo ? c.color : 'var(--border)'}`, background: activo ? c.bg : 'var(--white)', color: activo ? c.color : 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>
-                {e} ({cnt})
-              </button>
-            )
-          })}
-        </div>
+        {/* Filtros de estado — solo los recuadros con totales */}
 
         {loadingOrdenes ? (
           <div style={{ textAlign: 'center', padding: '30px', color: 'var(--muted)', fontSize: '13px' }}>
@@ -800,6 +787,7 @@ function ViewClient({ client, onEdit, onBack, onViewOrder }) {
                     <div key={e} onClick={() => setFiltroEstado(e)} style={{ background: activo ? c.bg : 'var(--cream)', border: `1.5px solid ${activo ? c.border : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '8px 10px', cursor: 'pointer', transition: 'all 0.15s' }}>
                       <div style={{ fontSize: '10px', fontWeight: '700', color: activo ? c.color : 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>{e}</div>
                       <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '13px', color: activo ? c.color : 'var(--ink)' }}>{fmtMoney(totalPorEstado(e))}</div>
+                      <div style={{ fontSize: '10px', color: activo ? c.color : 'var(--muted)', marginTop: '1px' }}>{cntEstado(e)} {cntEstado(e) === 1 ? 'orden' : 'órdenes'}</div>
                     </div>
                   )
                 })}
@@ -940,8 +928,8 @@ const fmtMoney = (n) => '$' + (parseFloat(n)||0).toLocaleString('es-EC', { minim
 
 // ─── Badge de estado ──────────────────────────────────────────────────────────
 const ESTADO_COLORS = {
-  'Negociando': { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
-  'Detenido':   { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
+  'Negociando': { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
+  'Detenido':   { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
   'Perdido':    { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
   'Vendido':    { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
 }
@@ -1891,16 +1879,12 @@ function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {['Vendido','Negociando','Detenido','Perdido','Todos'].map(e => {
             const activo = filtroEstado === e
-            const verde = ESTADO_COLORS['Vendido']
-            const rojo  = ESTADO_COLORS['Perdido']
-            const colorActivo = e === 'Todos' ? { bg: 'var(--brand)', color: 'white', border: 'var(--brand)' }
-              : (e === 'Vendido' || e === 'Negociando') ? { bg: verde.bg, color: verde.color, border: verde.color }
-              : { bg: rojo.bg, color: rojo.color, border: rojo.color }
+            const c = e === 'Todos' ? { bg: 'var(--brand)', color: 'white', border: 'var(--brand)' } : ESTADO_COLORS[e]
             return <button key={e} onClick={() => setFiltroEstado(e)} style={{
               padding: '6px 12px', borderRadius: '20px', cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap', fontSize: '12px', fontWeight: '700',
-              border: `1.5px solid ${activo ? colorActivo.border : 'var(--border)'}`,
-              background: activo ? colorActivo.bg : 'var(--white)',
-              color: activo ? colorActivo.color : 'var(--muted)',
+              border: `1.5px solid ${activo ? c.border : 'var(--border)'}`,
+              background: activo ? c.bg : 'var(--white)',
+              color: activo ? c.color : 'var(--muted)',
             }}>{e}</button>
           })}
         </div>
