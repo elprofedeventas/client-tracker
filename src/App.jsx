@@ -1433,21 +1433,27 @@ function ActividadesView({ onViewOrder }) {
       {/* Tarjeta de totales */}
       {actividades.length > 0 && (() => {
         const totalMonto = actividades.reduce((s, o) => s + (parseFloat(o.total)||0), 0)
-        const clientes   = new Set(actividades.map(o => o.clienteNombre)).size
         const modoLabel  = modo === 'pendientes' ? 'Pendientes este mes'
           : modo === 'vencidas' ? `Vencidas en ${mesNombre}`
           : modo === 'sinFecha' ? 'Sin fecha de seguimiento'
           : modoHistorial && fechaInicio && fechaFin ? `${formatFecha(fechaInicio)} — ${formatFecha(fechaFin)}`
           : 'Historial'
+        const cardTheme = modo === 'vencidas'
+          ? { bg:'#fef2f2', border:'#fecaca',  color:'#dc2626' }
+          : modo === 'sinFecha'
+          ? { bg:'#fffbeb', border:'#fde68a',  color:'#d97706' }
+          : modo === 'historial'
+          ? { bg:'var(--brand-light)', border:'var(--brand)', color:'var(--brand)' }
+          : { bg:'#f0fdf4', border:'#bbf7d0',  color:'#16a34a' }
         return (
-          <div style={{ background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:'14px', boxShadow:'var(--shadow)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', flexWrap:'wrap' }}>
+          <div style={{ background:cardTheme.bg, border:`1.5px solid ${cardTheme.border}`, borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:'14px', boxShadow:'var(--shadow)', display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap' }}>
             <div style={{ display:'flex', gap:'20px', flexWrap:'wrap' }}>
               <div>
-                <div style={{ fontSize:'10px', fontWeight:'700', color:'#16a34a', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>{modoLabel}</div>
-                <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'20px', color:'var(--ink)' }}>{actividades.length} <span style={{ fontSize:'13px', fontWeight:'600', color:'#16a34a' }}>{actividades.length === 1 ? 'actividad' : 'actividades'}</span></div>
+                <div style={{ fontSize:'10px', fontWeight:'700', color:cardTheme.color, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>{modoLabel}</div>
+                <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'20px', color:'var(--ink)' }}>{actividades.length} <span style={{ fontSize:'13px', fontWeight:'600', color:cardTheme.color }}>{actividades.length === 1 ? 'actividad' : 'actividades'}</span></div>
               </div>
-              <div style={{ borderLeft:'1.5px solid #bbf7d0', paddingLeft:'20px' }}>
-                <div style={{ fontSize:'10px', fontWeight:'700', color:'#16a34a', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>Total en órdenes</div>
+              <div style={{ borderLeft:`1.5px solid ${cardTheme.border}`, paddingLeft:'20px' }}>
+                <div style={{ fontSize:'10px', fontWeight:'700', color:cardTheme.color, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>Total en órdenes</div>
                 <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'20px', color:'var(--ink)' }}>{fmtMoney(totalMonto)}</div>
               </div>
             </div>
