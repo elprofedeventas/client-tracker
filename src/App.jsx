@@ -633,7 +633,15 @@ function ViewClient({ client, onEdit, onBack, onViewOrder }) {
   const [ordenes, setOrdenes] = useState([])
   const [loadingOrdenes, setLoadingOrdenes] = useState(true)
   const [filtroEstado, setFiltroEstado] = useState('Vendido')
-  const [sortDir, setSortDir] = useState('desc') // desc fecha por defecto
+  const [sortField, setSortField] = useState('fecha')
+  const [sortDir, setSortDir] = useState('desc')
+
+  const toggleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir(field === 'total' ? 'desc' : 'asc') }
+  }
+
+  const totalPorEstado = (e) => ordenes.filter(o => o.estado === e).reduce((s, o) => s + (parseFloat(o.total)||0), 0)
 
   useEffect(() => {
     fetch(`${API_BASE}?action=getOrdenes`)
@@ -656,10 +664,13 @@ function ViewClient({ client, onEdit, onBack, onViewOrder }) {
   const ordenesFiltradas = useMemo(() => {
     const list = ordenes.filter(o => o.estado === filtroEstado)
     return [...list].sort((a, b) => {
-      const fa = parseF(a.fecha), fb = parseF(b.fecha)
-      return sortDir === 'desc' ? fb - fa : fa - fb
+      if (sortField === 'fecha') {
+        const fa = parseF(a.fecha), fb = parseF(b.fecha)
+        return sortDir === 'desc' ? fb - fa : fa - fb
+      }
+      return sortDir === 'desc' ? (parseFloat(b.total)||0) - (parseFloat(a.total)||0) : (parseFloat(a.total)||0) - (parseFloat(b.total)||0)
     })
-  }, [ordenes, filtroEstado, sortDir])
+  }, [ordenes, filtroEstado, sortDir, sortField])
 
   const totalFiltrado = ordenesFiltradas.reduce((s, o) => s + (parseFloat(o.total)||0), 0)
 
@@ -744,11 +755,18 @@ function ViewClient({ client, onEdit, onBack, onViewOrder }) {
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '16px' }}>Órdenes</div>
-          {/* Botón $ sort */}
-          <button onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
-            style={{ padding: '4px 11px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--white)', color: 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>
-            $ {sortDir === 'desc' ? '↓' : '↑'}
-          </button>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {[['fecha','Fecha'],['total','$']].map(([field, label]) => {
+              const active = sortField === field
+              const arrow = sortDir === 'asc' ? '↑' : '↓'
+              return (
+                <button key={field} onClick={() => toggleSort(field)}
+                  style={{ padding: '4px 11px', borderRadius: '20px', border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`, background: active ? 'var(--brand-light)' : 'var(--white)', color: active ? 'var(--brand)' : 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>
+                  {label} {active ? arrow : '↕'}
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         {/* Filtros de estado */}
@@ -770,42 +788,62 @@ function ViewClient({ client, onEdit, onBack, onViewOrder }) {
           <div style={{ textAlign: 'center', padding: '30px', color: 'var(--muted)', fontSize: '13px' }}>
             <span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Cargando órdenes...
           </div>
-        ) : ordenesFiltradas.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '30px 20px', background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', color: 'var(--muted)' }}>
-            <div style={{ fontSize: '11px', fontWeight: '600' }}>Sin órdenes en estado {filtroEstado}</div>
-          </div>
         ) : (
           <>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {ordenesFiltradas.map((o, i) => {
-                const c = ESTADO_COLORS[o.estado]
-                return (
-                  <div key={o.numOrden}
-                    onClick={() => onViewOrder(o)}
-                    style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '12px 16px', cursor: 'pointer', transition: 'box-shadow 0.15s', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', animation: `fadeUp 0.2s ${Math.min(i,5)*0.04}s ease both` }}
-                    onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
-                    onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', marginBottom: '2px' }}>{o.numOrden} · {formatFecha(o.fecha)}</div>
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
-                        {(o.items||[]).slice(0,2).map((item, j) => (
-                          <span key={j} style={{ fontSize: '12px', color: 'var(--ink)', background: 'var(--cream)', padding: '1px 7px', borderRadius: '20px' }}>{item.nombre}</span>
-                        ))}
-                        {(o.items||[]).length > 2 && <span style={{ fontSize: '12px', color: 'var(--muted)' }}>+{o.items.length - 2} más</span>}
+            {/* Totales por estado */}
+            {!loadingOrdenes && ordenes.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginBottom: '14px' }}>
+                {['Vendido','Negociando','Detenido','Perdido'].map(e => {
+                  const c = ESTADO_COLORS[e]
+                  const activo = filtroEstado === e
+                  return (
+                    <div key={e} onClick={() => setFiltroEstado(e)} style={{ background: activo ? c.bg : 'var(--cream)', border: `1.5px solid ${activo ? c.border : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '8px 10px', cursor: 'pointer', transition: 'all 0.15s' }}>
+                      <div style={{ fontSize: '10px', fontWeight: '700', color: activo ? c.color : 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' }}>{e}</div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '13px', color: activo ? c.color : 'var(--ink)' }}>{fmtMoney(totalPorEstado(e))}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {ordenesFiltradas.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px 20px', background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', color: 'var(--muted)' }}>
+                <div style={{ fontSize: '11px', fontWeight: '600' }}>Sin órdenes en estado {filtroEstado}</div>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {ordenesFiltradas.map((o, i) => {
+                    const c = ESTADO_COLORS[o.estado]
+                    return (
+                      <div key={o.numOrden}
+                        onClick={() => onViewOrder(o)}
+                        style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '12px 16px', cursor: 'pointer', transition: 'box-shadow 0.15s', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', animation: `fadeUp 0.2s ${Math.min(i,5)*0.04}s ease both` }}
+                        onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
+                        onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', marginBottom: '2px' }}>{o.numOrden} · {formatFecha(o.fecha)}</div>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                            {(o.items||[]).slice(0,2).map((item, j) => (
+                              <span key={j} style={{ fontSize: '12px', color: 'var(--ink)', background: 'var(--cream)', padding: '1px 7px', borderRadius: '20px' }}>{item.nombre}</span>
+                            ))}
+                            {(o.items||[]).length > 2 && <span style={{ fontSize: '12px', color: 'var(--muted)' }}>+{o.items.length - 2} más</span>}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '15px' }}>{fmtMoney(o.total)}</div>
+                          <span style={{ fontSize: '10px', fontWeight: '700', padding: '1px 6px', borderRadius: '20px', background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>{o.estado}</span>
+                        </div>
                       </div>
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '15px' }}>{fmtMoney(o.total)}</div>
-                      <span style={{ fontSize: '10px', fontWeight: '700', padding: '1px 6px', borderRadius: '20px', background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>{o.estado}</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            <div style={{ marginTop: '10px', padding: '10px 14px', background: 'var(--cream)', borderRadius: 'var(--radius)', display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '700' }}>
-              <span style={{ color: 'var(--muted)' }}>{ordenesFiltradas.length} {ordenesFiltradas.length === 1 ? 'orden' : 'órdenes'}</span>
-              <span>{fmtMoney(totalFiltrado)}</span>
-            </div>
+                    )
+                  })}
+                </div>
+                <div style={{ marginTop: '10px', padding: '10px 14px', background: 'var(--cream)', borderRadius: 'var(--radius)', display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '700' }}>
+                  <span style={{ color: 'var(--muted)' }}>{ordenesFiltradas.length} {ordenesFiltradas.length === 1 ? 'orden' : 'órdenes'}</span>
+                  <span>{fmtMoney(totalFiltrado)}</span>
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
