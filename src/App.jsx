@@ -754,7 +754,23 @@ function ViewOrder({ order, onBack, onChangeEstado }) {
             <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: '600', marginBottom: '4px' }}>{order.numOrden}</div>
             <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px' }}>{order.clienteNombre}</div>
             {order.clienteNegocio && <div style={{ fontSize: '14px', color: 'var(--muted)' }}>{order.clienteNegocio}</div>}
-            <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px' }}>{formatFecha(order.fecha)}</div>
+            {order.clienteTelefono && (
+              <a href={`https://wa.me/593${order.clienteTelefono.replace(/\D/g,'').replace(/^0/,'')}`} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '6px', fontSize: '13px', fontWeight: '600', color: '#16a34a', textDecoration: 'none' }}
+                onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+                <Icon d={icons.phone} size={13} />{order.clienteTelefono}
+              </a>
+            )}
+            {order.clienteEmail && (
+              <a href={`mailto:${order.clienteEmail}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '4px', fontSize: '13px', fontWeight: '600', color: 'var(--brand)', textDecoration: 'none' }}
+                onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+                <Icon d={icons.mail} size={13} />{order.clienteEmail}
+              </a>
+            )}
+            <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '6px' }}>{formatFecha(order.fecha)}</div>
           </div>
           <EstadoBadge estado={estado} />
         </div>
@@ -789,12 +805,31 @@ function ViewOrder({ order, onBack, onChangeEstado }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontFamily: 'var(--font-display)', fontWeight: '800' }}><span>Total</span><span>{fmtMoney(order.total)}</span></div>
         </div>
       </div>
-      {order.notas && (
-        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow)' }}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.note} size={13} />Notas</div>
-          <div style={{ fontSize: '14px', fontStyle: 'italic', color: 'var(--muted)' }}>"{order.notas}"</div>
+      {/* Notas */}
+      <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '16px', boxShadow: 'var(--shadow)' }}>
+        <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.note} size={13} />Notas de la orden</div>
+        {order.notas
+          ? <div style={{ fontSize: '14px', fontStyle: 'italic', color: 'var(--muted)' }}>"{order.notas}"</div>
+          : <div style={{ fontSize: '13px', color: 'var(--border)' }}>Sin notas</div>}
+      </div>
+      {/* Seguimiento */}
+      <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow)' }}>
+        <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}><Icon d={icons.calendar} size={13} />Seguimiento</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Siguiente acción (fecha)</div>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: order.siguienteAccionFecha ? 'var(--ink)' : 'var(--border)' }}>
+              {order.siguienteAccionFecha ? formatFecha(order.siguienteAccionFecha) : '—'}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Acción a realizar</div>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: order.accion ? 'var(--ink)' : 'var(--border)' }}>
+              {order.accion || '—'}
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }
@@ -1002,12 +1037,20 @@ function NewOrder({ onBack, onSaved, showToast }) {
 function OrdersView({ onViewOrder }) {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filtroEstado, setFiltroEstado] = useState('Todos')
+  const [filtroEstado, setFiltroEstado] = useState('Negociando')
   const [meta, setMeta] = useState(0)
   const [historialOpen, setHistorialOpen] = useState(false)
   const [fechaInicio, setFechaInicio] = useState('')
   const [fechaFin, setFechaFin] = useState('')
   const [modoHistorial, setModoHistorial] = useState(false)
+  const [searchOrden, setSearchOrden] = useState('')
+  const [sortField, setSortField] = useState('total')   // 'total' | 'fecha'
+  const [sortDir, setSortDir] = useState('desc')         // 'asc' | 'desc'
+
+  const toggleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === 'desc' ? 'asc' : 'desc')
+    else { setSortField(field); setSortDir('desc') }
+  }
 
   // Mes actual en Guayaquil
   const now = getNowGuayaquil()
@@ -1048,7 +1091,24 @@ function OrdersView({ onViewOrder }) {
     })
   }, [orders, modoHistorial, fechaInicio, fechaFin])
 
-  const filtradas = filtroEstado === 'Todos' ? ordenesMes : ordenesMes.filter(o => o.estado === filtroEstado)
+  const filtradas = useMemo(() => {
+    let list = filtroEstado === 'Todos' ? ordenesMes : ordenesMes.filter(o => o.estado === filtroEstado)
+    if (searchOrden.trim()) {
+      const q = norm(searchOrden)
+      list = list.filter(o => norm(o.clienteNombre).includes(q) || norm(o.clienteNegocio).includes(q) || norm(o.numOrden).includes(q))
+    }
+    list = [...list].sort((a, b) => {
+      if (sortField === 'total') {
+        const diff = (parseFloat(a.total)||0) - (parseFloat(b.total)||0)
+        return sortDir === 'desc' ? -diff : diff
+      } else {
+        const fa = parseFechaOrden(a.fecha), fb = parseFechaOrden(b.fecha)
+        const diff = (fa||0) - (fb||0)
+        return sortDir === 'desc' ? -diff : diff
+      }
+    })
+    return list
+  }, [ordenesMes, filtroEstado, searchOrden, sortField, sortDir])
 
   // Totales del filtro activo
   const totalMonto = filtradas.reduce((s, o) => s + (parseFloat(o.total) || 0), 0)
@@ -1137,13 +1197,31 @@ function OrdersView({ onViewOrder }) {
       </div>
 
       {/* Total del filtro activo */}
-      <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: '16px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: '12px', boxShadow: 'var(--shadow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: '600' }}>
           {filtroEstado === 'Todos' ? 'Todas las órdenes' : filtroEstado} · {totalClientes} {totalClientes === 1 ? 'cliente' : 'clientes'} · {totalCantidad} {totalCantidad === 1 ? 'orden' : 'órdenes'}
         </div>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: filtroEstado !== 'Todos' && ESTADO_COLORS[filtroEstado] ? ESTADO_COLORS[filtroEstado].color : 'var(--brand)' }}>
           {fmtMoney(totalMonto)}
         </div>
+      </div>
+
+      {/* Búsqueda + ordenamiento */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }}><Icon d={icons.search} size={15} /></span>
+          <input type="text" placeholder="Buscar por cliente, negocio o # orden..." value={searchOrden} onChange={e => setSearchOrden(e.target.value)}
+            style={{ ...inputStyle, paddingLeft: '38px', paddingRight: searchOrden ? '36px' : '12px', fontSize: '13px' }} />
+          {searchOrden && <button onClick={() => setSearchOrden('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', padding: '2px' }}><Icon d={icons.x} size={14} /></button>}
+        </div>
+        {[{ field: 'total', labelAsc: '$ ↑', labelDesc: '$ ↓' }, { field: 'fecha', labelAsc: 'Fecha ↑', labelDesc: 'Fecha ↓' }].map(({ field, labelAsc, labelDesc }) => {
+          const activo = sortField === field
+          return (
+            <button key={field} onClick={() => toggleSort(field)} style={{ padding: '7px 12px', borderRadius: '20px', border: `1.5px solid ${activo ? 'var(--brand)' : 'var(--border)'}`, background: activo ? 'var(--brand-light)' : 'var(--white)', color: activo ? 'var(--brand)' : 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
+              {activo ? (sortDir === 'desc' ? labelDesc : labelAsc) : labelDesc}
+            </button>
+          )
+        })}
       </div>
 
       {/* Lista */}
