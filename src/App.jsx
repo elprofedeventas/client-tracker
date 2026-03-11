@@ -48,6 +48,7 @@ const icons = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n) => '$' + (n || 0).toLocaleString('es-EC', { minimumFractionDigits: 0 })
+const norm = (s) => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
 const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
 const MESES_LARGO = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
@@ -135,7 +136,7 @@ function Toast({ message, type, onClose }) {
 // ─── Highlight ────────────────────────────────────────────────────────────────
 function Highlight({ text, query }) {
   if (!query || !text) return <>{text}</>
-  const idx = text.toString().toLowerCase().indexOf(query.toLowerCase())
+  const idx = norm(text.toString()).indexOf(norm(query))
   if (idx === -1) return <>{text}</>
   return <>{text.toString().slice(0, idx)}<mark style={{ background: 'var(--accent-light)', color: 'var(--accent)', borderRadius: '2px', padding: '0 2px' }}>{text.toString().slice(idx, idx + query.length)}</mark>{text.toString().slice(idx + query.length)}</>
 }
@@ -813,8 +814,8 @@ function NewOrder({ onBack, onSaved, showToast }) {
     setLoadingClientes(true)
     fetch(API_BASE).then(r => r.json()).then(d => {
       if (d.success) {
-        const q = clienteSearch.toLowerCase()
-        setClientes(d.data.filter(c => c.nombre.toLowerCase().includes(q) || (c.negocio||'').toLowerCase().includes(q)))
+        const q = norm(clienteSearch)
+        setClientes(d.data.filter(c => norm(c.nombre).includes(q) || norm(c.negocio||'').includes(q)))
       }
     }).catch(() => {}).finally(() => setLoadingClientes(false))
   }, [clienteSearch])
@@ -1194,8 +1195,8 @@ export default function App() {
 
   const filteredClients = useMemo(() => {
     if (!searchQuery.trim()) return clients
-    const q = searchQuery.toLowerCase()
-    return clients.filter(c => c.nombre.toLowerCase().includes(q) || c.negocio.toLowerCase().includes(q) || c.identificacion.toLowerCase().includes(q))
+    const q = norm(searchQuery)
+    return clients.filter(c => norm(c.nombre).includes(q) || norm(c.negocio).includes(q) || norm(c.identificacion).includes(q))
   }, [clients, searchQuery])
 
   const validate = () => {
