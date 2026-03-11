@@ -1245,6 +1245,7 @@ function OrdersView({ onViewOrder }) {
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [view, setView] = useState('dashboard')
+  const [ordersKey, setOrdersKey] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
@@ -1307,7 +1308,7 @@ export default function App() {
     finally { setLoading(false) }
   }
 
-  const navigate = (v) => { setView(v); setMenuOpen(false); if (v !== 'edit') setEditingClient(null); if (v !== 'view') setViewingClient(null); if (v !== 'viewOrder' && v !== 'newOrder') setViewingOrder(null) }
+  const navigate = (v) => { setView(v); setMenuOpen(false); if (v !== 'edit') setEditingClient(null); if (v !== 'view') setViewingClient(null); if (v !== 'viewOrder' && v !== 'newOrder') setViewingOrder(null); if (v === 'orders') setOrdersKey(k => k + 1) }
   const handleEdit = (c) => { setEditingClient(c); setViewingClient(null); setView('edit') }
   const handleView = (c) => { setViewingClient(c); setView('view') }
   const handleSaveEdit = (c) => { setClients(p => p.map(x => x.rowIndex === c.rowIndex ? c : x)); showToast(`✓ ${c.nombre} actualizado`); setView('list') }
@@ -1450,7 +1451,7 @@ export default function App() {
 
         {/* ── ÓRDENES ───────────────────────────────────────────────────────── */}
         {view === 'orders' && (
-          <OrdersView onViewOrder={handleViewOrder} />
+          <OrdersView key={ordersKey} onViewOrder={handleViewOrder} />
         )}
 
         {/* ── VER ORDEN ─────────────────────────────────────────────────────── */}
