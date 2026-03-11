@@ -1013,6 +1013,10 @@ function ViewOrder({ order, onBack, onChangeEstado, showToast, backLabel = 'Volv
       .then(r => r.json())
       .then(d => { if (d.success) setFacturacion(d.data) })
       .catch(() => {})
+    fetch(`${API_BASE}?action=getAcciones`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setAcciones(d.data) })
+      .catch(() => {})
   }, [])
 
   const [ordenesCliente, setOrdenesCliente] = useState([])
