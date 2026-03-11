@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 
 const API_BASE = '/api/proxy'
 
@@ -122,6 +122,96 @@ const sectionTitle = {
   fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase',
   color: 'var(--muted)', marginBottom: '16px', paddingBottom: '8px',
   borderBottom: '1px solid var(--cream)', fontFamily: 'var(--font-display)',
+}
+
+// ─── DatePicker (semana lunes→domingo) ────────────────────────────────────────
+function DatePicker({ value, onChange, placeholder = 'dd/mm/aaaa' }) {
+  // value y onChange en formato yyyy-MM-dd (igual que input[type=date])
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  const today = getNowGuayaquil()
+  const parsed = value ? (() => { const [y,m,d] = value.split('-').map(Number); return new Date(y,m-1,d) })() : null
+  const [viewYear,  setViewYear]  = useState(parsed ? parsed.getFullYear()  : today.getFullYear())
+  const [viewMonth, setViewMonth] = useState(parsed ? parsed.getMonth()     : today.getMonth())
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const DIAS_CORTOS = ['Lu','Ma','Mi','Ju','Vi','Sa','Do']
+  const MESES_NOMBRES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+
+  // Primer día del mes (ajustado: lunes=0)
+  const firstDay = new Date(viewYear, viewMonth, 1)
+  const startDow = (firstDay.getDay() + 6) % 7 // lunes=0
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+
+  const cells = []
+  for (let i = 0; i < startDow; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+
+  const select = (d) => {
+    const mm = String(viewMonth + 1).padStart(2, '0')
+    const dd = String(d).padStart(2, '0')
+    onChange(`${viewYear}-${mm}-${dd}`)
+    setOpen(false)
+  }
+
+  const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y-1) } else setViewMonth(m => m-1) }
+  const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y+1) } else setViewMonth(m => m+1) }
+
+  const displayValue = parsed
+    ? `${String(parsed.getDate()).padStart(2,'0')}/${String(parsed.getMonth()+1).padStart(2,'0')}/${parsed.getFullYear()}`
+    : ''
+
+  const isSelected = (d) => parsed && parsed.getFullYear()===viewYear && parsed.getMonth()===viewMonth && parsed.getDate()===d
+  const isToday = (d) => today.getFullYear()===viewYear && today.getMonth()===viewMonth && today.getDate()===d
+
+  return (
+    <div ref={ref} style={{ position:'relative', width:'100%' }}>
+      <div onClick={() => setOpen(v => !v)}
+        style={{ ...inputStyle, padding:'7px 10px', fontSize:'13px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', userSelect:'none', background: open ? 'var(--brand-light)' : 'var(--white)', borderColor: open ? 'var(--brand)' : 'var(--border)' }}>
+        <span style={{ color: displayValue ? 'var(--ink)' : 'var(--muted)' }}>{displayValue || placeholder}</span>
+        <Icon d={icons.calendar} size={14} />
+      </div>
+      {open && (
+        <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, zIndex:400, background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', boxShadow:'var(--shadow-lg)', padding:'12px', minWidth:'260px', animation:'fadeUp 0.15s ease' }}
+          onMouseDown={e => e.stopPropagation()}>
+          {/* Nav mes */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'10px' }}>
+            <button onClick={prevMonth} style={{ background:'none', border:'none', cursor:'pointer', padding:'4px 8px', borderRadius:'var(--radius)', color:'var(--muted)', fontSize:'16px', lineHeight:1 }}>‹</button>
+            <span style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'13px' }}>{MESES_NOMBRES[viewMonth]} {viewYear}</span>
+            <button onClick={nextMonth} style={{ background:'none', border:'none', cursor:'pointer', padding:'4px 8px', borderRadius:'var(--radius)', color:'var(--muted)', fontSize:'16px', lineHeight:1 }}>›</button>
+          </div>
+          {/* Cabecera días */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:'2px', marginBottom:'4px' }}>
+            {DIAS_CORTOS.map(d => <div key={d} style={{ textAlign:'center', fontSize:'10px', fontWeight:'700', color:'var(--muted)', padding:'2px 0' }}>{d}</div>)}
+          </div>
+          {/* Celdas */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:'2px' }}>
+            {cells.map((d, i) => d === null
+              ? <div key={`e${i}`} />
+              : <button key={d} onClick={() => select(d)}
+                  style={{ padding:'5px 0', textAlign:'center', border:'none', borderRadius:'var(--radius)', fontSize:'12px', fontWeight: isSelected(d) ? '800' : isToday(d) ? '700' : '400', background: isSelected(d) ? 'var(--brand)' : isToday(d) ? 'var(--brand-light)' : 'transparent', color: isSelected(d) ? 'white' : isToday(d) ? 'var(--brand)' : 'var(--ink)', cursor:'pointer', transition:'background 0.1s' }}
+                  onMouseEnter={e => { if (!isSelected(d)) e.currentTarget.style.background = 'var(--cream)' }}
+                  onMouseLeave={e => { if (!isSelected(d)) e.currentTarget.style.background = isToday(d) ? 'var(--brand-light)' : 'transparent' }}>
+                  {d}
+                </button>
+            )}
+          </div>
+          {value && (
+            <button onClick={() => { onChange(''); setOpen(false) }}
+              style={{ marginTop:'8px', width:'100%', padding:'6px', background:'var(--cream)', border:'1.5px solid var(--border)', borderRadius:'var(--radius)', fontSize:'11px', fontWeight:'700', color:'var(--muted)', cursor:'pointer' }}>
+              Limpiar
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
@@ -1159,11 +1249,11 @@ function ActividadesView({ onViewOrder }) {
                 <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'10px' }}>
                   <div>
                     <label style={{ fontSize:'11px', color:'var(--muted)', fontWeight:'600' }}>Desde</label>
-                    <input type="date" lang="es-EC" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} style={{ ...inputStyle, padding:'7px 10px', fontSize:'13px', marginTop:'4px' }} />
+                    <DatePicker value={fechaInicio} onChange={setFechaInicio} placeholder="Desde..." />
                   </div>
                   <div>
                     <label style={{ fontSize:'11px', color:'var(--muted)', fontWeight:'600' }}>Hasta</label>
-                    <input type="date" lang="es-EC" value={fechaFin} onChange={e => setFechaFin(e.target.value)} style={{ ...inputStyle, padding:'7px 10px', fontSize:'13px', marginTop:'4px' }} />
+                    <DatePicker value={fechaFin} onChange={setFechaFin} placeholder="Hasta..." />
                   </div>
                 </div>
                 <div style={{ display:'flex', gap:'8px' }}>
@@ -1669,11 +1759,11 @@ function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
                 <div>
                   <label style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600' }}>Desde</label>
-                  <input type="date" lang="es-EC" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} style={{ ...inputStyle, padding: '7px 10px', fontSize: '13px', marginTop: '4px' }} />
+                  <DatePicker value={fechaInicio} onChange={setFechaInicio} placeholder="Desde..." />
                 </div>
                 <div>
                   <label style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600' }}>Hasta</label>
-                  <input type="date" lang="es-EC" value={fechaFin} onChange={e => setFechaFin(e.target.value)} style={{ ...inputStyle, padding: '7px 10px', fontSize: '13px', marginTop: '4px' }} />
+                  <DatePicker value={fechaFin} onChange={setFechaFin} placeholder="Hasta..." />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
