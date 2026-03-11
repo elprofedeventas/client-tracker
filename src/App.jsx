@@ -671,6 +671,20 @@ function ViewClient({ client, onEdit, onBack }) {
                   onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
                   {val} <Icon d={icons.map} size={13} />
                 </a>
+              ) : label === 'Teléfono' || label === 'Tel. Contacto' ? (
+                <a href={`https://wa.me/593${val.toString().replace(/\D/g,'').replace(/^0/,'')}`} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: '14px', fontWeight: '600', color: '#16a34a', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                  onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+                  <Icon d={icons.phone} size={13} />{val}
+                </a>
+              ) : label === 'Email' ? (
+                <a href={`mailto:${val}`}
+                  style={{ fontSize: '14px', fontWeight: '600', color: 'var(--brand)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                  onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
+                  <Icon d={icons.mail} size={13} />{val}
+                </a>
               ) : (
                 <div style={{ fontSize: '14px', fontWeight: '500' }}>{val}</div>
               )}
