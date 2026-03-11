@@ -413,6 +413,7 @@ function Dashboard() {
                             const fcs = parseFecha(o.fechaCambioEstado)
                             if (fcs) {
                               const hoy = getNowGuayaquil(); hoy.setHours(0,0,0,0)
+                              fcs.setHours(0,0,0,0)
                               diasEnEstado = Math.max(0, Math.floor((hoy - fcs) / (1000*60*60*24)))
                             }
                           }
