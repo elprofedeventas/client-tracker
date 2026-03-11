@@ -782,14 +782,15 @@ function ViewOrder({ order, onBack, onChangeEstado, showToast }) {
   const handleSaveDetalle = async () => {
     setSavingDetalle(true)
     try {
-      const fechaHora = siguienteAccionFecha
-        ? (horaAccion ? siguienteAccionFecha.split(' ')[0] + ' ' + horaAccion : siguienteAccionFecha.split(' ')[0])
-        : ''
+      const soloFecha = siguienteAccionFecha ? siguienteAccionFecha.split(' ')[0] : ''
+      const fechaHora = soloFecha ? (horaAccion ? soloFecha + ' ' + horaAccion : soloFecha) : ''
       const params = new URLSearchParams({ action: 'updateOrdenDetalle', rowIndex: order.rowIndex, notas, siguienteAccionFecha: fechaHora, accion, notasSeguimiento })
       const res = await fetch(`${API_BASE}?${params}`)
       const data = await res.json()
-      if (data.success) showToast('✓ Guardado')
-      else showToast(data.error || 'Error al guardar', 'error')
+      if (data.success) {
+        setSiguienteAccionFecha(fechaHora) // sincronizar estado local con lo guardado
+        showToast('✓ Guardado')
+      } else showToast(data.error || 'Error al guardar', 'error')
     } catch { showToast('Error de conexión', 'error') }
     finally { setSavingDetalle(false) }
   }
