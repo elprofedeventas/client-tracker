@@ -1029,7 +1029,7 @@ function ActividadesView({ onViewOrder }) {
       ? conFecha.filter(o => o._fecha < inicioMes)
       : conFecha.filter(o => o._fecha >= inicioMes && o._fecha <= finMes)
 
-    if (filtroAccion) list = list.filter(o => o.accion === filtroAccion)
+    if (filtroAccion) list = list.filter(o => norm(o.accion) === norm(filtroAccion))
 
     if (busqueda.trim()) {
       const q = norm(busqueda)
@@ -1140,10 +1140,22 @@ function ActividadesView({ onViewOrder }) {
           {actividades.map((order, i) => {
             const diff = getDiffLabel(order._fecha)
             const c = ESTADO_COLORS[order.estado]
-            const accion = order.accion || ''
-            const showDireccion = accion === 'Visitar' && order.clienteDireccion
-            const showTel = accion === 'Llamar' || ACCION_PHONE_EMAIL.includes(accion)
-            const showEmail = ACCION_PHONE_EMAIL.includes(accion)
+            const accion = (order.accion || '').trim()
+            const na = norm(accion)
+
+            // Construir lista de contactos en el orden correcto según acción
+            const contactos = []
+            if (na === norm('Visitar')) {
+              if (order.clienteTelefono) contactos.push({ type: 'tel', value: order.clienteTelefono })
+              if (order.clienteEmail)    contactos.push({ type: 'email', value: order.clienteEmail })
+              if (order.clienteDireccion) contactos.push({ type: 'dir', value: order.clienteDireccion })
+            } else if (na === norm('Llamar')) {
+              if (order.clienteTelefono) contactos.push({ type: 'tel', value: order.clienteTelefono })
+              if (order.clienteEmail)    contactos.push({ type: 'email', value: order.clienteEmail })
+            } else if ([norm('Enviar Propuesta'), norm('Cerrar Venta'), norm('Mensaje'), norm('Solicitar Referidos'), norm('Seguimiento'), norm('Resolver Objeción'), norm('Post Venta'), norm('Venta Cruzada'), norm('Venta Ascendente')].includes(na)) {
+              if (order.clienteTelefono) contactos.push({ type: 'tel', value: order.clienteTelefono })
+              if (order.clienteEmail)    contactos.push({ type: 'email', value: order.clienteEmail })
+            }
             return (
               <div key={order.numOrden}
                 onClick={() => onViewOrder(order)}
@@ -1172,37 +1184,37 @@ function ActividadesView({ onViewOrder }) {
                       {accion && <span style={{ fontSize:'12px', fontWeight:'600', color:'var(--brand)', background:'var(--brand-light)', padding:'1px 7px', borderRadius:'20px' }}>{accion}</span>}
                     </div>
                     {/* Contacto contextual según acción */}
-                    {(showDireccion || showTel || showEmail) && (
+                    {contactos.length > 0 && (
                       <div style={{ marginTop:'7px', display:'flex', flexDirection:'column', gap:'3px' }}>
-                        {showDireccion && (
-                          <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.clienteDireccion)}`}
-                            target="_blank" rel="noopener noreferrer"
-                            onClick={e => e.stopPropagation()}
-                            style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--brand)', textDecoration:'none' }}
-                            onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
-                            onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
-                            <Icon d={icons.map} size={12} />{order.clienteDireccion}
-                          </a>
-                        )}
-                        {showTel && order.clienteTelefono && (
-                          <a href={`https://wa.me/593${order.clienteTelefono.replace(/\D/g,'').replace(/^0/,'')}`}
-                            target="_blank" rel="noopener noreferrer"
-                            onClick={e => e.stopPropagation()}
-                            style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'#16a34a', textDecoration:'none' }}
-                            onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
-                            onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
-                            <Icon d={icons.phone} size={12} />{order.clienteTelefono}
-                          </a>
-                        )}
-                        {showEmail && order.clienteEmail && (
-                          <a href={`mailto:${order.clienteEmail}`}
-                            onClick={e => e.stopPropagation()}
-                            style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--brand)', textDecoration:'none' }}
-                            onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
-                            onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
-                            <Icon d={icons.mail} size={12} />{order.clienteEmail}
-                          </a>
-                        )}
+                        {contactos.map((c, ci) => {
+                          if (c.type === 'tel') return (
+                            <a key={ci} href={`https://wa.me/593${c.value.replace(/\D/g,'').replace(/^0/,'')}`}
+                              target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                              style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'#16a34a', textDecoration:'none' }}
+                              onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                              onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                              <Icon d={icons.phone} size={12} />{c.value}
+                            </a>
+                          )
+                          if (c.type === 'email') return (
+                            <a key={ci} href={`mailto:${c.value}`} onClick={e => e.stopPropagation()}
+                              style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--brand)', textDecoration:'none' }}
+                              onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                              onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                              <Icon d={icons.mail} size={12} />{c.value}
+                            </a>
+                          )
+                          if (c.type === 'dir') return (
+                            <a key={ci} href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.value)}`}
+                              target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                              style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--muted)', textDecoration:'none' }}
+                              onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                              onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                              <Icon d={icons.map} size={12} />{c.value}
+                            </a>
+                          )
+                          return null
+                        })}
                       </div>
                     )}
                     {order.notasSeguimiento && (
