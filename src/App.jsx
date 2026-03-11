@@ -1233,6 +1233,7 @@ Total:             ${fmtMoney(order.total)}`
           </div>
         </div>
         {editSeguimiento ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div>
                 <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Siguiente acción (fecha)</div>
