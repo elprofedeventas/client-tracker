@@ -711,17 +711,13 @@ function EstadoBadge({ estado }) {
 
 function OrderRow({ order, index, onView }) {
   return (
-    <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', animation: `fadeUp 0.2s ${Math.min(index,5)*0.04}s ease both`, transition: 'box-shadow 0.2s', cursor: 'pointer' }}
-      onClick={() => onView(order)}
-      onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
-      onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
+    <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', animation: `fadeUp 0.2s ${Math.min(index,5)*0.04}s ease both` }}>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '12px', color: 'var(--muted)', marginBottom: '2px' }}>{order.numOrden}</div>
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.clienteNombre}</div>
         <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '3px' }}>{order.clienteNegocio || '—'} · {formatFecha(order.fecha)}</div>
         {order.clienteTelefono && (
           <a href={`https://wa.me/593${order.clienteTelefono.replace(/\D/g,'').replace(/^0/,'')}`} target="_blank" rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '600', color: '#16a34a', textDecoration: 'none', marginRight: '10px' }}
             onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
             onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
@@ -730,7 +726,6 @@ function OrderRow({ order, index, onView }) {
         )}
         {order.clienteEmail && (
           <a href={`mailto:${order.clienteEmail}`}
-            onClick={e => e.stopPropagation()}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '600', color: 'var(--brand)', textDecoration: 'none' }}
             onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
             onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}>
@@ -738,9 +733,14 @@ function OrderRow({ order, index, onView }) {
           </a>
         )}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0, marginLeft: '12px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0, marginLeft: '12px' }}>
         <EstadoBadge estado={order.estado} />
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '16px' }}>{fmtMoney(order.total)}</div>
+        <button onClick={() => onView(order)} style={{ padding: '5px 12px', background: 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'background 0.15s' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--brand-dark)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--brand)'}>
+          Ver
+        </button>
       </div>
     </div>
   )
