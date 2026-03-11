@@ -977,10 +977,15 @@ function ActividadesView({ onViewOrder }) {
   const [busqueda, setBusqueda] = useState('')
   const [sortField, setSortField] = useState('fecha')
   const [sortDir, setSortDir] = useState('asc')
-  const [historial, setHistorial] = useState(false)
   const [filtroAccion, setFiltroAccion] = useState('')
   const [accionesDisp, setAccionesDisp] = useState([])
   const [accionDropOpen, setAccionDropOpen] = useState(false)
+  // 'pendientes' | 'vencidas' | 'sinFecha' | 'historial'
+  const [modo, setModo] = useState('pendientes')
+  const [historialOpen, setHistorialOpen] = useState(false)
+  const [fechaInicio, setFechaInicio] = useState('')
+  const [fechaFin, setFechaFin] = useState('')
+  const [modoHistorial, setModoHistorial] = useState(false)
 
   useEffect(() => {
     fetch(`${API_BASE}?action=getOrdenes`)
@@ -1003,58 +1008,95 @@ function ActividadesView({ onViewOrder }) {
   }
 
   const hoy = getNowGuayaquil(); hoy.setHours(0,0,0,0)
+  const ayer = new Date(hoy); ayer.setDate(ayer.getDate() - 1); ayer.setHours(23,59,59,999)
   const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
   const finMes    = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0, 23, 59, 59)
+  const ESTADOS   = ['Negociando', 'Detenido', 'Perdido']
+  const mesNombre = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][hoy.getMonth()]
 
-  const ESTADOS = ['Negociando', 'Detenido', 'Perdido']
+  const conFecha = useMemo(() =>
+    orders.filter(o => ESTADOS.includes(o.estado) && o.siguienteAccionFecha)
+      .map(o => ({ ...o, _fecha: parseFechaSeg(o.siguienteAccionFecha) }))
+      .filter(o => o._fecha !== null)
+  , [orders])
 
-  const conFecha = useMemo(() => orders
-    .filter(o => ESTADOS.includes(o.estado) && o.siguienteAccionFecha)
-    .map(o => ({ ...o, _fecha: parseFechaSeg(o.siguienteAccionFecha) }))
-    .filter(o => o._fecha !== null), [orders])
+  const sinFechaList = useMemo(() =>
+    orders.filter(o => ESTADOS.includes(o.estado) && !o.siguienteAccionFecha)
+  , [orders])
 
-  const sinFecha = useMemo(() => orders.filter(o => ESTADOS.includes(o.estado) && !o.siguienteAccionFecha), [orders])
+  // Conteos para badges
+  const cntPendientes = useMemo(() => conFecha.filter(o => o._fecha >= hoy && o._fecha <= finMes).length, [conFecha])
+  const cntVencidas   = useMemo(() => conFecha.filter(o => o._fecha >= inicioMes && o._fecha <= ayer).length, [conFecha])
+  const cntSinFecha   = sinFechaList.length
 
   const getDiffLabel = (fecha) => {
     const d = new Date(fecha); d.setHours(0,0,0,0)
     const diff = Math.round((d - hoy) / 86400000)
-    if (diff < 0)  return { label: `Hace ${Math.abs(diff)} día${Math.abs(diff)!==1?'s':''}`, color:'#dc2626', bg:'#fef2f2' }
-    if (diff === 0) return { label: 'Hoy',    color:'#d97706', bg:'#fffbeb' }
-    if (diff === 1) return { label: 'Mañana', color:'#2563eb', bg:'#eff6ff' }
+    if (diff < 0)  return { label:`Hace ${Math.abs(diff)} día${Math.abs(diff)!==1?'s':''}`, color:'#dc2626', bg:'#fef2f2' }
+    if (diff === 0) return { label:'Hoy',    color:'#d97706', bg:'#fffbeb' }
+    if (diff === 1) return { label:'Mañana', color:'#2563eb', bg:'#eff6ff' }
     return { label:`En ${diff} días`, color:'var(--muted)', bg:'var(--cream)' }
   }
 
   const actividades = useMemo(() => {
-    let list = historial
-      ? conFecha.filter(o => o._fecha < inicioMes)
-      : conFecha.filter(o => o._fecha >= inicioMes && o._fecha <= finMes)
+    let list = []
+    if (modo === 'sinFecha') {
+      list = sinFechaList
+    } else if (modo === 'pendientes') {
+      list = conFecha.filter(o => o._fecha >= hoy && o._fecha <= finMes)
+    } else if (modo === 'vencidas') {
+      list = conFecha.filter(o => o._fecha >= inicioMes && o._fecha <= ayer)
+    } else if (modo === 'historial' && modoHistorial && fechaInicio && fechaFin) {
+      const [iy,im,id] = fechaInicio.split('-').map(Number)
+      const [fy,fm,fd] = fechaFin.split('-').map(Number)
+      const desde = new Date(iy, im-1, id, 0, 0, 0)
+      const hasta = new Date(fy, fm-1, fd, 23, 59, 59)
+      list = conFecha.filter(o => o._fecha >= desde && o._fecha <= hasta)
+    }
 
     if (filtroAccion) list = list.filter(o => norm(o.accion) === norm(filtroAccion))
 
     if (busqueda.trim()) {
       const q = norm(busqueda)
-      list = list.filter(o => norm(o.clienteNombre).includes(q) || norm(o.clienteNegocio).includes(q) || norm(o.numOrden).includes(q) || norm(o.accion).includes(q))
+      list = list.filter(o => norm(o.clienteNombre).includes(q) || norm(o.clienteNegocio||'').includes(q) || norm(o.numOrden).includes(q) || norm(o.accion||'').includes(q))
     }
 
-    list = [...list].sort((a, b) => {
-      if (sortField === 'fecha') return sortDir === 'asc' ? a._fecha - b._fecha : b._fecha - a._fecha
-      return sortDir === 'asc' ? (a.total||0) - (b.total||0) : (b.total||0) - (a.total||0)
-    })
+    if (modo !== 'sinFecha') {
+      list = [...list].sort((a, b) => {
+        if (sortField === 'fecha') return sortDir === 'asc' ? a._fecha - b._fecha : b._fecha - a._fecha
+        return sortDir === 'asc' ? (a.total||0) - (b.total||0) : (b.total||0) - (a.total||0)
+      })
+    }
     return list
-  }, [conFecha, historial, filtroAccion, busqueda, sortField, sortDir])
+  }, [conFecha, sinFechaList, modo, modoHistorial, fechaInicio, fechaFin, filtroAccion, busqueda, sortField, sortDir])
 
   const toggleSort = (field) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
-    else { setSortField(field); setSortDir('asc') }
+    else { setSortField(field); setSortDir(field === 'total' ? 'desc' : 'asc') }
   }
+
+  const aplicarHistorial = () => {
+    if (fechaInicio && fechaFin) { setModoHistorial(true); setModo('historial'); setHistorialOpen(false) }
+  }
+  const limpiarHistorial = () => { setModoHistorial(false); setFechaInicio(''); setFechaFin(''); setHistorialOpen(false); setModo('pendientes') }
 
   const SortBtn = ({ field, label }) => {
     const active = sortField === field
     const arrow = sortDir === 'asc' ? '↑' : '↓'
     return (
       <button onClick={() => toggleSort(field)}
-        style={{ padding: '5px 11px', borderRadius: '20px', border: `1.5px solid ${active ? 'var(--brand)' : 'var(--border)'}`, background: active ? 'var(--brand-light)' : 'var(--white)', color: active ? 'var(--brand)' : 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>
+        style={{ padding:'5px 11px', borderRadius:'20px', border:`1.5px solid ${active?'var(--brand)':'var(--border)'}`, background:active?'var(--brand-light)':'var(--white)', color:active?'var(--brand)':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s' }}>
         {label} {active ? arrow : '↕'}
+      </button>
+    )
+  }
+
+  const ModoBtn = ({ key_, label, count, color }) => {
+    const active = modo === key_
+    return (
+      <button onClick={() => { setModo(key_); if (key_ !== 'historial') setModoHistorial(false) }}
+        style={{ padding:'5px 12px', borderRadius:'20px', border:`1.5px solid ${active?(color||'var(--brand)'):'var(--border)'}`, background:active?(color?color+'18':'var(--brand-light)'):'var(--white)', color:active?(color||'var(--brand)'):'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}>
+        {count !== undefined ? `${count} ${label}` : label}
       </button>
     )
   }
@@ -1066,20 +1108,20 @@ function ActividadesView({ onViewOrder }) {
   )
 
   return (
-    <div style={{ animation:'fadeUp 0.4s ease' }} onClick={() => accionDropOpen && setAccionDropOpen(false)}>
+    <div style={{ animation:'fadeUp 0.4s ease' }} onClick={() => { if (accionDropOpen) setAccionDropOpen(false); if (historialOpen) setHistorialOpen(false) }}>
 
       {/* Encabezado */}
-      <div style={{ marginBottom:'16px' }}>
+      <div style={{ marginBottom:'14px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px' }}>
           <h1 style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'28px', letterSpacing:'-0.02em', margin:0 }}>Actividades</h1>
           {/* Dropdown filtro acción */}
           <div style={{ position:'relative' }} onClick={e => e.stopPropagation()}>
-            <button onClick={() => setAccionDropOpen(v => !v)}
-              style={{ padding:'7px 13px', borderRadius:'var(--radius)', border:`1.5px solid ${filtroAccion ? 'var(--brand)' : 'var(--border)'}`, background: filtroAccion ? 'var(--brand-light)' : 'var(--white)', color: filtroAccion ? 'var(--brand)' : 'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px', transition:'all 0.15s' }}>
+            <button onClick={() => { setAccionDropOpen(v => !v); setHistorialOpen(false) }}
+              style={{ padding:'7px 13px', borderRadius:'var(--radius)', border:`1.5px solid ${filtroAccion?'var(--brand)':'var(--border)'}`, background:filtroAccion?'var(--brand-light)':'var(--white)', color:filtroAccion?'var(--brand)':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px', transition:'all 0.15s' }}>
               {filtroAccion || 'Acciones'} <Icon d={icons.chevron} size={12} />
             </button>
             {accionDropOpen && (
-              <div style={{ position:'absolute', top:'calc(100% + 6px)', right:0, zIndex:200, background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', boxShadow:'var(--shadow-lg)', minWidth:'180px', overflow:'hidden', animation:'fadeUp 0.15s ease' }}>
+              <div style={{ position:'absolute', top:'calc(100% + 6px)', right:0, zIndex:200, background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', boxShadow:'var(--shadow-lg)', minWidth:'190px', overflow:'hidden', animation:'fadeUp 0.15s ease' }}>
                 {filtroAccion && (
                   <button onClick={() => { setFiltroAccion(''); setAccionDropOpen(false) }}
                     style={{ width:'100%', padding:'10px 14px', background:'var(--cream)', border:'none', borderBottom:'1px solid var(--border)', color:'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', textAlign:'left' }}>
@@ -1088,7 +1130,7 @@ function ActividadesView({ onViewOrder }) {
                 )}
                 {accionesDisp.map(a => (
                   <button key={a} onClick={() => { setFiltroAccion(a); setAccionDropOpen(false) }}
-                    style={{ width:'100%', padding:'10px 14px', background: filtroAccion===a ? 'var(--brand-light)' : 'transparent', border:'none', borderBottom:'1px solid var(--cream)', color: filtroAccion===a ? 'var(--brand)' : 'var(--ink)', fontSize:'13px', fontWeight: filtroAccion===a ? '700' : '500', cursor:'pointer', textAlign:'left', transition:'background 0.1s' }}
+                    style={{ width:'100%', padding:'10px 14px', background:filtroAccion===a?'var(--brand-light)':'transparent', border:'none', borderBottom:'1px solid var(--cream)', color:filtroAccion===a?'var(--brand)':'var(--ink)', fontSize:'13px', fontWeight:filtroAccion===a?'700':'500', cursor:'pointer', textAlign:'left', transition:'background 0.1s' }}
                     onMouseEnter={e => { if (filtroAccion!==a) e.currentTarget.style.background='var(--cream)' }}
                     onMouseLeave={e => { if (filtroAccion!==a) e.currentTarget.style.background='transparent' }}>
                     {a}
@@ -1098,119 +1140,155 @@ function ActividadesView({ onViewOrder }) {
             )}
           </div>
         </div>
-        <p style={{ color:'var(--muted)', fontSize:'14px', marginTop:'4px' }}>
-          {actividades.length} {actividades.length===1?'actividad':'actividades'}
-          {!historial && sinFecha.length > 0 && ` · ${sinFecha.length} sin fecha`}
-          {historial && ' · Historial'}
-          {filtroAccion && ` · ${filtroAccion}`}
-        </p>
+
+        {/* Botones de modo */}
+        <div style={{ display:'flex', gap:'6px', marginTop:'10px', flexWrap:'wrap', alignItems:'center' }}>
+          <ModoBtn key_="pendientes" label="actividades" count={cntPendientes} />
+          <ModoBtn key_="vencidas" label={`vencidas en ${mesNombre}`} count={cntVencidas} color="#dc2626" />
+          <ModoBtn key_="sinFecha" label="sin fecha" count={cntSinFecha} color="#d97706" />
+          {/* Historial */}
+          <div style={{ position:'relative' }} onClick={e => e.stopPropagation()}>
+            <button onClick={() => { setHistorialOpen(v => !v); setAccionDropOpen(false) }}
+              style={{ padding:'5px 12px', borderRadius:'20px', border:`1.5px solid ${modo==='historial'?'var(--brand)':'var(--border)'}`, background:modo==='historial'?'var(--brand-light)':'var(--white)', color:modo==='historial'?'var(--brand)':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px', transition:'all 0.15s', whiteSpace:'nowrap' }}>
+              <Icon d={icons.clock} size={12} /> {modo==='historial' && modoHistorial ? `${formatFecha(fechaInicio,'').slice(0,6)}–${formatFecha(fechaFin,'').slice(0,6)}` : 'Historial'}
+            </button>
+            {historialOpen && (
+              <div style={{ position:'absolute', left:0, top:'calc(100% + 6px)', zIndex:200, background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'16px', boxShadow:'var(--shadow-lg)', minWidth:'240px', animation:'fadeUp 0.15s ease' }}>
+                <div style={{ fontSize:'11px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'10px' }}>Rango de fechas</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'10px' }}>
+                  <div>
+                    <label style={{ fontSize:'11px', color:'var(--muted)', fontWeight:'600' }}>Desde</label>
+                    <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} style={{ ...inputStyle, padding:'7px 10px', fontSize:'13px', marginTop:'4px' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize:'11px', color:'var(--muted)', fontWeight:'600' }}>Hasta</label>
+                    <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} style={{ ...inputStyle, padding:'7px 10px', fontSize:'13px', marginTop:'4px' }} />
+                  </div>
+                </div>
+                <div style={{ display:'flex', gap:'8px' }}>
+                  <button onClick={limpiarHistorial} style={{ flex:1, padding:'8px', background:'var(--cream)', color:'var(--muted)', border:'1.5px solid var(--border)', borderRadius:'var(--radius)', fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>Limpiar</button>
+                  <button onClick={aplicarHistorial} disabled={!fechaInicio||!fechaFin} style={{ flex:2, padding:'8px', background:!fechaInicio||!fechaFin?'var(--muted)':'var(--brand)', color:'white', border:'none', borderRadius:'var(--radius)', fontSize:'12px', fontWeight:'700', cursor:!fechaInicio||!fechaFin?'not-allowed':'pointer' }}>Aplicar</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {filtroAccion && (
+          <div style={{ fontSize:'12px', color:'var(--brand)', fontWeight:'600', marginTop:'6px', display:'flex', alignItems:'center', gap:'6px' }}>
+            Filtro: {filtroAccion}
+            <button onClick={() => setFiltroAccion('')} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--muted)', padding:'0 2px', fontSize:'11px', fontWeight:'700' }}>✕</button>
+          </div>
+        )}
       </div>
 
       {/* Búsqueda */}
-      <div style={{ position:'relative', marginBottom:'14px' }}>
+      <div style={{ position:'relative', marginBottom:'12px' }}>
         <span style={{ position:'absolute', left:'14px', top:'50%', transform:'translateY(-50%)', color:'var(--muted)', pointerEvents:'none' }}><Icon d={icons.search} size={16} /></span>
         <input type="text" placeholder="Buscar por cliente, negocio, # orden o acción..." value={busqueda} onChange={e => setBusqueda(e.target.value)}
-          style={{ ...inputStyle, paddingLeft:'42px', paddingRight: busqueda ? '42px':'14px', fontSize:'14px' }} />
+          style={{ ...inputStyle, paddingLeft:'42px', paddingRight:busqueda?'42px':'14px', fontSize:'14px' }} />
         {busqueda && <button onClick={() => setBusqueda('')} style={{ position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--muted)', display:'flex', padding:'2px' }}><Icon d={icons.x} size={16} /></button>}
       </div>
 
-      {/* Controles */}
-      <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'18px', flexWrap:'wrap' }}>
-        <SortBtn field="fecha" label="Fecha" />
-        <SortBtn field="total" label="$" />
-        <div style={{ flex:1 }} />
-        <button onClick={() => setHistorial(v => !v)}
-          style={{ padding:'5px 13px', borderRadius:'20px', border:`1.5px solid ${historial ? 'var(--brand)':'var(--border)'}`, background: historial ? 'var(--brand-light)':'var(--white)', color: historial ? 'var(--brand)':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px', transition:'all 0.15s' }}>
-          <Icon d={icons.clock} size={13} /> {historial ? 'Ver mes actual' : 'Historial'}
-        </button>
-      </div>
+      {/* Controles de orden — solo cuando no es sinFecha */}
+      {modo !== 'sinFecha' && (
+        <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'16px', flexWrap:'wrap' }}>
+          <SortBtn field="fecha" label="Fecha" />
+          <SortBtn field="total" label="$" />
+        </div>
+      )}
 
+      {/* Lista */}
       {actividades.length === 0 ? (
         <div style={{ textAlign:'center', padding:'60px 20px', background:'var(--white)', border:'1.5px dashed var(--border)', borderRadius:'var(--radius-lg)', color:'var(--muted)' }}>
-          <div style={{ fontSize:'36px', marginBottom:'12px' }}>{historial ? '📚' : '📭'}</div>
-          <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', marginBottom:'6px' }}>
-            {historial ? 'Sin historial' : 'Sin actividades este mes'}
+          <div style={{ fontSize:'36px', marginBottom:'12px' }}>
+            {modo==='sinFecha' ? '📋' : modo==='historial' ? '📚' : modo==='vencidas' ? '✅' : '📭'}
           </div>
-          <div style={{ fontSize:'14px' }}>
-            {historial ? 'No hay actividades pasadas registradas' : 'No hay actividades programadas para este mes'}
+          <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', marginBottom:'6px' }}>
+            {modo==='sinFecha' ? 'Sin órdenes sin fecha' : modo==='historial' ? 'Sin actividades en ese rango' : modo==='vencidas' ? `Sin actividades vencidas en ${mesNombre}` : 'Sin actividades pendientes este mes'}
           </div>
         </div>
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
           {actividades.map((order, i) => {
-            const diff = getDiffLabel(order._fecha)
+            const diff = order._fecha ? getDiffLabel(order._fecha) : null
             const c = ESTADO_COLORS[order.estado]
             const accion = (order.accion || '').trim()
             const na = norm(accion)
 
-            // Construir lista de contactos en el orden correcto según acción
             const contactos = []
             if (na === norm('Visitar')) {
-              if (order.clienteTelefono) contactos.push({ type: 'tel', value: order.clienteTelefono })
-              if (order.clienteEmail)    contactos.push({ type: 'email', value: order.clienteEmail })
-              if (order.clienteDireccion) contactos.push({ type: 'dir', value: order.clienteDireccion })
+              if (order.clienteTelefono)  contactos.push({ type:'tel',   value:order.clienteTelefono })
+              if (order.clienteEmail)     contactos.push({ type:'email', value:order.clienteEmail })
+              if (order.clienteDireccion) contactos.push({ type:'dir',   value:order.clienteDireccion })
             } else if (na === norm('Llamar')) {
-              if (order.clienteTelefono) contactos.push({ type: 'tel', value: order.clienteTelefono })
-              if (order.clienteEmail)    contactos.push({ type: 'email', value: order.clienteEmail })
-            } else if ([norm('Enviar Propuesta'), norm('Cerrar Venta'), norm('Mensaje'), norm('Solicitar Referidos'), norm('Seguimiento'), norm('Resolver Objeción'), norm('Post Venta'), norm('Venta Cruzada'), norm('Venta Ascendente')].includes(na)) {
-              if (order.clienteTelefono) contactos.push({ type: 'tel', value: order.clienteTelefono })
-              if (order.clienteEmail)    contactos.push({ type: 'email', value: order.clienteEmail })
+              if (order.clienteTelefono) contactos.push({ type:'tel',   value:order.clienteTelefono })
+              if (order.clienteEmail)    contactos.push({ type:'email', value:order.clienteEmail })
+            } else if ([norm('Enviar Propuesta'),norm('Cerrar Venta'),norm('Mensaje'),norm('Solicitar Referidos'),norm('Seguimiento'),norm('Resolver Objeción'),norm('Post Venta'),norm('Venta Cruzada'),norm('Venta Ascendente')].includes(na)) {
+              if (order.clienteTelefono) contactos.push({ type:'tel',   value:order.clienteTelefono })
+              if (order.clienteEmail)    contactos.push({ type:'email', value:order.clienteEmail })
             }
+
             return (
               <div key={order.numOrden}
                 onClick={() => onViewOrder(order)}
                 style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', cursor:'pointer', transition:'box-shadow 0.15s', animation:`fadeUp 0.2s ${Math.min(i,5)*0.04}s ease both` }}
-                onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
-                onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
+                onMouseEnter={e => e.currentTarget.style.boxShadow='var(--shadow)'}
+                onMouseLeave={e => e.currentTarget.style.boxShadow='none'}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'12px' }}>
                   <div style={{ minWidth:0, flex:1 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px', flexWrap:'wrap' }}>
-                      <span style={{ fontSize:'11px', fontWeight:'700', padding:'2px 8px', borderRadius:'20px', background:diff.bg, color:diff.color }}>{diff.label}</span>
+                      {diff && <span style={{ fontSize:'11px', fontWeight:'700', padding:'2px 8px', borderRadius:'20px', background:diff.bg, color:diff.color }}>{diff.label}</span>}
                       <span style={{ fontSize:'11px', fontWeight:'700', padding:'2px 8px', borderRadius:'20px', background:c.bg, color:c.color, border:`1px solid ${c.border}` }}>{order.estado}</span>
                     </div>
                     <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px' }}>{order.clienteNombre}</div>
                     {order.clienteNegocio && <div style={{ fontSize:'13px', color:'var(--muted)' }}>{order.clienteNegocio}</div>}
-                    {/* Fecha + hora + acción */}
-                    <div style={{ display:'flex', alignItems:'center', gap:'6px', marginTop:'6px', flexWrap:'wrap' }}>
-                      <span style={{ fontSize:'12px', color:'var(--muted)', display:'flex', alignItems:'center', gap:'4px' }}>
-                        <Icon d={icons.calendar} size={12} />
-                        {formatFecha(order.siguienteAccionFecha)}
-                        {order.siguienteAccionFecha?.includes(' ') && (
-                          <span style={{ display:'inline-flex', alignItems:'center', gap:'3px' }}>
-                            <Icon d={icons.clock} size={12} />{order.siguienteAccionFecha.split(' ')[1]}
-                          </span>
-                        )}
-                      </span>
-                      {accion && <span style={{ fontSize:'12px', fontWeight:'600', color:'var(--brand)', background:'var(--brand-light)', padding:'1px 7px', borderRadius:'20px' }}>{accion}</span>}
-                    </div>
-                    {/* Contacto contextual según acción */}
+                    {order.siguienteAccionFecha && (
+                      <div style={{ display:'flex', alignItems:'center', gap:'6px', marginTop:'6px', flexWrap:'wrap' }}>
+                        <span style={{ fontSize:'12px', color:'var(--muted)', display:'flex', alignItems:'center', gap:'4px' }}>
+                          <Icon d={icons.calendar} size={12} />
+                          {formatFecha(order.siguienteAccionFecha)}
+                          {order.siguienteAccionFecha?.includes(' ') && (
+                            <span style={{ display:'inline-flex', alignItems:'center', gap:'3px' }}>
+                              <Icon d={icons.clock} size={12} />{order.siguienteAccionFecha.split(' ')[1]}
+                            </span>
+                          )}
+                        </span>
+                        {accion && <span style={{ fontSize:'12px', fontWeight:'600', color:'var(--brand)', background:'var(--brand-light)', padding:'1px 7px', borderRadius:'20px' }}>{accion}</span>}
+                      </div>
+                    )}
+                    {modo === 'sinFecha' && (
+                      <div style={{ fontSize:'12px', color:'#d97706', fontWeight:'600', marginTop:'4px', display:'flex', alignItems:'center', gap:'4px' }}>
+                        <Icon d={icons.alert} size={12} /> Sin fecha de seguimiento
+                      </div>
+                    )}
                     {contactos.length > 0 && (
                       <div style={{ marginTop:'7px', display:'flex', flexDirection:'column', gap:'3px' }}>
-                        {contactos.map((c, ci) => {
-                          if (c.type === 'tel') return (
-                            <a key={ci} href={`https://wa.me/593${c.value.replace(/\D/g,'').replace(/^0/,'')}`}
+                        {contactos.map((ct, ci) => {
+                          if (ct.type==='tel') return (
+                            <a key={ci} href={`https://wa.me/593${ct.value.replace(/\D/g,'').replace(/^0/,'')}`}
                               target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
                               style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'#16a34a', textDecoration:'none' }}
                               onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
                               onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
-                              <Icon d={icons.phone} size={12} />{c.value}
+                              <Icon d={icons.phone} size={12} />{ct.value}
                             </a>
                           )
-                          if (c.type === 'email') return (
-                            <a key={ci} href={`mailto:${c.value}`} onClick={e => e.stopPropagation()}
+                          if (ct.type==='email') return (
+                            <a key={ci} href={`mailto:${ct.value}`} onClick={e => e.stopPropagation()}
                               style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--brand)', textDecoration:'none' }}
                               onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
                               onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
-                              <Icon d={icons.mail} size={12} />{c.value}
+                              <Icon d={icons.mail} size={12} />{ct.value}
                             </a>
                           )
-                          if (c.type === 'dir') return (
-                            <a key={ci} href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.value)}`}
+                          if (ct.type==='dir') return (
+                            <a key={ci} href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ct.value)}`}
                               target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
                               style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--muted)', textDecoration:'none' }}
                               onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
                               onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
-                              <Icon d={icons.map} size={12} />{c.value}
+                              <Icon d={icons.map} size={12} />{ct.value}
                             </a>
                           )
                           return null
