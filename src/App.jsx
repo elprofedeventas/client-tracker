@@ -1373,7 +1373,7 @@ Total:             ${fmtMoney(order.total)}`
                     const esActual = o.numOrden === order.numOrden
                     return (
                       <div key={o.numOrden}
-                        style={{ background: esActual ? 'var(--brand-light)' : 'var(--white)', border:`1.5px solid ${esActual ? 'var(--brand)' : 'var(--border)'}`, borderRadius:'var(--radius-lg)', padding:'12px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'12px', animation:`fadeUp 0.2s ${Math.min(i,5)*0.04}s ease both`, opacity: esActual ? 0.8 : 1 }}>
+                        style={{ background: esActual ? 'var(--brand-light)' : 'var(--white)', border: `1.5px solid ${esActual ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 'var(--radius-lg)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', animation: `fadeUp 0.2s ${Math.min(i,5)*0.04}s ease both`, opacity: esActual ? 0.8 : 1 }}>
                         <div style={{ minWidth:0 }}>
                           <div style={{ fontSize:'11px', color:'var(--muted)', fontWeight:'600', marginBottom:'2px', display:'flex', alignItems:'center', gap:'6px' }}>
                             {o.numOrden} · {formatFecha(o.fecha)}
