@@ -1099,10 +1099,12 @@ function NewOrder({ onBack, onSaved, showToast }) {
   )
 }
 
-function OrdersView({ onViewOrder }) {
+function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filtroEstado, setFiltroEstado] = useState('Negociando')
+  const [filtroEstado, setFiltroEstadoLocal] = useState(filtroInicial || 'Negociando')
+
+  const setFiltroEstado = (v) => { setFiltroEstadoLocal(v); onFiltroChange(v) }
   const [meta, setMeta] = useState(0)
   const [historialOpen, setHistorialOpen] = useState(false)
   const [fechaInicio, setFechaInicio] = useState('')
@@ -1311,6 +1313,7 @@ function OrdersView({ onViewOrder }) {
 export default function App() {
   const [view, setView] = useState('dashboard')
   const [ordersKey, setOrdersKey] = useState(0)
+  const [ordersFiltro, setOrdersFiltro] = useState('Negociando')
   const [menuOpen, setMenuOpen] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
@@ -1373,7 +1376,7 @@ export default function App() {
     finally { setLoading(false) }
   }
 
-  const navigate = (v) => { setView(v); setMenuOpen(false); if (v !== 'edit') setEditingClient(null); if (v !== 'view') setViewingClient(null); if (v !== 'viewOrder' && v !== 'newOrder') setViewingOrder(null); if (v === 'orders') setOrdersKey(k => k + 1) }
+  const navigate = (v) => { setView(v); setMenuOpen(false); if (v !== 'edit') setEditingClient(null); if (v !== 'view') setViewingClient(null); if (v !== 'viewOrder' && v !== 'newOrder') setViewingOrder(null); if (v === 'orders') { setOrdersKey(k => k + 1); setOrdersFiltro('Negociando') } }
   const handleEdit = (c) => { setEditingClient(c); setViewingClient(null); setView('edit') }
   const handleView = (c) => { setViewingClient(c); setView('view') }
   const handleSaveEdit = (c) => { setClients(p => p.map(x => x.rowIndex === c.rowIndex ? c : x)); showToast(`✓ ${c.nombre} actualizado`); setView('list') }
@@ -1516,7 +1519,7 @@ export default function App() {
 
         {/* ── ÓRDENES ───────────────────────────────────────────────────────── */}
         {view === 'orders' && (
-          <OrdersView key={ordersKey} onViewOrder={handleViewOrder} />
+          <OrdersView key={ordersKey} onViewOrder={handleViewOrder} filtroInicial={ordersFiltro} onFiltroChange={setOrdersFiltro} />
         )}
 
         {/* ── VER ORDEN ─────────────────────────────────────────────────────── */}
