@@ -233,6 +233,206 @@ function Highlight({ text, query }) {
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MI DÍA DE HOY
+// ─────────────────────────────────────────────────────────────────────────────
+function MiDia({ onViewOrder }) {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`${API_BASE}?action=getMiDia`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setData(d.data) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const fmtM = (n) => `$${(parseFloat(n)||0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+  const parseFechaActividad = (s) => {
+    if (!s) return null
+    const parte = s.toString().trim().split(' ')[0]
+    if (parte.includes('/')) {
+      const p = parte.split('/')
+      if (p.length === 3) return new Date(p[2], p[1]-1, p[0])
+    }
+    return null
+  }
+
+  const diasDesdeVencimiento = (s) => {
+    const f = parseFechaActividad(s)
+    if (!f) return 0
+    f.setHours(0,0,0,0)
+    const hoy = getNowGuayaquil(); hoy.setHours(0,0,0,0)
+    return Math.max(0, Math.floor((hoy - f) / (1000*60*60*24)))
+  }
+
+  const contactosPorAccion = (order) => {
+    const na = norm(order.accion || '')
+    const contactos = []
+    if (na === norm('Visitar')) {
+      if (order.clienteTelefono) contactos.push({ type: 'tel', value: order.clienteTelefono })
+      if (order.clienteEmail)    contactos.push({ type: 'email', value: order.clienteEmail })
+    } else {
+      if (order.clienteTelefono) contactos.push({ type: 'tel', value: order.clienteTelefono })
+      if (order.clienteEmail)    contactos.push({ type: 'email', value: order.clienteEmail })
+    }
+    return contactos
+  }
+
+  const CardActividad = ({ order, urgencia }) => {
+    const c = ESTADO_COLORS[order.estado] || { bg: 'var(--cream)', color: 'var(--muted)', border: 'var(--border)' }
+    const dias = diasDesdeVencimiento(order.siguienteAccionFecha)
+    const contactos = contactosPorAccion(order)
+    const borderColor = urgencia ? (dias >= 7 ? '#dc2626' : '#d97706') : 'var(--border)'
+
+    return (
+      <div onClick={() => onViewOrder(order)}
+        style={{ background: 'var(--white)', border: `1.5px solid ${borderColor}`, borderRadius: 'var(--radius-lg)', padding: '14px 16px', cursor: 'pointer', transition: 'box-shadow 0.15s' }}
+        onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
+        onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            {/* Estado + acción */}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '5px' }}>
+              <span style={{ fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '20px', background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>{order.estado}</span>
+              {order.accion && <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--brand)', background: 'var(--brand-light)', padding: '2px 8px', borderRadius: '20px' }}>{order.accion}</span>}
+              {urgencia && dias > 0 && <span style={{ fontSize: '11px', fontWeight: '700', color: dias >= 7 ? '#dc2626' : '#d97706', background: dias >= 7 ? '#fef2f2' : '#fffbeb', padding: '2px 8px', borderRadius: '20px' }}>{dias} {dias === 1 ? 'día' : 'días'} vencida</span>}
+            </div>
+            {/* Cliente */}
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '15px' }}>{order.clienteNombre}</div>
+            {order.clienteNegocio && <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{order.clienteNegocio}</div>}
+            {/* Hora si es de hoy */}
+            {!urgencia && order.siguienteAccionFecha?.toString().includes(' ') && (
+              <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Icon d={icons.clock} size={12} />{order.siguienteAccionFecha.toString().split(' ')[1]}
+              </div>
+            )}
+            {/* Contactos */}
+            {contactos.length > 0 && (
+              <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                {contactos.map((ct, ci) => ct.type === 'tel' ? (
+                  <a key={ci} href={`https://wa.me/593${ct.value.toString().replace(/\D/g,'').replace(/^0/,'')}`}
+                    target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '600', color: '#16a34a', textDecoration: 'none' }}>
+                    <Icon d={icons.phone} size={12} />{ct.value}
+                  </a>
+                ) : (
+                  <a key={ci} href={`mailto:${ct.value}`} onClick={e => e.stopPropagation()}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '600', color: 'var(--brand)', textDecoration: 'none' }}>
+                    <Icon d={icons.mail} size={12} />{ct.value}
+                  </a>
+                ))}
+              </div>
+            )}
+            {/* Nota de seguimiento — briefing */}
+            {order.notasSeguimiento && (
+              <div style={{ fontSize: '12px', color: 'var(--ink)', marginTop: '6px', fontStyle: 'italic', lineHeight: '1.5', background: 'var(--cream)', borderRadius: '6px', padding: '6px 10px', borderLeft: '3px solid var(--brand)' }}>
+                "{order.notasSeguimiento}"
+              </div>
+            )}
+          </div>
+          {/* Total */}
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '15px', color: 'var(--brand)' }}>{fmtM(order.total)}</div>
+            <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>{order.numOrden}</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (loading) return (
+    <div style={{ textAlign: 'center', padding: '80px', color: 'var(--muted)' }}>
+      <div style={{ fontSize: '28px', marginBottom: '12px', animation: 'pulse 1s infinite' }}>⏳</div>
+      Cargando tu día...
+    </div>
+  )
+
+  if (!data) return (
+    <div style={{ textAlign: 'center', padding: '80px', color: 'var(--muted)' }}>
+      <div style={{ fontSize: '36px', marginBottom: '12px' }}>😕</div>
+      No se pudo cargar la información
+    </div>
+  )
+
+  const { metaMes, valorX, diasLaborables, multiplicador, diasVencidos,
+          actividadesHoy, actividadesVencidas, totalVencido, enCamino, faltante } = data
+
+  const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+  const mesActual = MESES_ES[new Date().getMonth()]
+
+  return (
+    <div style={{ animation: 'fadeUp 0.4s ease', paddingBottom: '40px' }}>
+
+      {/* Header */}
+      <div style={{ marginBottom: '20px' }}>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '26px', letterSpacing: '-0.02em' }}>Mi día de hoy</h1>
+        <p style={{ color: 'var(--muted)', fontSize: '13px', marginTop: '2px' }}>
+          Meta {mesActual}: {fmtM(metaMes)} · {fmtM(metaMes / diasLaborables)}/día · ×{multiplicador}
+        </p>
+      </div>
+
+      {/* ── SECCIÓN 1: Actividades de hoy ─────────────────────────────────── */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Icon d={icons.calendar} size={13} />
+          Actividades de hoy · {actividadesHoy.length}
+        </div>
+        {actividadesHoy.length === 0 ? (
+          <div style={{ background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', textAlign: 'center', color: 'var(--muted)', fontSize: '13px' }}>
+            Sin actividades programadas para hoy
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {actividadesHoy.map(o => <CardActividad key={o.numOrden} order={o} urgencia={false} />)}
+          </div>
+        )}
+      </div>
+
+      {/* ── SECCIÓN 2: En juego — actividades vencidas ────────────────────── */}
+      <div>
+        <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Icon d={icons.alert} size={13} />
+          Vencidas (últimos {diasVencidos} días) · {actividadesVencidas.length}
+        </div>
+
+        {/* Medidor verde/rojo */}
+        <div style={{ background: enCamino ? '#f0fdf4' : '#fef2f2', border: `1.5px solid ${enCamino ? '#bbf7d0' : '#fecaca'}`, borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: enCamino ? 0 : '10px' }}>
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: '700', color: enCamino ? '#16a34a' : '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>En juego</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '22px', color: enCamino ? '#16a34a' : '#dc2626' }}>{fmtM(totalVencido)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: '700', color: enCamino ? '#16a34a' : '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>Necesitas</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '22px', color: enCamino ? '#16a34a' : '#dc2626' }}>{fmtM(valorX)}</div>
+            </div>
+          </div>
+          {enCamino ? (
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#16a34a', marginTop: '8px' }}>✓ Estás en camino — tienes suficiente en juego</div>
+          ) : (
+            <div style={{ fontSize: '13px', fontWeight: '700', color: '#dc2626', marginTop: '8px' }}>⚠ Te faltan {fmtM(faltante)} — necesitas prospectar más hoy</div>
+          )}
+        </div>
+
+        {/* Lista de vencidas */}
+        {actividadesVencidas.length === 0 ? (
+          <div style={{ background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', textAlign: 'center', color: 'var(--muted)', fontSize: '13px' }}>
+            Sin actividades vencidas en los últimos {diasVencidos} días
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {actividadesVencidas.map(o => <CardActividad key={o.numOrden} order={o} urgencia={true} />)}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function Dashboard() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -2259,7 +2459,7 @@ function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [view, setView] = useState('dashboard')
+  const [view, setView] = useState('midia')
   const [ordersKey, setOrdersKey] = useState(0)
   const [ordersFiltro, setOrdersFiltro] = useState('Negociando')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -2337,6 +2537,7 @@ export default function App() {
   const fp = (f, x = {}) => ({ style: gs(f), value: form[f], onChange: e => inp(f, e.target.value), onFocus: () => setFocusedField(f), onBlur: () => setFocusedField(null), ...x })
 
   const menuItems = [
+    { key: 'midia',       icon: icons.calendar,   label: 'Mi día de hoy' },
     { key: 'dashboard',   icon: icons.dashboard,  label: 'Dashboard' },
     { key: 'activities',  icon: icons.activity,   label: 'Actividades' },
     { key: 'form',        icon: icons.plus,        label: 'Nuevo cliente' },
@@ -2362,7 +2563,7 @@ export default function App() {
       {menuOpen && (
         <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: '68px', right: '16px', zIndex: 300, background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', minWidth: '200px', animation: 'fadeUp 0.2s ease' }}>
           {menuItems.map(({ key, icon, label }) => {
-              const isActive = view === key || (view === 'edit' && key === 'list') || (view === 'view' && key === 'list') || (view === 'viewOrder' && key === 'orders') || (view === 'viewOrder' && key === 'activities')
+              const isActive = view === key || (view === 'edit' && key === 'list') || (view === 'view' && key === 'list') || (view === 'viewOrder' && key === 'orders') || (view === 'viewOrder' && key === 'activities') || (view === 'viewOrder' && key === 'midia')
               return (
                 <button key={key} onClick={() => navigate(key)} style={{ width: '100%', padding: '13px 18px', background: isActive ? 'var(--accent-light)' : 'transparent', border: 'none', borderBottom: '1px solid var(--cream)', color: isActive ? 'var(--accent)' : 'var(--ink)', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s' }}
                   onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--cream)' }}
@@ -2378,6 +2579,8 @@ export default function App() {
       <main style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 20px' }}>
 
         {/* ── DASHBOARD ─────────────────────────────────────────────────────── */}
+        {view === 'midia' && <MiDia onViewOrder={(o) => handleViewOrder(o, 'activities')} />}
+
         {view === 'dashboard' && <Dashboard />}
 
         {/* ── VER CLIENTE ───────────────────────────────────────────────────── */}
