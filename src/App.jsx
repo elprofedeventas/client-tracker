@@ -980,6 +980,15 @@ const ESTADO_COLORS = {
   'Vendido':    { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
 }
 
+// [DEMO-SF-START] ─── SERVICIOS FINANCIEROS DEMO ───────────────────────────
+const SF_ESTADO_COLORS = {
+  'Captado':    { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
+  'Negociando': { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
+  'Detenido':   { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
+  'Perdido':    { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
+}
+// [DEMO-SF-END] ────────────────────────────────────────────────────────────
+
 function EstadoBadge({ estado }) {
   const c = ESTADO_COLORS[estado] || { bg: 'var(--cream)', color: 'var(--muted)', border: 'var(--border)' }
   return (
@@ -1805,8 +1814,25 @@ function ActividadesView({ onViewOrder }) {
                         })}
                       </div>
                     )}
+                    {/* Días en estado — briefing */}
+                    {(() => {
+                      if (!order.fechaCambioEstado) return null
+                      const s = order.fechaCambioEstado.toString().trim()
+                      let fcs = null
+                      if (s.includes('/')) { const p = s.split(' ')[0].split('/'); if (p.length === 3) fcs = new Date(p[2], p[1]-1, p[0]) }
+                      if (!fcs) return null
+                      fcs.setHours(0,0,0,0)
+                      const hoy = getNowGuayaquil(); hoy.setHours(0,0,0,0)
+                      const dias = Math.max(0, Math.floor((hoy - fcs) / (1000*60*60*24)))
+                      const color = dias >= 7 ? '#dc2626' : dias >= 3 ? '#d97706' : 'var(--muted)'
+                      const label = dias === 0 ? `Hoy en ${order.estado.toLowerCase()}` : `${dias} ${dias === 1 ? 'día' : 'días'} en ${order.estado.toLowerCase()}`
+                      return <div style={{ fontSize:'11px', fontWeight:'700', color, marginTop:'5px', display:'flex', alignItems:'center', gap:'4px' }}><Icon d={icons.clock} size={11} />{label}</div>
+                    })()}
+                    {/* Última nota — briefing completo */}
                     {order.notasSeguimiento && (
-                      <div style={{ fontSize:'12px', color:'var(--muted)', marginTop:'5px', fontStyle:'italic', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>"{order.notasSeguimiento}"</div>
+                      <div style={{ fontSize:'12px', color:'var(--ink)', marginTop:'6px', fontStyle:'italic', lineHeight:'1.5', background:'var(--cream)', borderRadius:'6px', padding:'6px 10px', borderLeft:'3px solid var(--brand)' }}>
+                        "{order.notasSeguimiento}"
+                      </div>
                     )}
                   </div>
                   <div style={{ textAlign:'right', flexShrink:0 }}>
@@ -2239,6 +2265,441 @@ function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
+
+// [DEMO-SF-START] ─── SERVICIOS FINANCIEROS DEMO ───────────────────────────
+// NUEVA ORDEN FINANCIERA
+// ─────────────────────────────────────────────────────────────────────────────
+function NewFinancialOrder({ onBack, onSaved, showToast }) {
+  const [clientes, setClientes] = useState([])
+  const [sfProductos, setSfProductos] = useState([])
+  const [clienteSearch, setClienteSearch] = useState('')
+  const [clienteSel, setClienteSel] = useState(null)
+  const [clienteOpen, setClienteOpen] = useState(false)
+  const [form, setForm] = useState({
+    producto: '', inversion: '', rendimiento: '', plazo: '',
+    fechaInicio: '', fechaVencimiento: '', notas: '', estado: 'Captado'
+  })
+  const [saving, setSaving] = useState(false)
+  const [errors, setErrors] = useState({})
+
+  useEffect(() => {
+    fetch(`${API_BASE}?action=sfGetProductos`)
+      .then(r => r.json()).then(d => {
+        if (d.success && d.data.length > 0) {
+          setSfProductos(d.data)
+        } else {
+          // Init products first time
+          fetch(`${API_BASE}?action=sfInitProductos`).then(() =>
+            fetch(`${API_BASE}?action=sfGetProductos`).then(r => r.json())
+              .then(d2 => { if (d2.success) setSfProductos(d2.data) })
+          )
+        }
+      }).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (clienteSearch.trim().length < 2) { setClientes([]); return }
+    fetch(`${API_BASE}`).then(r => r.json()).then(d => {
+      if (d.success) {
+        const q = norm(clienteSearch)
+        setClientes(d.data.filter(c => norm(c.nombre).includes(q) || norm(c.negocio).includes(q)).slice(0, 8))
+      }
+    }).catch(() => {})
+  }, [clienteSearch])
+
+  const prodSel = sfProductos.find(p => p.nombre === form.producto)
+  const inversion = parseFloat(form.inversion) || 0
+  const rendPct   = parseFloat(form.rendimiento) || 0
+  const rendAnual = inversion > 0 && rendPct > 0 ? (inversion * rendPct / 100) : 0
+  const rendMens  = rendAnual / 12
+
+  const fmtM = (n) => `$${n.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+  const validate = () => {
+    const e = {}
+    if (!clienteSel) e.cliente = 'Selecciona un cliente'
+    if (!form.producto) e.producto = 'Selecciona un producto'
+    if (!form.inversion || inversion <= 0) e.inversion = 'Ingresa el monto'
+    if (!form.rendimiento || rendPct <= 0) e.rendimiento = 'Ingresa la tasa'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
+  const handleSave = async () => {
+    if (!validate()) return
+    setSaving(true)
+    try {
+      const params = new URLSearchParams({
+        action: 'sfCreateOrden',
+        clienteNombre: clienteSel.nombre,
+        clienteNegocio: clienteSel.negocio || '',
+        clienteIdentificacion: clienteSel.identificacion || '',
+        clienteTelefono: clienteSel.telefono || '',
+        estado: form.estado,
+        producto: form.producto,
+        inversion: form.inversion,
+        rendimiento: form.rendimiento,
+        plazo: form.plazo || '0',
+        fechaInicio: form.fechaInicio || '',
+        fechaVencimiento: form.fechaVencimiento || '',
+        notas: form.notas || '',
+      })
+      const res = await fetch(`${API_BASE}?${params}`)
+      const data = await res.json()
+      if (data.success) {
+        showToast('✓ Orden financiera creada')
+        onSaved()
+      } else {
+        showToast('Error al guardar: ' + (data.error || ''), 'error')
+      }
+    } catch {
+      showToast('Error de conexión', 'error')
+    }
+    setSaving(false)
+  }
+
+  const sf = (field) => ({ value: form[field], onChange: e => setForm(p => ({ ...p, [field]: e.target.value })) })
+
+  return (
+    <div style={{ animation: 'fadeUp 0.4s ease', paddingBottom: '40px' }}>
+      <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', padding: '4px' }}><Icon d={icons.back} size={20} /></button>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '24px', letterSpacing: '-0.02em' }}>Nueva orden financiera</h1>
+          <p style={{ color: 'var(--muted)', fontSize: '13px', marginTop: '2px' }}>Servicios Financieros</p>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+        {/* Cliente */}
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Cliente</div>
+          {clienteSel ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--brand-light)', borderRadius: 'var(--radius)', padding: '12px 14px', border: '1.5px solid var(--brand)' }}>
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--ink)' }}>{clienteSel.nombre}</div>
+                {clienteSel.negocio && <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{clienteSel.negocio}</div>}
+              </div>
+              <button onClick={() => { setClienteSel(null); setClienteSearch('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)' }}><Icon d={icons.x} size={16} /></button>
+            </div>
+          ) : (
+            <div style={{ position: 'relative' }}>
+              <input value={clienteSearch} onChange={e => { setClienteSearch(e.target.value); setClienteOpen(true) }}
+                onFocus={() => setClienteOpen(true)}
+                placeholder="Buscar cliente por nombre o negocio..."
+                style={{ ...inputStyle, fontSize: '14px' }} />
+              {errors.cliente && <div style={{ fontSize: '12px', color: 'var(--error)', marginTop: '4px' }}>{errors.cliente}</div>}
+              {clienteOpen && clientes.length > 0 && (
+                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 300, background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', maxHeight: '220px', overflowY: 'auto' }}>
+                  {clientes.map(cl => (
+                    <div key={cl.rowIndex} onClick={() => { setClienteSel(cl); setClienteOpen(false); setClienteSearch('') }}
+                      style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid var(--border)', fontSize: '13px' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--cream)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'var(--white)'}>
+                      <div style={{ fontWeight: '700' }}>{cl.nombre}</div>
+                      {cl.negocio && <div style={{ color: 'var(--muted)', fontSize: '12px' }}>{cl.negocio}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Producto financiero */}
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Producto financiero</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {sfProductos.map(p => {
+              const sel = form.producto === p.nombre
+              return (
+                <div key={p.codigo} onClick={() => setForm(f => ({ ...f, producto: p.nombre }))}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 'var(--radius)', border: `1.5px solid ${sel ? 'var(--brand)' : 'var(--border)'}`, background: sel ? 'var(--brand-light)' : 'var(--paper)', cursor: 'pointer', transition: 'all 0.15s' }}>
+                  <div style={{ fontWeight: '700', fontSize: '14px', color: sel ? 'var(--brand)' : 'var(--ink)' }}>{p.nombre}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: '600', textAlign: 'right' }}>
+                    {p.rendimientoMin === p.rendimientoMax
+                      ? `${p.rendimientoMin}% anual`
+                      : `${p.rendimientoMin}%–${p.rendimientoMax}% anual`}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          {errors.producto && <div style={{ fontSize: '12px', color: 'var(--error)', marginTop: '8px' }}>{errors.producto}</div>}
+        </div>
+
+        {/* Inversión y tasa */}
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '14px' }}>Inversión y rendimiento</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+                Inversión ($) {prodSel && <span style={{ color: 'var(--brand)' }}>*</span>}
+              </div>
+              <input type="number" min="0" step="0.01" placeholder="0.00" {...sf('inversion')} style={{ ...inputStyle, fontSize: '14px' }} />
+              {errors.inversion && <div style={{ fontSize: '12px', color: 'var(--error)', marginTop: '4px' }}>{errors.inversion}</div>}
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+                Rendimiento (%)
+                {prodSel && <span style={{ color: 'var(--muted)', fontWeight: '400', fontSize: '10px', marginLeft: '4px' }}>
+                  {prodSel.rendimientoMin === prodSel.rendimientoMax
+                    ? `(${prodSel.rendimientoMin}%)`
+                    : `(${prodSel.rendimientoMin}%–${prodSel.rendimientoMax}%)`}
+                </span>}
+              </div>
+              <input type="number" min="0" step="0.01" placeholder="0.00" {...sf('rendimiento')} style={{ ...inputStyle, fontSize: '14px' }} />
+              {errors.rendimiento && <div style={{ fontSize: '12px', color: 'var(--error)', marginTop: '4px' }}>{errors.rendimiento}</div>}
+            </div>
+          </div>
+
+          {/* Cálculo automático */}
+          {rendAnual > 0 && (
+            <div style={{ marginTop: '14px', background: 'var(--brand-light)', borderRadius: 'var(--radius)', padding: '14px 16px', border: '1.5px solid var(--brand)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>Rendimiento anual</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: 'var(--brand)' }}>{fmtM(rendAnual)}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>Rendimiento mensual</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '20px', color: 'var(--brand)' }}>{fmtM(rendMens)}</div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Plazo y fechas */}
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '14px' }}>Plazo y fechas</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Plazo (días)</div>
+              <input type="number" min="0" placeholder="Ej: 365" {...sf('plazo')} style={{ ...inputStyle, fontSize: '14px' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Fecha inicio</div>
+              <input type="date" {...sf('fechaInicio')} style={{ ...inputStyle, fontSize: '14px' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Fecha vencimiento</div>
+              <input type="date" {...sf('fechaVencimiento')} style={{ ...inputStyle, fontSize: '14px' }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Estado y notas */}
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '14px' }}>Estado y notas</div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
+            {['Captado','Negociando','Detenido','Perdido'].map(est => {
+              const col = SF_ESTADO_COLORS[est]
+              const sel = form.estado === est
+              return (
+                <button key={est} onClick={() => setForm(f => ({ ...f, estado: est }))}
+                  style={{ padding: '6px 14px', borderRadius: '20px', border: `1.5px solid ${sel ? col.color : 'var(--border)'}`, background: sel ? col.bg : 'var(--white)', color: sel ? col.color : 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>
+                  {est}
+                </button>
+              )
+            })}
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Notas</div>
+            <textarea {...sf('notas')} placeholder="Observaciones, condiciones, acuerdos..."
+              style={{ ...inputStyle, resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px', width: '100%', boxSizing: 'border-box' }} />
+          </div>
+        </div>
+
+        {/* Botón guardar */}
+        <button onClick={handleSave} disabled={saving}
+          style={{ width: '100%', padding: '13px', background: saving ? 'var(--muted)' : 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: saving ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}
+          onMouseEnter={e => { if (!saving) e.currentTarget.style.background = 'var(--brand-dark)' }}
+          onMouseLeave={e => { if (!saving) e.currentTarget.style.background = 'var(--brand)' }}>
+          {saving ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando...</> : <><Icon d={icons.check} size={16} /> Crear orden financiera</>}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VISTA ÓRDENES FINANCIERAS
+// ─────────────────────────────────────────────────────────────────────────────
+function SFOrdenesView({ onBack, showToast }) {
+  const [ordenes, setOrdenes] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filtroEstado, setFiltroEstado] = useState('Captado')
+  const [search, setSearch] = useState('')
+  const [sortField, setSortField] = useState('fecha')
+  const [sortDir, setSortDir] = useState('asc')
+
+  const fmtM = (n) => `$${(parseFloat(n)||0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+  useEffect(() => {
+    fetch(`${API_BASE}?action=sfGetOrdenes`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setOrdenes(d.data) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const parseFecha = (s) => {
+    if (!s) return new Date(0)
+    if (typeof s === 'string' && s.includes('/')) {
+      const p = s.split(' ')[0].split('/')
+      if (p.length === 3) return new Date(p[2], p[1]-1, p[0])
+    }
+    return new Date(0)
+  }
+
+  const handleEstado = async (numOrden, nuevoEstado) => {
+    const params = new URLSearchParams({ action: 'sfUpdateEstado', numOrden, estado: nuevoEstado })
+    const res = await fetch(`${API_BASE}?${params}`)
+    const data = await res.json()
+    if (data.success) {
+      setOrdenes(prev => prev.map(o => o.numOrden === numOrden ? { ...o, estado: nuevoEstado } : o))
+      showToast(`✓ Estado actualizado a ${nuevoEstado}`)
+    } else {
+      showToast('Error al actualizar', 'error')
+    }
+  }
+
+  const toggleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir(field === 'inversion' ? 'desc' : 'asc') }
+  }
+
+  const estados = ['Captado','Negociando','Detenido','Perdido']
+  const counts = Object.fromEntries(estados.map(e => [e, ordenes.filter(o => o.estado === e).length]))
+  const totales = Object.fromEntries(estados.map(e => [e, ordenes.filter(o => o.estado === e).reduce((s,o) => s + (o.inversion||0), 0)]))
+
+  let lista = filtroEstado === 'Todos' ? ordenes : ordenes.filter(o => o.estado === filtroEstado)
+  if (search.trim()) { const q = norm(search); lista = lista.filter(o => norm(o.clienteNombre).includes(q) || norm(o.clienteNegocio).includes(q) || norm(o.producto).includes(q)) }
+  lista = [...lista].sort((a, b) => {
+    if (sortField === 'fecha') { const fa = parseFecha(a.fecha), fb = parseFecha(b.fecha); return sortDir === 'asc' ? fa - fb : fb - fa }
+    return sortDir === 'asc' ? (a.inversion||0) - (b.inversion||0) : (b.inversion||0) - (a.inversion||0)
+  })
+
+  const totalMostrado = lista.reduce((s,o) => s + (o.inversion||0), 0)
+  const totalRendAnual = lista.reduce((s,o) => s + (o.rendAnual||0), 0)
+
+  return (
+    <div style={{ animation: 'fadeUp 0.4s ease', paddingBottom: '40px' }}>
+      <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', padding: '4px' }}><Icon d={icons.back} size={20} /></button>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '24px', letterSpacing: '-0.02em' }}>Servicios Financieros</h1>
+          <p style={{ color: 'var(--muted)', fontSize: '13px', marginTop: '2px' }}>{ordenes.length} órdenes financieras</p>
+        </div>
+      </div>
+
+      {/* Resumen por estado */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+        {estados.map(est => {
+          const col = SF_ESTADO_COLORS[est]
+          const activo = filtroEstado === est
+          return (
+            <div key={est} onClick={() => setFiltroEstado(est)}
+              style={{ background: activo ? col.bg : 'var(--white)', border: `1.5px solid ${activo ? col.color : 'var(--border)'}`, borderRadius: 'var(--radius-lg)', padding: '12px 16px', cursor: 'pointer', transition: 'all 0.15s' }}>
+              <div style={{ fontSize: '10px', fontWeight: '700', color: activo ? col.color : 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '4px' }}>{est}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '18px', color: activo ? col.color : 'var(--ink)' }}>{counts[est]}</div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>{fmtM(totales[est])}</div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Búsqueda y sort */}
+      <div style={{ position: 'relative', marginBottom: '10px' }}>
+        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }}><Icon d={icons.search} size={15} /></span>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar cliente o producto..." style={{ ...inputStyle, paddingLeft: '38px', fontSize: '14px' }} />
+      </div>
+
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+        {[['fecha','Fecha'],['inversion','$']].map(([f,lbl]) => (
+          <button key={f} onClick={() => toggleSort(f)}
+            style={{ padding: '4px 12px', borderRadius: '20px', border: `1.5px solid ${sortField === f ? 'var(--brand)' : 'var(--border)'}`, background: sortField === f ? 'var(--brand-light)' : 'var(--white)', color: sortField === f ? 'var(--brand)' : 'var(--muted)', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+            {lbl} {sortField === f ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+          </button>
+        ))}
+      </div>
+
+      {/* Resumen verde */}
+      {lista.length > 0 && (
+        <div style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: 'var(--radius-lg)', padding: '12px 16px', marginBottom: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Órdenes</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '18px', color: '#16a34a' }}>{lista.length}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Inversión total</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '18px', color: '#16a34a' }}>{fmtM(totalMostrado)}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Rend. anual</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '18px', color: '#16a34a' }}>{fmtM(totalRendAnual)}</div>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--muted)' }}><span style={{ animation: 'pulse 1s infinite', fontSize: '24px' }}>⏳</span><div style={{ marginTop: '12px' }}>Cargando...</div></div>
+      ) : lista.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px', background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', color: 'var(--muted)' }}>
+          <div style={{ fontSize: '36px', marginBottom: '12px' }}>📭</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700' }}>Sin órdenes en {filtroEstado}</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {lista.map((o, i) => {
+            const col = SF_ESTADO_COLORS[o.estado] || SF_ESTADO_COLORS['Captado']
+            return (
+              <div key={o.numOrden} style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 18px', boxShadow: 'var(--shadow)', animation: `fadeUp 0.2s ${Math.min(i,5)*0.04}s ease both` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '10px' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--ink)' }}>{o.clienteNombre}</div>
+                    {o.clienteNegocio && <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{o.clienteNegocio}</div>}
+                    <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>{o.numOrden} · {o.fecha ? o.fecha.toString().split(' ')[0] : ''}</div>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '18px', color: 'var(--brand)' }}>{fmtM(o.inversion)}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{o.rendimiento}% · {fmtM(o.rendMensual)}/mes</div>
+                  </div>
+                </div>
+
+                {/* Producto badge + rendimiento anual */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--brand)', background: 'var(--brand-light)', padding: '2px 10px', borderRadius: '20px', border: '1px solid var(--brand)' }}>{o.producto}</span>
+                  {o.plazo > 0 && <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600' }}>{o.plazo} días</span>}
+                  {o.fechaVencimiento && <span style={{ fontSize: '11px', color: 'var(--muted)' }}>Vence: {o.fechaVencimiento}</span>}
+                  <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: '700', color: '#16a34a' }}>Rend. anual: {fmtM(o.rendAnual)}</span>
+                </div>
+
+                {/* Botones de estado */}
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {['Captado','Negociando','Detenido','Perdido'].map(est => {
+                    const sc = SF_ESTADO_COLORS[est]
+                    const activo = o.estado === est
+                    return (
+                      <button key={est} onClick={() => handleEstado(o.numOrden, est)}
+                        style={{ padding: '4px 12px', borderRadius: '20px', border: `1.5px solid ${activo ? sc.color : 'var(--border)'}`, background: activo ? sc.bg : 'var(--white)', color: activo ? sc.color : 'var(--muted)', fontSize: '11px', fontWeight: '700', cursor: activo ? 'default' : 'pointer', transition: 'all 0.15s' }}>
+                        {est}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {o.notas && <div style={{ marginTop: '10px', fontSize: '12px', color: 'var(--muted)', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>{o.notas}</div>}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// [DEMO-SF-END] ────────────────────────────────────────────────────────────
 export default function App() {
   const [view, setView] = useState('dashboard')
   const [ordersKey, setOrdersKey] = useState(0)
@@ -2324,6 +2785,10 @@ export default function App() {
     { key: 'list',        icon: icons.list,        label: 'Clientes' },
     { key: 'newOrder',    icon: icons.plus,        label: 'Nueva orden' },
     { key: 'orders',      icon: icons.orders,      label: 'Órdenes' },
+    // [DEMO-SF-START] ─── SERVICIOS FINANCIEROS DEMO ───────────────────────────
+    { key: 'sfNew',       icon: icons.plus,        label: 'Nueva orden financiera' },
+    { key: 'sfOrdenes',   icon: icons.orders,      label: 'Servicios Financieros' },
+    // [DEMO-SF-END] ────────────────────────────────────────────────────────────
   ]
 
   return (
@@ -2464,6 +2929,16 @@ export default function App() {
         )}
 
         {/* ── NUEVA ORDEN ───────────────────────────────────────────────────── */}
+        // [DEMO-SF-START] ─── SERVICIOS FINANCIEROS DEMO ───────────────────────────
+        {view === 'sfNew' && (
+          <NewFinancialOrder onBack={() => setView('sfOrdenes')} onSaved={() => { setView('sfOrdenes') }} showToast={showToast} />
+        )}
+
+        {view === 'sfOrdenes' && (
+          <SFOrdenesView onBack={() => setView('dashboard')} showToast={showToast} />
+        )}
+
+        // [DEMO-SF-END] ────────────────────────────────────────────────────────────
         {view === 'newOrder' && (
           <NewOrder onBack={() => setView('orders')} onSaved={() => setView('orders')} showToast={showToast} />
         )}
