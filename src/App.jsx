@@ -1667,12 +1667,15 @@ function ActividadesView({ onViewOrder }) {
   const [fechaInicio, setFechaInicio] = useState('')
   const [fechaFin, setFechaFin] = useState('')
   const [modoHistorial, setModoHistorial] = useState(false)
+  const [dashData, setDashData] = useState(null)
 
   useEffect(() => {
     fetch(`${API_BASE}?action=getOrdenes`)
       .then(r => r.json()).then(d => { if (d.success) setOrders(d.data) }).catch(() => {}).finally(() => setLoading(false))
     fetch(`${API_BASE}?action=getAcciones`)
       .then(r => r.json()).then(d => { if (d.success) setAccionesDisp(d.data) }).catch(() => {})
+    fetch(`${API_BASE}?action=dashboard`)
+      .then(r => r.json()).then(d => { if (d.success) setDashData(d.data) }).catch(() => {})
   }, [])
 
   const parseFechaSeg = (v) => {
@@ -1795,7 +1798,12 @@ function ActividadesView({ onViewOrder }) {
       {/* Encabezado */}
       <div style={{ marginBottom:'14px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px' }}>
-          <h1 style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'28px', letterSpacing:'-0.02em', margin:0 }}>Actividades</h1>
+          <div>
+            <h1 style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'28px', letterSpacing:'-0.02em', margin:0 }}>Actividades</h1>
+            <div style={{ fontSize:'13px', color:'var(--muted)', fontWeight:'500', marginTop:'4px', display:'flex', alignItems:'center', gap:'6px' }}>
+              <Icon d={icons.calendar} size={13} />{getTodayLabel()}
+            </div>
+          </div>
           {/* Dropdown filtro acción */}
           <div style={{ position:'relative' }} onClick={e => e.stopPropagation()}>
             <button onClick={() => { setAccionDropOpen(v => !v); setHistorialOpen(false) }}
@@ -1871,6 +1879,47 @@ function ActividadesView({ onViewOrder }) {
           style={{ ...inputStyle, paddingLeft:'42px', paddingRight:busqueda?'42px':'14px', fontSize:'14px' }} />
         {busqueda && <button onClick={() => setBusqueda('')} style={{ position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--muted)', display:'flex', padding:'2px' }}><Icon d={icons.x} size={16} /></button>}
       </div>
+
+      {/* Meta y Avance del mes */}
+      {dashData && (() => {
+        const now2    = getNowGuayaquil()
+        const mesLbl2 = MESES_LARGO[now2.getMonth()].charAt(0).toUpperCase() + MESES_LARGO[now2.getMonth()].slice(1)
+        const anio2   = now2.getFullYear()
+        const meta2    = dashData.meta    || 0
+        const vendido2 = dashData.vendido || 0
+        const pct2     = meta2 > 0 ? Math.round((vendido2 / meta2) * 100) : 0
+        const verde2   = '#16a34a'
+        const cv       = dashData.conteos || {}
+        return (
+          <>
+            <div style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:'10px', boxShadow:'var(--shadow)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                <div style={{ width:'32px', height:'32px', borderRadius:'8px', background:'#eef2ff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <Icon d={icons.target} size={15} stroke="#6366f1" />
+                </div>
+                <div style={{ fontSize:'12px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Meta {mesLbl2} {anio2}</div>
+              </div>
+              <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'#6366f1' }}>{fmtMoney(meta2)}</div>
+            </div>
+            <div style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:'10px', boxShadow:'var(--shadow)' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
+                <span style={{ fontSize:'12px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Avance del mes</span>
+                <span style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'16px', color: pct2 >= 100 ? verde2 : 'var(--ink)' }}>{pct2}%</span>
+              </div>
+              <div style={{ background:'var(--cream)', borderRadius:'100px', height:'8px', overflow:'hidden', marginBottom:'6px' }}>
+                <div style={{ height:'100%', width:`${Math.min(100,pct2)}%`, background: pct2>=100 ? verde2 : pct2>=60 ? '#2563eb' : 'var(--brand)', borderRadius:'100px', transition:'width 0.8s ease' }} />
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:'10px', fontSize:'12px', color:'var(--muted)' }}>
+                <span style={{ fontWeight:'600', color:verde2 }}>{fmtMoney(vendido2)} vendido</span>
+                <span>·</span>
+                <span>{cv.Vendido?.clientes||0} {(cv.Vendido?.clientes||0)===1?'cliente':'clientes'}</span>
+                <span>·</span>
+                <span>{cv.Vendido?.ordenes||0} {(cv.Vendido?.ordenes||0)===1?'orden':'órdenes'}</span>
+              </div>
+            </div>
+          </>
+        )
+      })()}
 
       {/* Controles de orden */}
       <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'16px', flexWrap:'wrap' }}>
