@@ -604,8 +604,8 @@ function MiDia({ onViewOrder }) {
           {data && (
             <button onClick={() => hablar(data.actividadesHoy, data.actividadesVencidas, data.diasVencidos, diasExtra, data.faltante, data.totalVencido)}
               title={speaking ? 'Detener' : 'Escuchar resumen del día'}
-              style={{ background: speaking ? 'var(--brand)' : 'var(--white)', border: `1.5px solid ${speaking ? 'var(--brand)' : 'var(--border)'}`, borderRadius: '50%', width: '34px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0 }}>
-              <span style={{ fontSize: '16px', lineHeight: 1 }}>{speaking ? '⏹' : '🔊'}</span>
+              style={{ background: speaking ? 'var(--brand)' : 'var(--white)', border: `1.5px solid ${speaking ? 'var(--brand)' : 'var(--border)'}`, borderRadius: '50%', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0, animation: !speaking ? 'pulse 1.5s infinite' : 'none', boxShadow: !speaking ? '0 0 0 3px var(--brand-light)' : 'none' }}>
+              <span style={{ fontSize: '18px', lineHeight: 1 }}>{speaking ? '⏹' : '🔊'}</span>
             </button>
           )}
         </div>
