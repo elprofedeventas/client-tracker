@@ -483,11 +483,9 @@ function MiDia({ onViewOrder }) {
 
         {/* Sección 1 — rojo/amarillo/azul: estado + días vencida + monto + orden */}
         <div style={{ background:sec1Bg, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px' }}>
-          <div style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
-            <span style={{ fontSize:'11px', fontWeight:'700', color:sec1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', alignSelf:'flex-start', opacity:0.9 }}>{order.estado}</span>
-            <span style={{ fontSize:'12px', fontWeight:'800', color:sec1Color }}>{sec1Label}</span>
-          </div>
+          <span style={{ fontSize:'12px', fontWeight:'800', color:sec1Color }}>{sec1Label}</span>
           <div style={{ textAlign:'right', flexShrink:0 }}>
+            <span style={{ fontSize:'11px', fontWeight:'700', color:sec1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', display:'block', marginBottom:'3px', opacity:0.9 }}>{order.estado}</span>
             <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:sec1Color }}>{fmtM(order.total)}</div>
             <div style={{ fontSize:'10px', color:sec1Color, opacity:0.7 }}>{order.numOrden}</div>
           </div>
@@ -532,19 +530,19 @@ function MiDia({ onViewOrder }) {
           )}
         </div>
 
-        {/* Sección 3 — celeste: fecha + actividad + nota */}
-        <div style={{ background:'#eff6ff', padding:'8px 14px', borderTop:'1px solid #bfdbfe' }}>
+        {/* Sección 3 — negro: actividad → fecha → nota */}
+        <div style={{ background:'#0f172a', padding:'10px 14px', borderTop:'1px solid #1e293b' }}>
+          {accion && (
+            <div style={{ fontSize:'12px', color:'#f8fafc', fontWeight:'700', marginBottom:'3px' }}>Actividad: {accion}</div>
+          )}
           {fechaLabel && (
-            <div style={{ fontSize:'12px', fontWeight:'700', color:'#1d4ed8', marginBottom:'2px', display:'flex', alignItems:'center', gap:'5px' }}>
-              <Icon d={icons.calendar} size={12} />
+            <div style={{ fontSize:'12px', fontWeight:'600', color:'#94a3b8', display:'flex', alignItems:'center', gap:'5px' }}>
+              <Icon d={icons.calendar} size={12} fill="#94a3b8" />
               {fechaLabel}{hora ? ` · ${hora}` : ''}
             </div>
           )}
-          {accion && (
-            <div style={{ fontSize:'12px', color:'#1d4ed8', fontWeight:'600' }}>Actividad: {accion}</div>
-          )}
           {order.notasSeguimiento && (
-            <div style={{ fontSize:'12px', color:'#1e40af', marginTop:'4px', fontStyle:'italic', lineHeight:'1.4' }}>
+            <div style={{ fontSize:'12px', color:'#cbd5e1', marginTop:'5px', fontStyle:'italic', lineHeight:'1.4', borderTop:'1px solid #1e293b', paddingTop:'5px' }}>
               "{order.notasSeguimiento}"
             </div>
           )}
@@ -2996,11 +2994,9 @@ function ProximaSemana({ onViewOrder }) {
 
         {/* Sección 1 */}
         <div style={{ background:sec1Bg, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px' }}>
-          <div style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
-            <span style={{ fontSize:'11px', fontWeight:'700', color:sec1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', alignSelf:'flex-start', opacity:0.9 }}>{order.estado}</span>
-            <span style={{ fontSize:'12px', fontWeight:'800', color:sec1Color }}>{sec1Label}</span>
-          </div>
+          <span style={{ fontSize:'12px', fontWeight:'800', color:sec1Color }}>{sec1Label}</span>
           <div style={{ textAlign:'right', flexShrink:0 }}>
+            <span style={{ fontSize:'11px', fontWeight:'700', color:sec1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', display:'block', marginBottom:'3px', opacity:0.9 }}>{order.estado}</span>
             <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:sec1Color }}>{fmtM(order.total)}</div>
             <div style={{ fontSize:'10px', color:sec1Color, opacity:0.7 }}>{order.numOrden}</div>
           </div>
@@ -3045,17 +3041,19 @@ function ProximaSemana({ onViewOrder }) {
           )}
         </div>
 
-        {/* Sección 3 — celeste: fecha + actividad + nota */}
-        <div style={{ background:'#eff6ff', padding:'8px 14px', borderTop:'1px solid #bfdbfe' }}>
+        {/* Sección 3 — negro: actividad → fecha → nota */}
+        <div style={{ background:'#0f172a', padding:'10px 14px', borderTop:'1px solid #1e293b' }}>
+          {accion && (
+            <div style={{ fontSize:'12px', color:'#f8fafc', fontWeight:'700', marginBottom:'3px' }}>Actividad: {accion}</div>
+          )}
           {fechaLabel && (
-            <div style={{ fontSize:'12px', fontWeight:'700', color:'#1d4ed8', marginBottom:'2px', display:'flex', alignItems:'center', gap:'5px' }}>
-              <Icon d={icons.calendar} size={12} />
+            <div style={{ fontSize:'12px', fontWeight:'600', color:'#94a3b8', display:'flex', alignItems:'center', gap:'5px' }}>
+              <Icon d={icons.calendar} size={12} fill="#94a3b8" />
               {fechaLabel}{hora ? ` · ${hora}` : ''}
             </div>
           )}
-          {accion && <div style={{ fontSize:'12px', color:'#1d4ed8', fontWeight:'600' }}>Actividad: {accion}</div>}
           {order.notasSeguimiento && (
-            <div style={{ fontSize:'12px', color:'#1e40af', marginTop:'4px', fontStyle:'italic', lineHeight:'1.4' }}>
+            <div style={{ fontSize:'12px', color:'#cbd5e1', marginTop:'5px', fontStyle:'italic', lineHeight:'1.4', borderTop:'1px solid #1e293b', paddingTop:'5px' }}>
               "{order.notasSeguimiento}"
             </div>
           )}
@@ -3374,13 +3372,13 @@ export default function App() {
 
   const menuItems = [
     { key: 'midia',       icon: icons.calendar,   label: 'Mi día de hoy' },
+    { key: 'proximaSemana', icon: icons.trending,  label: 'Próxima semana' },
     { key: 'dashboard',   icon: icons.dashboard,  label: 'Panel' },
     { key: 'activities',  icon: icons.activity,   label: 'Actividades' },
     { key: 'form',        icon: icons.plus,        label: 'Nuevo cliente' },
     { key: 'list',        icon: icons.list,        label: 'Clientes' },
     { key: 'newOrder',    icon: icons.plus,        label: 'Nueva orden' },
     { key: 'orders',      icon: icons.orders,      label: 'Órdenes' },
-    { key: 'proximaSemana', icon: icons.trending,  label: 'Próxima semana' },
       ]
 
   return (
