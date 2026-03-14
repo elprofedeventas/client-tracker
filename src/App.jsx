@@ -240,6 +240,9 @@ function Highlight({ text, query }) {
 function MiDia({ onViewOrder }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [diasExtra, setDiasExtra] = useState(0)
+  const [sortField, setSortField] = useState('fecha')
+  const [sortDir, setSortDir] = useState('asc')
 
   useEffect(() => {
     fetch(`${API_BASE}?action=getMiDia`)
@@ -248,6 +251,11 @@ function MiDia({ onViewOrder }) {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
+
+  const toggleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir(field === 'total' ? 'desc' : 'asc') }
+  }
 
   const fmtM = (n) => `$${(parseFloat(n)||0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
@@ -370,9 +378,7 @@ function MiDia({ onViewOrder }) {
       {/* Header */}
       <div style={{ marginBottom: '20px' }}>
         <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '26px', letterSpacing: '-0.02em' }}>Mi día de hoy</h1>
-        <p style={{ color: 'var(--muted)', fontSize: '13px', marginTop: '2px' }}>
-          Meta {mesActual}: {fmtM(metaMes)} · {fmtM(metaMes / diasLaborables)}/día · ×{multiplicador}
-        </p>
+
       </div>
 
       {/* ── SECCIÓN 1: Actividades de hoy ─────────────────────────────────── */}
@@ -394,40 +400,99 @@ function MiDia({ onViewOrder }) {
 
       {/* ── SECCIÓN 2: En juego — actividades vencidas ────────────────────── */}
       <div>
-        <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Icon d={icons.alert} size={13} />
-          Vencidas (últimos {diasVencidos} días) · {actividadesVencidas.length}
-        </div>
-
-        {/* Medidor verde/rojo */}
-        <div style={{ background: enCamino ? '#f0fdf4' : '#fef2f2', border: `1.5px solid ${enCamino ? '#bbf7d0' : '#fecaca'}`, borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '14px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: enCamino ? 0 : '10px' }}>
-            <div>
-              <div style={{ fontSize: '10px', fontWeight: '700', color: enCamino ? '#16a34a' : '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>En juego</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '22px', color: enCamino ? '#16a34a' : '#dc2626' }}>{fmtM(totalVencido)}</div>
-            </div>
-            <div>
-              <div style={{ fontSize: '10px', fontWeight: '700', color: enCamino ? '#16a34a' : '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>Necesitas</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '22px', color: enCamino ? '#16a34a' : '#dc2626' }}>{fmtM(valorX)}</div>
-            </div>
-          </div>
-          {enCamino ? (
-            <div style={{ fontSize: '13px', fontWeight: '700', color: '#16a34a', marginTop: '8px' }}>✓ Estás en camino — tienes suficiente en juego</div>
-          ) : (
-            <div style={{ fontSize: '13px', fontWeight: '700', color: '#dc2626', marginTop: '8px' }}>⚠ Te faltan {fmtM(faltante)} — necesitas prospectar más hoy</div>
+        {/* Header con botón +15 días */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+          <button onClick={() => {}}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '20px', border: '1.5px solid var(--brand)', background: 'var(--brand-light)', color: 'var(--brand)', fontSize: '12px', fontWeight: '700', cursor: 'default' }}>
+            <Icon d={icons.alert} size={12} />
+            Vencidas (últimos {diasVencidos + diasExtra} días) · {actividadesVencidas.filter(o => {
+              if (diasExtra === 0) return true
+              const f = parseFechaActividad(o.siguienteAccionFecha)
+              if (!f) return false
+              f.setHours(0,0,0,0)
+              const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
+              const diff = Math.floor((hoy2 - f) / (1000*60*60*24))
+              return diff <= diasVencidos + diasExtra
+            }).length}
+          </button>
+          <button onClick={() => setDiasExtra(d => d + 15)}
+            style={{ padding: '5px 12px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--white)', color: 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--brand)'; e.currentTarget.style.color = 'var(--brand)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}>
+            + 15 días más
+          </button>
+          {diasExtra > 0 && (
+            <button onClick={() => setDiasExtra(0)}
+              style={{ padding: '5px 10px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--white)', color: 'var(--muted)', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+              ✕ resetear
+            </button>
           )}
         </div>
 
-        {/* Lista de vencidas */}
-        {actividadesVencidas.length === 0 ? (
-          <div style={{ background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', textAlign: 'center', color: 'var(--muted)', fontSize: '13px' }}>
-            Sin actividades vencidas en los últimos {diasVencidos} días
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {actividadesVencidas.map(o => <CardActividad key={o.numOrden} order={o} urgencia={true} />)}
-          </div>
-        )}
+        {/* Medidor verde/rojo */}
+        {(() => {
+          const listaVenc = actividadesVencidas.filter(o => {
+            if (diasExtra === 0) return true
+            const f = parseFechaActividad(o.siguienteAccionFecha)
+            if (!f) return false
+            f.setHours(0,0,0,0)
+            const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
+            return Math.floor((hoy2 - f) / (1000*60*60*24)) <= diasVencidos + diasExtra
+          })
+          const totalV = listaVenc.reduce((s,o) => s + (o.total||0), 0)
+          const ok = totalV >= valorX
+          const falt = Math.max(0, valorX - totalV)
+
+          const listaSort = [...listaVenc].sort((a, b) => {
+            if (sortField === 'fecha') {
+              const fa = parseFechaActividad(a.siguienteAccionFecha) || new Date(0)
+              const fb = parseFechaActividad(b.siguienteAccionFecha) || new Date(0)
+              return sortDir === 'asc' ? fa - fb : fb - fa
+            }
+            return sortDir === 'asc' ? (a.total||0) - (b.total||0) : (b.total||0) - (a.total||0)
+          })
+
+          return (
+            <>
+              <div style={{ background: ok ? '#f0fdf4' : '#fef2f2', border: `1.5px solid ${ok ? '#bbf7d0' : '#fecaca'}`, borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '10px' }}>
+                  <div>
+                    <div style={{ fontSize: '10px', fontWeight: '700', color: ok ? '#16a34a' : '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>En juego</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '22px', color: ok ? '#16a34a' : '#dc2626' }}>{fmtM(totalV)}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '10px', fontWeight: '700', color: ok ? '#16a34a' : '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>Necesitas</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '22px', color: ok ? '#16a34a' : '#dc2626' }}>{fmtM(valorX)}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: ok ? '#16a34a' : '#dc2626' }}>
+                  {ok ? '✓ Estás en camino — tienes suficiente en juego' : `⚠ Te faltan ${fmtM(falt)} — necesitas prospectar más hoy`}
+                </div>
+              </div>
+
+              {/* Botones sort */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                {[['fecha','Fecha'],['total','$']].map(([f,lbl]) => (
+                  <button key={f} onClick={() => toggleSort(f)}
+                    style={{ padding: '4px 12px', borderRadius: '20px', border: `1.5px solid ${sortField === f ? 'var(--brand)' : 'var(--border)'}`, background: sortField === f ? 'var(--brand-light)' : 'var(--white)', color: sortField === f ? 'var(--brand)' : 'var(--muted)', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
+                    {lbl} {sortField === f ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Lista */}
+              {listaSort.length === 0 ? (
+                <div style={{ background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', textAlign: 'center', color: 'var(--muted)', fontSize: '13px' }}>
+                  Sin actividades vencidas en los últimos {diasVencidos + diasExtra} días
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {listaSort.map(o => <CardActividad key={o.numOrden} order={o} urgencia={true} />)}
+                </div>
+              )}
+            </>
+          )
+        })()}
       </div>
     </div>
   )
@@ -2628,7 +2693,7 @@ export default function App() {
       <main style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 20px' }}>
 
         {/* ── DASHBOARD ─────────────────────────────────────────────────────── */}
-        {view === 'midia' && <MiDia onViewOrder={(o) => handleViewOrder(o, 'activities')} />}
+        {view === 'midia' && <MiDia onViewOrder={(o) => handleViewOrder(o, 'midia')} />}
 
         {view === 'dashboard' && <Dashboard />}
 
@@ -2731,7 +2796,7 @@ export default function App() {
 
         {/* ── VER ORDEN ─────────────────────────────────────────────────────── */}
         {view === 'viewOrder' && viewingOrder && (
-          <ViewOrder order={viewingOrder} onBack={() => setView(orderOrigin)} onChangeEstado={handleChangeEstado} showToast={showToast} backLabel={orderOrigin === 'view' ? 'Volver al cliente' : 'Volver a órdenes'} />
+          <ViewOrder order={viewingOrder} onBack={() => setView(orderOrigin === 'midia' ? 'midia' : orderOrigin)} onChangeEstado={handleChangeEstado} showToast={showToast} backLabel={orderOrigin === 'view' ? 'Volver al cliente' : orderOrigin === 'midia' ? 'Volver a Mi día' : 'Volver a órdenes'} />
         )}
 
         {/* ── NUEVA ORDEN ───────────────────────────────────────────────────── */}
