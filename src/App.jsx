@@ -6,6 +6,8 @@ const EMPTY_FORM = {
   nombre: '', negocio: '', identificacion: '', telefono: '',
   email: '', direccion: '', contacto: '',
   telefonoContacto: '', notas: '',
+  fuente: '', potencial: '',
+  fechaSeguimiento: '', horaSeguimiento: '', accionSeguimiento: '', notaSeguimiento: '',
 }
 
 const Icon = ({ d, size = 18, stroke = 'currentColor', fill = 'none' }) => (
@@ -2544,14 +2546,25 @@ function ViewPista({ pista, onBack, onEdit, showToast }) {
           <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--brand)', background: 'var(--brand-light)', padding: '3px 10px', borderRadius: '20px', border: '1px solid var(--brand)' }}>
             Pista activa · {pista.diasEnPista} {pista.diasEnPista === 1 ? 'día' : 'días'}
           </span>
-          {pista.potencial && (
-            <span style={{ fontSize: '12px', fontWeight: '700', color: potencialColor(pista.potencial), background: potencialBg(pista.potencial), padding: '3px 10px', borderRadius: '20px' }}>
-              Potencial {pista.potencial}
-            </span>
-          )}
-          {pista.fuente && (
-            <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: '600' }}>Fuente: {pista.fuente}</span>
-          )}
+        </div>
+
+        {/* Calificación de la pista — siempre visible */}
+        <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>Calificación de la pista</div>
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', marginBottom: '4px' }}>Fuente de contacto</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: pista.fuente ? 'var(--ink)' : 'var(--border)' }}>{pista.fuente || '—'}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', marginBottom: '4px' }}>Potencial</div>
+              {pista.potencial ? (
+                <span style={{ fontSize: '13px', fontWeight: '700', color: potencialColor(pista.potencial), background: potencialBg(pista.potencial), padding: '2px 10px', borderRadius: '20px' }}>{pista.potencial}</span>
+              ) : (
+                <div style={{ fontSize: '14px', color: 'var(--border)' }}>—</div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Datos de contacto */}
@@ -2592,7 +2605,7 @@ function ViewPista({ pista, onBack, onEdit, showToast }) {
         )}
 
         {/* Seguimiento */}
-        {(pista.accionSeguimiento || pista.fechaSeguimiento || pista.notaSeguimiento) && (
+        {true && (
           <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '16px 20px', boxShadow: 'var(--shadow)' }}>
             <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Icon d={icons.calendar} size={13} />Seguimiento de pista
@@ -2779,7 +2792,9 @@ function EditPista({ pista, onSave, onCancel, showToast }) {
                 style={{ ...inputStyle, fontSize: '14px' }} />
             </Field>
             <Field label="Hora de seguimiento">
-              <input type="time" {...set('horaSeguimiento')} style={{ ...inputStyle, fontSize: '14px' }} />
+              <input type="time" value={form.horaSeguimiento || ''}
+                onChange={e => { const v = e.target.value; setForm(p => ({ ...p, horaSeguimiento: v })) }}
+                style={{ ...inputStyle, fontSize: '14px' }} />
             </Field>
             <div style={{ gridColumn: '1 / -1' }}>
               <Field label="Acción de seguimiento">
@@ -2791,7 +2806,8 @@ function EditPista({ pista, onSave, onCancel, showToast }) {
             </div>
           </div>
           <Field label="Nota de seguimiento">
-            <textarea {...set('notaSeguimiento')} placeholder="Detalles del seguimiento, acuerdos, próximos pasos..."
+            <textarea value={form.notaSeguimiento || ''} placeholder="Detalles del seguimiento, acuerdos, próximos pasos..."
+              onChange={e => { const v = e.target.value; setForm(p => ({ ...p, notaSeguimiento: v })) }}
               style={{ ...inputStyle, resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px', width: '100%', boxSizing: 'border-box' }} />
           </Field>
         </div>
@@ -3621,6 +3637,34 @@ function ProximaSemana({ onViewOrder }) {
   )
 }
 
+
+// ─── HELPERS PISTAS SELECTS ───────────────────────────────────────────────────
+function PistaFuenteSelect({ value, onChange }) {
+  const [fuentes, setFuentes] = useState([])
+  useEffect(() => {
+    fetch(`${API_BASE}?action=getPistasFuentes`).then(r=>r.json()).then(d=>{ if(d.success) setFuentes(d.data) }).catch(()=>{})
+  }, [])
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)} style={{ ...inputStyle, cursor:'pointer', fontSize:'14px' }}>
+      <option value="">— Seleccionar —</option>
+      {fuentes.map(f => <option key={f} value={f}>{f}</option>)}
+    </select>
+  )
+}
+
+function PistaAccionSelect({ value, onChange }) {
+  const [acciones, setAcciones] = useState([])
+  useEffect(() => {
+    fetch(`${API_BASE}?action=getPistasAcciones`).then(r=>r.json()).then(d=>{ if(d.success) setAcciones(d.data) }).catch(()=>{})
+  }, [])
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)} style={{ ...inputStyle, cursor:'pointer', fontSize:'14px' }}>
+      <option value="">— Seleccionar —</option>
+      {acciones.map(a => <option key={a} value={a}>{a}</option>)}
+    </select>
+  )
+}
+
 export default function App() {
   const [view, setView] = useState('midia')
   const [ordersKey, setOrdersKey] = useState(0)
@@ -3685,7 +3729,15 @@ export default function App() {
     if (!validate()) return
     setLoading(true)
     try {
-      const params = new URLSearchParams({ ...form, action: 'create' })
+      const params = new URLSearchParams({
+        action: 'create',
+        nombre: form.nombre, negocio: form.negocio||'', identificacion: form.identificacion||'',
+        telefono: form.telefono, email: form.email||'', direccion: form.direccion||'',
+        contacto: form.contacto||'', telefonoContacto: form.telefonoContacto||'', notas: form.notas||'',
+        fuente: form.fuente||'', potencial: form.potencial||'',
+        fechaSeguimiento: form.fechaSeguimiento||'', horaSeguimiento: form.horaSeguimiento||'',
+        accionSeguimiento: form.accionSeguimiento||'', notaSeguimiento: form.notaSeguimiento||'',
+      })
       const res = await fetch(`${API_BASE}?${params.toString()}`)
       const data = await res.json()
       if (data.success) { showToast(`✓ ${form.nombre} registrado exitosamente`); setForm(EMPTY_FORM); setErrors({}); if (view === 'newPista') setView('pistas') }
@@ -3773,7 +3825,6 @@ export default function App() {
     { key: 'activities',  icon: icons.activity,   label: 'Actividades' },
     { key: 'newPista',    icon: icons.plus,        label: 'Nueva pista' },
     { key: 'pistas',      icon: icons.search,      label: 'Pistas' },
-    { key: 'form',        icon: icons.plus,        label: 'Nuevo cliente' },
     { key: 'list',        icon: icons.list,        label: 'Clientes' },
     { key: 'newOrder',    icon: icons.plus,        label: 'Nueva orden' },
     { key: 'orders',      icon: icons.orders,      label: 'Órdenes' },
@@ -3876,10 +3927,57 @@ export default function App() {
                 <div style={sectionTitle}>Notas / Comentarios</div>
                 <Field label="Notas / Comentarios" icon="note"><textarea {...fp('notas')} style={{ ...gs('notas'), resize: 'vertical', minHeight: '90px', lineHeight: '1.5' }} placeholder="Interés del cliente, próximos pasos, observaciones..." /></Field>
               </div>
+
+              {/* Calificación — solo en Nueva Pista */}
+              {view === 'newPista' && (
+                <>
+                  <div>
+                    <div style={sectionTitle}>Calificación de la pista</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <Field label="Fuente de contacto" icon="note">
+                        <PistaFuenteSelect value={form.fuente || ''} onChange={v => setForm(p => ({ ...p, fuente: v }))} />
+                      </Field>
+                      <Field label="Potencial" icon="note">
+                        <select value={form.potencial || ''} onChange={e => setForm(p => ({ ...p, potencial: e.target.value }))}
+                          style={{ ...inputStyle, cursor: 'pointer', fontSize: '14px' }}>
+                          <option value="">— Seleccionar —</option>
+                          {['Alto','Medio','Bajo'].map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                      </Field>
+                    </div>
+                  </div>
+                  <div>
+                    <div style={sectionTitle}>Seguimiento de pista</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                      <Field label="Fecha de seguimiento" icon="calendar">
+                        <input type="date" value={form.fechaSeguimiento ? (() => { const p = form.fechaSeguimiento.split('/'); return p.length===3?`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`:'' })() : ''}
+                          onChange={e => { const iso = e.target.value; if (!iso) { setForm(p => ({ ...p, fechaSeguimiento: '' })); return }; const [y,m,d] = iso.split('-'); setForm(p => ({ ...p, fechaSeguimiento: `${d}/${m}/${y}` })) }}
+                          style={{ ...inputStyle, fontSize: '14px' }} />
+                      </Field>
+                      <Field label="Hora de seguimiento" icon="clock">
+                        <input type="time" value={form.horaSeguimiento || ''}
+                          onChange={e => setForm(p => ({ ...p, horaSeguimiento: e.target.value }))}
+                          style={{ ...inputStyle, fontSize: '14px' }} />
+                      </Field>
+                    </div>
+                    <div style={{ marginBottom: '16px' }}>
+                      <Field label="Acción de seguimiento" icon="note">
+                        <PistaAccionSelect value={form.accionSeguimiento || ''} onChange={v => setForm(p => ({ ...p, accionSeguimiento: v }))} />
+                      </Field>
+                    </div>
+                    <Field label="Nota de seguimiento" icon="note">
+                      <textarea value={form.notaSeguimiento || ''} placeholder="Detalles, acuerdos, próximos pasos..."
+                        onChange={e => setForm(p => ({ ...p, notaSeguimiento: e.target.value }))}
+                        style={{ ...inputStyle, resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px' }} />
+                    </Field>
+                  </div>
+                </>
+              )}
+
               <button onClick={handleSubmit} disabled={loading} style={{ width: '100%', padding: '13px', background: loading ? 'var(--muted)' : 'var(--brand)', color: 'white', border: 'none', borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'background 0.2s', marginTop: '4px', cursor: loading ? 'not-allowed' : 'pointer' }}
                 onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--brand-dark)' }}
                 onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--brand-dark)' }}>
-                {loading ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando...</> : <><Icon d={icons.check} size={16} /> Registrar cliente</>}
+                {loading ? <><span style={{ animation: 'pulse 1s infinite' }}>⏳</span> Guardando...</> : <><Icon d={icons.check} size={16} /> {view === 'newPista' ? 'Registrar pista' : 'Registrar cliente'}</>}
               </button>
             </div>
           </div>
