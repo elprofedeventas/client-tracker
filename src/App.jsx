@@ -2860,6 +2860,7 @@ export default function App() {
   const [ordersKey, setOrdersKey] = useState(0)
   const [ordersFiltro, setOrdersFiltro] = useState('Negociando')
   const [activitiesModo, setActivitiesModo] = useState('pendientes')
+  const [activitiesKey, setActivitiesKey] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
   const [voiceState, setVoiceState] = useState('idle') // 'idle' | 'listening' | 'success' | 'error'
   const recognitionRef = useRef(null)
@@ -2970,6 +2971,7 @@ export default function App() {
         voiceSpeak(confirmacion)
         if (destino === 'activities-vencidas') {
           setActivitiesModo('vencidas')
+          setActivitiesKey(k => k + 1)
           navigate('activities')
         } else {
           navigate(destino)
@@ -3129,7 +3131,7 @@ export default function App() {
 
         {/* ── ACTIVIDADES ───────────────────────────────────────────────────── */}
         {view === 'activities' && (
-          <ActividadesView onViewOrder={(o) => handleViewOrder(o, 'activities')} modoInicial={activitiesModo} />
+          <ActividadesView key={activitiesKey} onViewOrder={(o) => handleViewOrder(o, 'activities')} modoInicial={activitiesModo} />
         )}
 
         {/* ── ÓRDENES ───────────────────────────────────────────────────────── */}
