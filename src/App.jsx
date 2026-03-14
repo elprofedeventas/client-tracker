@@ -323,7 +323,7 @@ function MiDia({ onViewOrder }) {
     window.speechSynthesis.speak(utter)
   }
 
-  const dataRef = React.useRef(null)
+  const dataRef = useRef(null)
 
   useEffect(() => {
     fetch(`${API_BASE}?action=getMiDia`)
