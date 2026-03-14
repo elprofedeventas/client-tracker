@@ -2693,14 +2693,7 @@ function EditPista({ pista, onSave, onCancel, showToast }) {
     setLoading(false)
   }
 
-  const sectionTitle = { fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid var(--border)' }
 
-  const Field = ({ label, children }) => (
-    <div>
-      <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>{label}</div>
-      {children}
-    </div>
-  )
 
   // fechaParaInput convierte dd/MM/yyyy a yyyy-MM-dd
   const fechaParaInput = (v) => {
@@ -2720,58 +2713,69 @@ function EditPista({ pista, onSave, onCancel, showToast }) {
 
         {/* Datos básicos */}
         <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
-          <div style={sectionTitle}>Datos del contacto</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid var(--border)' }}>Datos del contacto</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-            <Field label="Nombre completo *">
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Nombre completo *</div>
               <input {...set('nombre')} style={{ ...inputStyle, fontSize: '14px' }} />
               {errors.nombre && <div style={{ fontSize: '12px', color: 'var(--error)', marginTop: '4px' }}>{errors.nombre}</div>}
-            </Field>
-            <Field label="Identificación">
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Identificación</div>
               <input {...set('identificacion')} style={{ ...inputStyle, fontSize: '14px' }} />
-            </Field>
-            <Field label="Teléfono *">
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Teléfono *</div>
               <input {...set('telefono')} type="tel" style={{ ...inputStyle, fontSize: '14px' }} />
               {errors.telefono && <div style={{ fontSize: '12px', color: 'var(--error)', marginTop: '4px' }}>{errors.telefono}</div>}
-            </Field>
-            <Field label="Email">
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Email</div>
               <input {...set('email')} type="email" style={{ ...inputStyle, fontSize: '14px' }} />
-            </Field>
-            <Field label="Negocio">
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Negocio</div>
               <input {...set('negocio')} style={{ ...inputStyle, fontSize: '14px' }} />
-            </Field>
-            <Field label="Dirección">
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Dirección</div>
               <input {...set('direccion')} style={{ ...inputStyle, fontSize: '14px' }} />
-            </Field>
-            <Field label="Contacto">
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Contacto</div>
               <input {...set('contacto')} style={{ ...inputStyle, fontSize: '14px' }} />
-            </Field>
-            <Field label="Teléfono de contacto">
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Teléfono de contacto</div>
               <input {...set('telefonoContacto')} type="tel" style={{ ...inputStyle, fontSize: '14px' }} />
-            </Field>
+            </div>
           </div>
           <div style={{ marginTop: '14px' }}>
-            <Field label="Notas / Comentarios">
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Notas / Comentarios</div>
               <textarea {...set('notas')} style={{ ...inputStyle, resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px', width: '100%', boxSizing: 'border-box' }} />
-            </Field>
+            </div>
           </div>
         </div>
 
         {/* Fuente y potencial */}
         <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', boxShadow: 'var(--shadow)' }}>
-          <div style={sectionTitle}>Calificación de la pista</div>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid var(--border)' }}>Calificación de la pista</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-            <Field label="Fuente de contacto">
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Fuente de contacto</div>
               <select {...set('fuente')} style={{ ...inputStyle, cursor: 'pointer', fontSize: '14px' }}>
                 <option value="">— Seleccionar —</option>
                 {fuentes.map(f => <option key={f} value={f}>{f}</option>)}
               </select>
-            </Field>
-            <Field label="Potencial">
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Potencial</div>
               <select {...set('potencial')} style={{ ...inputStyle, cursor: 'pointer', fontSize: '14px' }}>
                 <option value="">— Seleccionar —</option>
                 {['Alto','Medio','Bajo'].map(p => <option key={p} value={p}>{p}</option>)}
               </select>
-            </Field>
+            </div>
           </div>
         </div>
 
@@ -2781,7 +2785,8 @@ function EditPista({ pista, onSave, onCancel, showToast }) {
             <Icon d={icons.calendar} size={13} />Seguimiento de pista
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-            <Field label="Fecha de seguimiento">
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Fecha de seguimiento</div>
               <input type="date" value={fechaParaInput(form.fechaSeguimiento)}
                 onChange={e => {
                   const iso = e.target.value
@@ -2790,26 +2795,29 @@ function EditPista({ pista, onSave, onCancel, showToast }) {
                   setForm(p => ({ ...p, fechaSeguimiento: `${d}/${m}/${y}` }))
                 }}
                 style={{ ...inputStyle, fontSize: '14px' }} />
-            </Field>
-            <Field label="Hora de seguimiento">
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Hora de seguimiento</div>
               <input type="time" value={form.horaSeguimiento || ''}
                 onChange={e => { const v = e.target.value; setForm(p => ({ ...p, horaSeguimiento: v })) }}
                 style={{ ...inputStyle, fontSize: '14px' }} />
-            </Field>
+            </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <Field label="Acción de seguimiento">
+              <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Acción de seguimiento</div>
                 <select {...set('accionSeguimiento')} style={{ ...inputStyle, cursor: 'pointer', fontSize: '14px' }}>
                   <option value="">— Seleccionar —</option>
                   {acciones.map(a => <option key={a} value={a}>{a}</option>)}
                 </select>
-              </Field>
+              </div>
             </div>
           </div>
-          <Field label="Nota de seguimiento">
+          <div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Nota de seguimiento</div>
             <textarea value={form.notaSeguimiento || ''} placeholder="Detalles del seguimiento, acuerdos, próximos pasos..."
               onChange={e => { const v = e.target.value; setForm(p => ({ ...p, notaSeguimiento: v })) }}
               style={{ ...inputStyle, resize: 'vertical', minHeight: '80px', lineHeight: '1.5', fontSize: '14px', width: '100%', boxSizing: 'border-box' }} />
-          </Field>
+          </div>
         </div>
 
         {/* Botón guardar */}
