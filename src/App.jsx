@@ -508,6 +508,15 @@ function MiDia({ onViewOrder }) {
           <Icon d={icons.calendar} size={13} />
           Actividades de hoy · {actividadesHoy.length}
         </div>
+        {actividadesHoy.length > 0 && (() => {
+          const totalHoy = actividadesHoy.reduce((s,o) => s + (o.total||0), 0)
+          return (
+            <div style={{ background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:'var(--radius-lg)', padding:'12px 18px', marginBottom:'10px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ fontSize:'12px', fontWeight:'700', color:'#16a34a', textTransform:'uppercase', letterSpacing:'0.06em' }}>Total hoy</span>
+              <span style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'#16a34a' }}>{fmtM(totalHoy)}</span>
+            </div>
+          )
+        })()}
         {actividadesHoy.length === 0 ? (
           <div style={{ background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', textAlign: 'center', color: 'var(--muted)', fontSize: '13px' }}>
             Sin actividades programadas para hoy
@@ -517,50 +526,29 @@ function MiDia({ onViewOrder }) {
             {actividadesHoy.map(o => <CardActividad key={o.numOrden} order={o} urgencia={false} />)}
           </div>
         )}
-        {actividadesHoy.length > 0 && (() => {
-          const totalHoy = actividadesHoy.reduce((s,o) => s + (o.total||0), 0)
-          return (
-            <div style={{ background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:'var(--radius-lg)', padding:'12px 18px', marginTop:'10px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <span style={{ fontSize:'12px', fontWeight:'700', color:'#16a34a', textTransform:'uppercase', letterSpacing:'0.06em' }}>Total hoy</span>
-              <span style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'#16a34a' }}>{fmtM(totalHoy)}</span>
-            </div>
-          )
-        })()}
       </div>
 
       {/* ── SECCIÓN 2: En juego — actividades vencidas ────────────────────── */}
       <div>
-        {/* Header con botón +15 días */}
+        {/* Botones de rango vencidas */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-          <button onClick={() => {}}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '20px', border: '1.5px solid var(--brand)', background: 'var(--brand-light)', color: 'var(--brand)', fontSize: '12px', fontWeight: '700', cursor: 'default' }}>
-            <Icon d={icons.alert} size={12} />
-            Vencidas (últimos {diasVencidos + diasExtra} días) · {actividadesVencidas.filter(o => {
-              if (diasExtra === 0) return true
+          {[{ extra: 0, label: `Vencidas (últimos ${diasVencidos} días)` }, { extra: 15, label: `Vencidas (últimos ${diasVencidos + 15} días)` }].map(({ extra, label }) => {
+            const cnt = actividadesVencidas.filter(o => {
               const f = parseFechaActividad(o.siguienteAccionFecha)
               if (!f) return false
               f.setHours(0,0,0,0)
               const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
-              const diff = Math.floor((hoy2 - f) / (1000*60*60*24))
-              return diff <= diasVencidos + diasExtra
-            }).length}
-          </button>
-          <button onClick={() => setDiasExtra(15)}
-            style={{ padding: '5px 12px', borderRadius: '20px', border: `1.5px solid ${diasExtra===15?'var(--brand)':'var(--border)'}`, background: diasExtra===15?'var(--brand-light)':'var(--white)', color: diasExtra===15?'var(--brand)':'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>
-            Vencidas (últimos 30 días) · {actividadesVencidas.filter(o => {
-              const f = parseFechaActividad(o.siguienteAccionFecha)
-              if (!f) return false
-              f.setHours(0,0,0,0)
-              const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
-              return Math.floor((hoy2 - f) / (1000*60*60*24)) <= diasVencidos + 15
-            }).length}
-          </button>
-          {diasExtra > 0 && (
-            <button onClick={() => setDiasExtra(0)}
-              style={{ padding: '5px 10px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--white)', color: 'var(--muted)', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
-              ✕
-            </button>
-          )}
+              return Math.floor((hoy2 - f) / (1000*60*60*24)) <= diasVencidos + extra
+            }).length
+            const activo = diasExtra === extra
+            return (
+              <button key={extra} onClick={() => setDiasExtra(extra)}
+                style={{ display:'flex', alignItems:'center', gap:'6px', padding:'5px 12px', borderRadius:'20px', border:`1.5px solid ${activo?'var(--brand)':'var(--border)'}`, background:activo?'var(--brand-light)':'var(--white)', color:activo?'var(--brand)':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s' }}>
+                {activo && <Icon d={icons.alert} size={12} />}
+                {label} · {cnt}
+              </button>
+            )
+          })}
         </div>
 
         {/* Botones sort */}
