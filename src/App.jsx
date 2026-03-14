@@ -1505,6 +1505,7 @@ const ESTADO_COLORS = {
   'Detenido':   { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
   'Perdido':    { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
   'Vendido':    { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
+  'Pista':      { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
 }
 
 
@@ -1981,6 +1982,7 @@ const ACCION_PHONE_EMAIL = ['Mensaje','Solicitar Referidos','Enviar Propuesta','
 
 function ActividadesView({ onViewOrder, modoInicial }) {
   const [orders, setOrders] = useState([])
+  const [pistasData, setPistasData] = useState([])
   const [loading, setLoading] = useState(true)
   const [busqueda, setBusqueda] = useState('')
   const [sortField, setSortField] = useState('fecha')
@@ -1995,6 +1997,7 @@ function ActividadesView({ onViewOrder, modoInicial }) {
   const [fechaFin, setFechaFin] = useState('')
   const [modoHistorial, setModoHistorial] = useState(false)
   const [dashData, setDashData] = useState(null)
+  const [tipoDato, setTipoDato] = useState('ordenes') // 'ordenes' | 'pistas'
 
   useEffect(() => {
     fetch(`${API_BASE}?action=getOrdenes`)
@@ -2003,6 +2006,8 @@ function ActividadesView({ onViewOrder, modoInicial }) {
       .then(r => r.json()).then(d => { if (d.success) setAccionesDisp(d.data) }).catch(() => {})
     fetch(`${API_BASE}?action=dashboard`)
       .then(r => r.json()).then(d => { if (d.success) setDashData(d.data) }).catch(() => {})
+    fetch(`${API_BASE}?action=getPistasActividades`)
+      .then(r => r.json()).then(d => { if (d.success) setPistasData(d.data) }).catch(() => {})
   }, [])
 
   const parseFechaSeg = (v) => {
@@ -2023,17 +2028,35 @@ function ActividadesView({ onViewOrder, modoInicial }) {
   const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
   const finMes    = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0, 23, 59, 59)
   const ESTADOS   = ['Negociando', 'Detenido', 'Perdido']
+
+  // Switch data source based on tipoDato
+  // For pistas: map to same shape as orders so existing filters work
+  const pistasComoOrdenes = pistasData.map(p => ({
+    ...p,
+    clienteNombre: p.nombre,
+    clienteNegocio: p.negocio,
+    clienteTelefono: p.telefono,
+    clienteEmail: p.email,
+    clienteDireccion: p.direccion,
+    estado: 'Pista',
+    total: 0,
+    numOrden: '',
+  }))
+  const activeOrders = tipoDato === 'pistas' ? pistasComoOrdenes : orders
   const mesNombre = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][hoy.getMonth()]
 
-  const conFecha = useMemo(() =>
-    orders.filter(o => ESTADOS.includes(o.estado) && o.siguienteAccionFecha)
-      .map(o => ({ ...o, _fecha: parseFechaSeg(o.siguienteAccionFecha) }))
-      .filter(o => o._fecha !== null)
-  , [orders])
+  const conFecha = useMemo(() => {
+    const src = tipoDato === 'pistas'
+      ? pistasComoOrdenes.filter(o => o.siguienteAccionFecha)
+      : activeOrders.filter(o => ESTADOS.includes(o.estado) && o.siguienteAccionFecha)
+    return src.map(o => ({ ...o, _fecha: parseFechaSeg(o.siguienteAccionFecha) })).filter(o => o._fecha !== null)
+  }, [orders, pistasData, tipoDato])
 
-  const sinFechaList = useMemo(() =>
-    orders.filter(o => ESTADOS.includes(o.estado) && !o.siguienteAccionFecha)
-  , [orders])
+  const sinFechaList = useMemo(() => {
+    return tipoDato === 'pistas'
+      ? pistasComoOrdenes.filter(o => !o.siguienteAccionFecha)
+      : activeOrders.filter(o => ESTADOS.includes(o.estado) && !o.siguienteAccionFecha)
+  }, [orders, pistasData, tipoDato])
 
   // Conteos para badges
   const cntPendientes = useMemo(() => conFecha.filter(o => o._fecha >= hoy && o._fecha <= finMes).length, [conFecha])
@@ -2069,7 +2092,7 @@ function ActividadesView({ onViewOrder, modoInicial }) {
 
     if (busqueda.trim()) {
       const q = norm(busqueda)
-      list = list.filter(o => norm(o.clienteNombre).includes(q) || norm(o.clienteNegocio||'').includes(q) || norm(o.numOrden).includes(q) || norm(o.accion||'').includes(q))
+      list = list.filter(o => norm(o.clienteNombre||o.nombre||'').includes(q) || norm(o.clienteNegocio||o.negocio||'').includes(q) || norm(o.numOrden||'').includes(q) || norm(o.accion||'').includes(q))
     }
 
     list = [...list].sort((a, b) => {
@@ -2129,6 +2152,15 @@ function ActividadesView({ onViewOrder, modoInicial }) {
             <h1 style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'28px', letterSpacing:'-0.02em', margin:0 }}>Actividades</h1>
             <div style={{ fontSize:'13px', color:'var(--muted)', fontWeight:'500', marginTop:'4px', display:'flex', alignItems:'center', gap:'6px' }}>
               <Icon d={icons.calendar} size={13} />{getTodayLabel()}
+            </div>
+            {/* Botones Órdenes / Pistas */}
+            <div style={{ display:'flex', gap:'6px', marginTop:'8px' }}>
+              {[['ordenes','Órdenes'],['pistas','Pistas']].map(([tipo, lbl]) => (
+                <button key={tipo} onClick={() => { setTipoDato(tipo); setModo('pendientes'); setModoHistorial(false); setBusqueda(''); setFiltroAccion('') }}
+                  style={{ padding:'5px 14px', borderRadius:'20px', border:`1.5px solid ${tipoDato===tipo?'var(--brand)':'var(--border)'}`, background:tipoDato===tipo?'var(--brand)':'var(--white)', color:tipoDato===tipo?'white':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s' }}>
+                  {lbl}
+                </button>
+              ))}
             </div>
           </div>
           {/* Dropdown filtro acción */}
@@ -2328,8 +2360,8 @@ function ActividadesView({ onViewOrder, modoInicial }) {
                       {diff && <span style={{ fontSize:'11px', fontWeight:'700', padding:'2px 8px', borderRadius:'20px', background:diff.bg, color:diff.color }}>{diff.label}</span>}
                       <span style={{ fontSize:'11px', fontWeight:'700', padding:'2px 8px', borderRadius:'20px', background:c.bg, color:c.color, border:`1px solid ${c.border}` }}>{order.estado}</span>
                     </div>
-                    <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px' }}>{order.clienteNombre}</div>
-                    {order.clienteNegocio && <div style={{ fontSize:'13px', color:'var(--muted)' }}>{order.clienteNegocio}</div>}
+                    <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px' }}>{order.clienteNombre || order.nombre}</div>
+                    {(order.clienteNegocio || order.negocio) && <div style={{ fontSize:'13px', color:'var(--muted)' }}>{order.clienteNegocio || order.negocio}</div>}
                     {order.siguienteAccionFecha && (
                       <div style={{ display:'flex', alignItems:'center', gap:'6px', marginTop:'6px', flexWrap:'wrap' }}>
                         <span style={{ fontSize:'12px', color:'var(--muted)', display:'flex', alignItems:'center', gap:'4px' }}>
@@ -2404,8 +2436,11 @@ function ActividadesView({ onViewOrder, modoInicial }) {
                     )}
                   </div>
                   <div style={{ textAlign:'right', flexShrink:0 }}>
-                    <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px' }}>{fmtMoney(order.total)}</div>
-                    <div style={{ fontSize:'11px', color:'var(--muted)', marginTop:'2px' }}>{order.numOrden}</div>
+                    {order.estado !== 'Pista' && <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px' }}>{fmtMoney(order.total)}</div>}
+                    {order.numOrden && <div style={{ fontSize:'11px', color:'var(--muted)', marginTop:'2px' }}>{order.numOrden}</div>}
+                    {order.estado === 'Pista' && order.potencial && (
+                      <span style={{ fontSize:'11px', fontWeight:'700', color: order.potencial==='Alto'?'#16a34a':order.potencial==='Medio'?'#d97706':'#dc2626', background: order.potencial==='Alto'?'#f0fdf4':order.potencial==='Medio'?'#fffbeb':'#fef2f2', padding:'2px 8px', borderRadius:'20px' }}>{order.potencial}</span>
+                    )}
                   </div>
                 </div>
               </div>
