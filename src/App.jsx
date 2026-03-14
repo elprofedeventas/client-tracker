@@ -299,12 +299,8 @@ function MiDia({ onViewOrder }) {
         }
         return n.toString()
       }
-      const cents = Math.round((parseFloat(n)||0) % 1 * 100)
-      const entero = Math.floor(parseFloat(n)||0)
-      const textoEntero = parteEntera(entero) || 'cero'
-      return cents > 0
-        ? `${textoEntero} dólares con ${parteEntera(cents)} centavos`
-        : `${textoEntero} dólares`
+      const textoEntero = parteEntera(num) || 'cero'
+      return `${textoEntero} dólares`
     }
     const hora = getNowGuayaquil().getHours()
     const saludo = hora < 12 ? 'Buenos días' : hora < 18 ? 'Buenas tardes' : 'Buenas noches'
@@ -327,10 +323,17 @@ function MiDia({ onViewOrder }) {
     window.speechSynthesis.speak(utter)
   }
 
+  const dataRef = React.useRef(null)
+
   useEffect(() => {
     fetch(`${API_BASE}?action=getMiDia`)
       .then(r => r.json())
-      .then(d => { if (d.success) setData(d.data) })
+      .then(d => {
+        if (d.success) {
+          setData(d.data)
+          dataRef.current = d.data
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
     fetch(`${API_BASE}?action=dashboard`)
@@ -338,6 +341,15 @@ function MiDia({ onViewOrder }) {
       .then(d => { if (d.success) setDashData(d.data) })
       .catch(() => {})
   }, [])
+
+  // Auto-hablar cuando carguen los datos
+  useEffect(() => {
+    if (!data) return
+    const timer = setTimeout(() => {
+      hablar(data.actividadesHoy, data.actividadesVencidas, data.diasVencidos, 0, data.faltante, data.totalVencido)
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [data])
 
   const toggleSort = (field) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
