@@ -481,11 +481,11 @@ function MiDia({ onViewOrder }) {
         onMouseEnter={e => e.currentTarget.style.boxShadow='var(--shadow-lg)'}
         onMouseLeave={e => e.currentTarget.style.boxShadow='var(--shadow)'}>
 
-        {/* Sección 1 — rojo/amarillo/azul: días vencida + monto + orden */}
+        {/* Sección 1 — rojo/amarillo/azul: estado + días vencida + monto + orden */}
         <div style={{ background:sec1Bg, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
+            <span style={{ fontSize:'11px', fontWeight:'700', color:sec1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', alignSelf:'flex-start', opacity:0.9 }}>{order.estado}</span>
             <span style={{ fontSize:'12px', fontWeight:'800', color:sec1Color }}>{sec1Label}</span>
-            <span style={{ fontSize:'11px', fontWeight:'600', color:sec1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', opacity:0.85 }}>{order.estado}</span>
           </div>
           <div style={{ textAlign:'right', flexShrink:0 }}>
             <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:sec1Color }}>{fmtM(order.total)}</div>
@@ -817,7 +817,7 @@ function Dashboard() {
       {/* Título */}
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '28px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-          Dashboard {mesLabel} {anio}
+          Panel {mesLabel} {anio}
         </h1>
         <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: '500', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Icon d={icons.calendar} size={13} />{getTodayLabel()}
@@ -2996,9 +2996,9 @@ function ProximaSemana({ onViewOrder }) {
 
         {/* Sección 1 */}
         <div style={{ background:sec1Bg, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
+            <span style={{ fontSize:'11px', fontWeight:'700', color:sec1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', alignSelf:'flex-start', opacity:0.9 }}>{order.estado}</span>
             <span style={{ fontSize:'12px', fontWeight:'800', color:sec1Color }}>{sec1Label}</span>
-            <span style={{ fontSize:'11px', fontWeight:'600', color:sec1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', opacity:0.85 }}>{order.estado}</span>
           </div>
           <div style={{ textAlign:'right', flexShrink:0 }}>
             <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:sec1Color }}>{fmtM(order.total)}</div>
@@ -3339,7 +3339,7 @@ export default function App() {
       else if (incluye(['vencidas', 'actividades vencidas', 'vencidos']))       { destino = 'activities-vencidas'; confirmacion = 'Abriendo actividades vencidas.' }
       else if (incluye(['mis actividades', 'ver actividades', 'actividades']))  { destino = 'activities'; confirmacion = 'Abriendo actividades.' }
       else if (incluye(['ordenes', 'órdenes', 'ver ordenes', 'ver órdenes']))   { destino = 'orders';    confirmacion = 'Abriendo órdenes.' }
-      else if (incluye(['dashboard', 'inicio', 'panel']))                       { destino = 'dashboard'; confirmacion = 'Abriendo dashboard.' }
+      else if (incluye(['panel', 'inicio', 'dashboard']))                       { destino = 'dashboard'; confirmacion = 'Abriendo panel.' }
       else if (incluye(['nueva orden', 'crear orden', 'nuevo pedido']))         { destino = 'newOrder';  confirmacion = 'Abriendo nueva orden.' }
       else if (incluye(['nuevo cliente', 'crear cliente', 'agregar cliente']))  { destino = 'form';      confirmacion = 'Abriendo nuevo cliente.' }
       else if (incluye(['clientes', 'ver clientes', 'mis clientes']))           { destino = 'list';      confirmacion = 'Abriendo clientes.' }
@@ -3374,7 +3374,7 @@ export default function App() {
 
   const menuItems = [
     { key: 'midia',       icon: icons.calendar,   label: 'Mi día de hoy' },
-    { key: 'dashboard',   icon: icons.dashboard,  label: 'Dashboard' },
+    { key: 'dashboard',   icon: icons.dashboard,  label: 'Panel' },
     { key: 'activities',  icon: icons.activity,   label: 'Actividades' },
     { key: 'form',        icon: icons.plus,        label: 'Nuevo cliente' },
     { key: 'list',        icon: icons.list,        label: 'Clientes' },
