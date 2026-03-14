@@ -2865,6 +2865,50 @@ function ProximaSemana({ onViewOrder }) {
   const [diasExtraVenc, setDiasExtraVenc] = useState(0)
   const [sortField, setSortField] = useState('fecha')
   const [sortDir, setSortDir] = useState('asc')
+  const [speaking, setSpeaking] = useState(false)
+
+  const hablarSemana = (data) => {
+    if (!window.speechSynthesis) return
+    if (speaking) {
+      window.speechSynthesis.cancel()
+      setSpeaking(false)
+      return
+    }
+    const redondear = (n) => Math.round((parseFloat(n)||0) / 100) * 100
+    const numAPalabras = (n) => {
+      const num = redondear(n)
+      if (num === 0) return 'cero dólares'
+      const unidades = ['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce','quince','dieciséis','diecisiete','dieciocho','diecinueve']
+      const decenas = ['','','veinte','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa']
+      const centenas = ['','cien','doscientos','trescientos','cuatrocientos','quinientos','seiscientos','setecientos','ochocientos','novecientos']
+      const p = (n) => {
+        if (n === 0) return ''
+        if (n < 20) return unidades[n]
+        if (n < 100) { const d = Math.floor(n/10), u = n%10; return u===0?decenas[d]:`${d===2?'veinti'+unidades[u]:decenas[d]+' y '+unidades[u]}` }
+        if (n < 1000) { const cv = Math.floor(n/100), r = n%100; const sc = cv===1&&r===0?'cien':cv===1?'ciento':centenas[cv]; return r===0?sc:`${sc} ${p(r)}` }
+        if (n < 1000000) { const miles = Math.floor(n/1000), r = n%1000; const sm = miles===1?'mil':`${p(miles)} mil`; return r===0?sm:`${sm} ${p(r)}` }
+        return n.toString()
+      }
+      return `${p(num)} dólares`
+    }
+    const numActs = (data.ordenesProximaSemana || []).length
+    const total = data.totalProximaSemana || 0
+    const nombre = data.nombreUsuario ? `, ${data.nombreUsuario}` : ''
+    const parteActs = numActs === 0
+      ? 'No tienes actividades programadas para la próxima semana.'
+      : `La próxima semana tienes ${numActs} ${numActs===1?'actividad programada':'actividades programadas'} por ${numAPalabras(total)}.`
+    const parteEstado = data.enCamino
+      ? `Tienes suficiente para cumplir la semana. ¡Estás en camino!`
+      : `Te faltan ${numAPalabras(data.faltante)} para completar la semana. Necesitas prospectar o recuperar órdenes.`
+    const texto = `Próxima semana${nombre}. Semana ${data.numSemana} del mes. ${parteActs} ${parteEstado}`
+    const utter = new SpeechSynthesisUtterance(texto)
+    utter.lang = 'es-EC'; utter.rate = 0.95; utter.pitch = 1
+    utter.onend = () => setSpeaking(false)
+    utter.onerror = () => setSpeaking(false)
+    setSpeaking(true)
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.speak(utter)
+  }
 
   useEffect(() => {
     fetch(`${API_BASE}?action=getProximaSemana`)
@@ -2985,14 +3029,23 @@ function ProximaSemana({ onViewOrder }) {
 
       {/* Header */}
       <div style={{ marginBottom:'20px' }}>
-        <h1 style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'26px', letterSpacing:'-0.02em' }}>Próxima semana</h1>
-        <div style={{ fontSize:'13px', color:'var(--muted)', fontWeight:'500', marginTop:'4px' }}>
-          {lunesProximo} — {finSemana} · {semanaLaboral} días laborables
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div>
+            <h1 style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'26px', letterSpacing:'-0.02em', margin:0 }}>Próxima semana</h1>
+            <div style={{ fontSize:'13px', color:'var(--muted)', fontWeight:'500', marginTop:'4px' }}>
+              {lunesProximo} — {finSemana} · {semanaLaboral} días laborables
+            </div>
+            <div style={{ fontSize:'12px', color:'var(--brand)', fontWeight:'600', marginTop:'3px' }}>
+              Semana {numSemana} del mes · peso {pesoSemana}×
+            </div>
+          </div>
+          <button onClick={() => hablarSemana(data)}
+            title={speaking ? 'Detener' : 'Escuchar resumen de la semana'}
+            style={{ background: speaking ? 'var(--brand)' : 'var(--white)', border:`1.5px solid ${speaking?'var(--brand)':'var(--border)'}`, borderRadius:'50%', width:'38px', height:'38px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', transition:'all 0.2s', flexShrink:0, animation: !speaking?'pulse 1.5s infinite':'none', boxShadow: !speaking?'0 0 0 3px var(--brand-light)':'none' }}>
+            <span style={{ fontSize:'18px', lineHeight:1 }}>{speaking ? '⏹' : '🔊'}</span>
+          </button>
         </div>
-        <div style={{ fontSize:'12px', color:'var(--brand)', fontWeight:'600', marginTop:'3px' }}>
-          Semana {numSemana} del mes · peso {pesoSemana}×
-        </div>
-
+      </div>
       {/* ── SECCIÓN 1: Medidor semana ──────────────────────────────────────────── */}
       <div style={{ background: enCamino ? '#f0fdf4' : '#fef2f2', border:`1.5px solid ${enCamino ? '#bbf7d0' : '#fecaca'}`, borderRadius:'var(--radius-lg)', padding:'16px 20px', marginBottom:'16px' }}>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'10px' }}>
