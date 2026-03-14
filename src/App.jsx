@@ -530,6 +530,9 @@ function MiDia({ onViewOrder }) {
 
       {/* ── SECCIÓN 2: En juego — actividades vencidas ────────────────────── */}
       <div>
+        <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--ink)', marginBottom: '10px' }}>
+          Dinero que estás dejando en la mesa
+        </div>
         {/* Botones de rango vencidas */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
           {[{ extra: 0, label: `Vencidas (últimos ${diasVencidos} días)` }, { extra: 15, label: `Vencidas (últimos ${diasVencidos + 15} días)` }].map(({ extra, label }) => {
