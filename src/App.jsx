@@ -2733,7 +2733,9 @@ function EditPista({ pista, onSave, onCancel, showToast }) {
   // fechaParaInput convierte dd/MM/yyyy a yyyy-MM-dd
   const fechaParaInput = (v) => {
     if (!v) return ''
-    if (v.includes('/')) { const [d,m,y] = v.split('/'); return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}` }
+    // Tomar solo la parte de fecha (dd/MM/yyyy), ignorar hora
+    const parte = v.toString().trim().split(' ')[0]
+    if (parte.includes('/')) { const [d,m,y] = parte.split('/'); return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}` }
     return v
   }
 
