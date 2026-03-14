@@ -511,10 +511,15 @@ function MiDia({ onViewOrder }) {
         {actividadesHoy.length > 0 && (() => {
           const totalHoy = actividadesHoy.reduce((s,o) => s + (o.total||0), 0)
           return (
-            <div style={{ background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:'var(--radius-lg)', padding:'12px 18px', marginBottom:'10px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <span style={{ fontSize:'12px', fontWeight:'700', color:'#16a34a', textTransform:'uppercase', letterSpacing:'0.06em' }}>Total hoy</span>
-              <span style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'#16a34a' }}>{fmtM(totalHoy)}</span>
-            </div>
+            <>
+              <div style={{ textAlign:'center', marginBottom:'10px', padding:'8px 0' }}>
+                <span style={{ fontSize:'13px', fontWeight:'800', color:'var(--brand)', textTransform:'uppercase', letterSpacing:'0.12em' }}>⚡ Esto es lo más importante</span>
+              </div>
+              <div style={{ background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:'var(--radius-lg)', padding:'12px 18px', marginBottom:'10px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span style={{ fontSize:'12px', fontWeight:'700', color:'#16a34a', textTransform:'uppercase', letterSpacing:'0.06em' }}>Total hoy</span>
+                <span style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'#16a34a' }}>{fmtM(totalHoy)}</span>
+              </div>
+            </>
           )
         })()}
         {actividadesHoy.length === 0 ? (
