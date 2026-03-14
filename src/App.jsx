@@ -1831,53 +1831,6 @@ function ActividadesView({ onViewOrder }) {
           </div>
         </div>
 
-        {/* Botones de modo */}
-        <div style={{ display:'flex', gap:'6px', marginTop:'10px', flexWrap:'wrap', alignItems:'center' }}>
-          <ModoBtn key_="pendientes" label="actividades" count={cntPendientes} />
-          <ModoBtn key_="vencidas" label={`vencidas en ${mesNombre}`} count={cntVencidas} color="#dc2626" />
-          <ModoBtn key_="sinFecha" label="sin fecha" count={cntSinFecha} color="#d97706" />
-          {/* Historial */}
-          <div style={{ position:'relative' }} onClick={e => e.stopPropagation()}>
-            <button onClick={() => { setHistorialOpen(v => !v); setAccionDropOpen(false) }}
-              style={{ padding:'5px 12px', borderRadius:'20px', border:`1.5px solid ${modo==='historial'?'var(--brand)':'var(--border)'}`, background:modo==='historial'?'var(--brand-light)':'var(--white)', color:modo==='historial'?'var(--brand)':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px', transition:'all 0.15s', whiteSpace:'nowrap' }}>
-              <Icon d={icons.clock} size={12} /> {modo==='historial' && modoHistorial ? `${formatFecha(fechaInicio,'').slice(0,6)}–${formatFecha(fechaFin,'').slice(0,6)}` : 'Historial'}
-            </button>
-            {historialOpen && (
-              <div style={{ position:'absolute', left:0, top:'calc(100% + 6px)', zIndex:200, background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'16px', boxShadow:'var(--shadow-lg)', minWidth:'240px', animation:'fadeUp 0.15s ease' }}>
-                <div style={{ fontSize:'11px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'10px' }}>Rango de fechas</div>
-                <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'10px' }}>
-                  <div>
-                    <label style={{ fontSize:'11px', color:'var(--muted)', fontWeight:'600' }}>Desde</label>
-                    <DatePicker value={fechaInicio} onChange={setFechaInicio} placeholder="Desde..." />
-                  </div>
-                  <div>
-                    <label style={{ fontSize:'11px', color:'var(--muted)', fontWeight:'600' }}>Hasta</label>
-                    <DatePicker value={fechaFin} onChange={setFechaFin} placeholder="Hasta..." />
-                  </div>
-                </div>
-                <div style={{ display:'flex', gap:'8px' }}>
-                  <button onClick={limpiarHistorial} style={{ flex:1, padding:'8px', background:'var(--cream)', color:'var(--muted)', border:'1.5px solid var(--border)', borderRadius:'var(--radius)', fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>Limpiar</button>
-                  <button onClick={aplicarHistorial} disabled={!fechaInicio||!fechaFin} style={{ flex:2, padding:'8px', background:!fechaInicio||!fechaFin?'var(--muted)':'var(--brand)', color:'white', border:'none', borderRadius:'var(--radius)', fontSize:'12px', fontWeight:'700', cursor:!fechaInicio||!fechaFin?'not-allowed':'pointer' }}>Aplicar</button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {filtroAccion && (
-          <div style={{ fontSize:'12px', color:'var(--brand)', fontWeight:'600', marginTop:'6px', display:'flex', alignItems:'center', gap:'6px' }}>
-            Filtro: {filtroAccion}
-            <button onClick={() => setFiltroAccion('')} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--muted)', padding:'0 2px', fontSize:'11px', fontWeight:'700' }}>✕</button>
-          </div>
-        )}
-      </div>
-
-      {/* Búsqueda */}
-      <div style={{ position:'relative', marginBottom:'12px' }}>
-        <span style={{ position:'absolute', left:'14px', top:'50%', transform:'translateY(-50%)', color:'var(--muted)', pointerEvents:'none' }}><Icon d={icons.search} size={16} /></span>
-        <input type="text" placeholder="Buscar por cliente, negocio, # orden o acción..." value={busqueda} onChange={e => setBusqueda(e.target.value)}
-          style={{ ...inputStyle, paddingLeft:'42px', paddingRight:busqueda?'42px':'14px', fontSize:'14px' }} />
-        {busqueda && <button onClick={() => setBusqueda('')} style={{ position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--muted)', display:'flex', padding:'2px' }}><Icon d={icons.x} size={16} /></button>}
       </div>
 
       {/* Meta y Avance del mes */}
@@ -1921,10 +1874,51 @@ function ActividadesView({ onViewOrder }) {
         )
       })()}
 
-      {/* Controles de orden */}
-      <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'16px', flexWrap:'wrap' }}>
-        <SortBtn field="fecha" label="Fecha" />
-        <SortBtn field="total" label="$" />
+      {/* Botones de modo */}
+      <div style={{ display:'flex', gap:'6px', marginBottom:'14px', flexWrap:'wrap', alignItems:'center' }}>
+        <ModoBtn key_="pendientes" label="actividades" count={cntPendientes} />
+        <ModoBtn key_="vencidas" label={`vencidas en ${mesNombre}`} count={cntVencidas} color="#dc2626" />
+        <ModoBtn key_="sinFecha" label="sin fecha" count={cntSinFecha} color="#d97706" />
+        {/* Historial */}
+        <div style={{ position:'relative' }} onClick={e => e.stopPropagation()}>
+          <button onClick={() => { setHistorialOpen(v => !v); setAccionDropOpen(false) }}
+            style={{ padding:'5px 12px', borderRadius:'20px', border:`1.5px solid ${modo==='historial'?'var(--brand)':'var(--border)'}`, background:modo==='historial'?'var(--brand-light)':'var(--white)', color:modo==='historial'?'var(--brand)':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', display:'flex', alignItems:'center', gap:'5px', transition:'all 0.15s', whiteSpace:'nowrap' }}>
+            <Icon d={icons.clock} size={12} /> {modo==='historial' && modoHistorial ? `${formatFecha(fechaInicio,'').slice(0,6)}–${formatFecha(fechaFin,'').slice(0,6)}` : 'Historial'}
+          </button>
+          {historialOpen && (
+            <div style={{ position:'absolute', left:0, top:'calc(100% + 6px)', zIndex:200, background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'16px', boxShadow:'var(--shadow-lg)', minWidth:'240px', animation:'fadeUp 0.15s ease' }}>
+              <div style={{ fontSize:'11px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'10px' }}>Rango de fechas</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'10px' }}>
+                <div>
+                  <label style={{ fontSize:'11px', color:'var(--muted)', fontWeight:'600' }}>Desde</label>
+                  <DatePicker value={fechaInicio} onChange={setFechaInicio} placeholder="Desde..." />
+                </div>
+                <div>
+                  <label style={{ fontSize:'11px', color:'var(--muted)', fontWeight:'600' }}>Hasta</label>
+                  <DatePicker value={fechaFin} onChange={setFechaFin} placeholder="Hasta..." />
+                </div>
+              </div>
+              <div style={{ display:'flex', gap:'8px' }}>
+                <button onClick={limpiarHistorial} style={{ flex:1, padding:'8px', background:'var(--cream)', color:'var(--muted)', border:'1.5px solid var(--border)', borderRadius:'var(--radius)', fontSize:'12px', fontWeight:'700', cursor:'pointer' }}>Limpiar</button>
+                <button onClick={aplicarHistorial} disabled={!fechaInicio||!fechaFin} style={{ flex:2, padding:'8px', background:!fechaInicio||!fechaFin?'var(--muted)':'var(--brand)', color:'white', border:'none', borderRadius:'var(--radius)', fontSize:'12px', fontWeight:'700', cursor:!fechaInicio||!fechaFin?'not-allowed':'pointer' }}>Aplicar</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      {filtroAccion && (
+        <div style={{ fontSize:'12px', color:'var(--brand)', fontWeight:'600', marginBottom:'10px', display:'flex', alignItems:'center', gap:'6px' }}>
+          Filtro: {filtroAccion}
+          <button onClick={() => setFiltroAccion('')} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--muted)', padding:'0 2px', fontSize:'11px', fontWeight:'700' }}>✕</button>
+        </div>
+      )}
+
+      {/* Búsqueda */}
+      <div style={{ position:'relative', marginBottom:'12px' }}>
+        <span style={{ position:'absolute', left:'14px', top:'50%', transform:'translateY(-50%)', color:'var(--muted)', pointerEvents:'none' }}><Icon d={icons.search} size={16} /></span>
+        <input type="text" placeholder="Buscar por cliente, negocio, # orden o acción..." value={busqueda} onChange={e => setBusqueda(e.target.value)}
+          style={{ ...inputStyle, paddingLeft:'42px', paddingRight:busqueda?'42px':'14px', fontSize:'14px' }} />
+        {busqueda && <button onClick={() => setBusqueda('')} style={{ position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--muted)', display:'flex', padding:'2px' }}><Icon d={icons.x} size={16} /></button>}
       </div>
 
       {/* Tarjeta de totales */}
@@ -1957,6 +1951,12 @@ function ActividadesView({ onViewOrder }) {
           </div>
         )
       })()}
+
+      {/* Controles de orden */}
+      <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'16px', flexWrap:'wrap' }}>
+        <SortBtn field="fecha" label="Fecha" />
+        <SortBtn field="total" label="$" />
+      </div>
 
       {/* Lista */}
       {actividades.length === 0 ? (
