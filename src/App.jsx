@@ -2059,8 +2059,12 @@ function ActividadesView({ onViewOrder, modoInicial }) {
   }, [orders, pistasData, tipoDato])
 
   // Conteos para badges
-  const cntPendientes = useMemo(() => conFecha.filter(o => o._fecha >= hoy && o._fecha <= finMes).length, [conFecha])
-  const cntVencidas   = useMemo(() => conFecha.filter(o => o._fecha >= inicioMes && o._fecha <= ayer).length, [conFecha])
+  const cntPendientes = useMemo(() => tipoDato === 'pistas'
+    ? conFecha.filter(o => o._fecha >= hoy).length
+    : conFecha.filter(o => o._fecha >= hoy && o._fecha <= finMes).length, [conFecha, tipoDato])
+  const cntVencidas = useMemo(() => tipoDato === 'pistas'
+    ? conFecha.filter(o => o._fecha < hoy).length
+    : conFecha.filter(o => o._fecha >= inicioMes && o._fecha <= ayer).length, [conFecha, tipoDato])
   const cntSinFecha   = sinFechaList.length
 
   const getDiffLabel = (fecha) => {
@@ -2077,9 +2081,15 @@ function ActividadesView({ onViewOrder, modoInicial }) {
     if (modo === 'sinFecha') {
       list = sinFechaList
     } else if (modo === 'pendientes') {
-      list = conFecha.filter(o => o._fecha >= hoy && o._fecha <= finMes)
+      // Pistas: todas las futuras. Órdenes: solo las del mes en curso
+      list = tipoDato === 'pistas'
+        ? conFecha.filter(o => o._fecha >= hoy)
+        : conFecha.filter(o => o._fecha >= hoy && o._fecha <= finMes)
     } else if (modo === 'vencidas') {
-      list = conFecha.filter(o => o._fecha >= inicioMes && o._fecha <= ayer)
+      // Pistas: todas las vencidas. Órdenes: solo las del mes en curso
+      list = tipoDato === 'pistas'
+        ? conFecha.filter(o => o._fecha < hoy)
+        : conFecha.filter(o => o._fecha >= inicioMes && o._fecha <= ayer)
     } else if (modo === 'historial' && modoHistorial && fechaInicio && fechaFin) {
       const [iy,im,id] = fechaInicio.split('-').map(Number)
       const [fy,fm,fd] = fechaFin.split('-').map(Number)
