@@ -444,7 +444,7 @@ function MiDia({ onViewOrder }) {
     </div>
   )
 
-  const { metaMes, valorX, diasLaborables, multiplicador, diasVencidos,
+  const { metaMes, valorX, diasLaborables, multiplicador, diasVencidos, diasVencidos2,
           actividadesHoy, actividadesVencidas, totalVencido, enCamino, faltante } = data
 
   const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
@@ -573,7 +573,7 @@ function MiDia({ onViewOrder }) {
 
               {/* Botones de rango */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-                {[{ extra: 0, label: `Vencidas (últimos ${diasVencidos} días)` }, { extra: 15, label: `Vencidas (últimos ${diasVencidos + 15} días)` }].map(({ extra, label }) => {
+                {[{ extra: 0, label: `Vencidas (últimos ${diasVencidos} días)` }, { extra: diasVencidos2 - diasVencidos, label: `Vencidas (últimos ${diasVencidos2} días)` }].map(({ extra, label }) => {
                   const cnt = actividadesVencidas.filter(o => {
                     const f = parseFechaActividad(o.siguienteAccionFecha)
                     if (!f) return false
