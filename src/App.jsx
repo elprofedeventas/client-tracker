@@ -2903,7 +2903,8 @@ function ProximaSemana({ onViewOrder }) {
     </div>
   )
 
-  const { lunesProximo, finSemana, semanaLaboral, metaMes, valorXSemana,
+  const { lunesProximo, finSemana, semanaLaboral, numSemana, pesoSemana,
+          metaMes, valorXSemana,
           ordenesProximaSemana, ordenesVencidas, totalProximaSemana,
           enCamino, faltante, diasVencidos1, diasVencidos2 } = data
 
@@ -2988,7 +2989,9 @@ function ProximaSemana({ onViewOrder }) {
         <div style={{ fontSize:'13px', color:'var(--muted)', fontWeight:'500', marginTop:'4px' }}>
           {lunesProximo} — {finSemana} · {semanaLaboral} días laborables
         </div>
-      </div>
+        <div style={{ fontSize:'12px', color:'var(--brand)', fontWeight:'600', marginTop:'3px' }}>
+          Semana {numSemana} del mes · peso {pesoSemana}×
+        </div>
 
       {/* ── SECCIÓN 1: Medidor semana ──────────────────────────────────────────── */}
       <div style={{ background: enCamino ? '#f0fdf4' : '#fef2f2', border:`1.5px solid ${enCamino ? '#bbf7d0' : '#fecaca'}`, borderRadius:'var(--radius-lg)', padding:'16px 20px', marginBottom:'16px' }}>
