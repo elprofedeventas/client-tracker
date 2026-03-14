@@ -291,61 +291,133 @@ function MiDia({ onViewOrder }) {
   }
 
   const CardActividad = ({ order, urgencia }) => {
-    const c = ESTADO_COLORS[order.estado] || { bg: 'var(--cream)', color: 'var(--muted)', border: 'var(--border)' }
+    const col = ESTADO_COLORS[order.estado] || { bg: 'var(--cream)', color: 'var(--muted)', border: 'var(--border)' }
     const dias = diasDesdeVencimiento(order.siguienteAccionFecha)
-    const contactos = contactosPorAccion(order)
+    const accion = (order.accion || '').trim()
+    const na = norm(accion)
     const borderColor = urgencia ? (dias >= 7 ? '#dc2626' : '#d97706') : 'var(--border)'
+
+    // Diff label (Hoy / Hace X días / En X días)
+    const fechaAct = parseFechaActividad(order.siguienteAccionFecha)
+    let diffLabel = null
+    if (fechaAct) {
+      const hoyD = getNowGuayaquil(); hoyD.setHours(0,0,0,0)
+      const fD = new Date(fechaAct); fD.setHours(0,0,0,0)
+      const diff = Math.round((fD - hoyD) / 86400000)
+      if (diff < 0)  diffLabel = { label: `Hace ${Math.abs(diff)} día${Math.abs(diff)!==1?'s':''}`, color:'#dc2626', bg:'#fef2f2' }
+      else if (diff === 0) diffLabel = { label:'Hoy', color:'#d97706', bg:'#fffbeb' }
+      else if (diff === 1) diffLabel = { label:'Mañana', color:'#2563eb', bg:'#eff6ff' }
+      else diffLabel = { label:`En ${diff} días`, color:'var(--muted)', bg:'var(--cream)' }
+    }
+
+    // Contactos por tipo de acción
+    const contactos = []
+    if (na === norm('Visitar')) {
+      if (order.clienteTelefono)  contactos.push({ type:'tel',   value:order.clienteTelefono })
+      if (order.clienteEmail)     contactos.push({ type:'email', value:order.clienteEmail })
+      if (order.clienteDireccion) contactos.push({ type:'dir',   value:order.clienteDireccion })
+    } else if (na === norm('Llamar')) {
+      if (order.clienteTelefono) contactos.push({ type:'tel',   value:order.clienteTelefono })
+      if (order.clienteEmail)    contactos.push({ type:'email', value:order.clienteEmail })
+    } else {
+      if (order.clienteTelefono) contactos.push({ type:'tel',   value:order.clienteTelefono })
+      if (order.clienteEmail)    contactos.push({ type:'email', value:order.clienteEmail })
+    }
+
+    // Días en estado
+    let diasEstadoEl = null
+    if (order.fechaCambioEstado) {
+      const s = order.fechaCambioEstado.toString().trim()
+      let fcs = null
+      if (s.includes('/')) { const p = s.split(' ')[0].split('/'); if (p.length === 3) fcs = new Date(p[2], p[1]-1, p[0]) }
+      if (fcs) {
+        fcs.setHours(0,0,0,0)
+        const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
+        const d2 = Math.max(0, Math.floor((hoy2 - fcs) / (1000*60*60*24)))
+        const col2 = d2 >= 7 ? '#dc2626' : d2 >= 3 ? '#d97706' : 'var(--muted)'
+        const lbl2 = d2 === 0 ? `Hoy en ${order.estado.toLowerCase()}` : `${d2} ${d2===1?'día':'días'} en ${order.estado.toLowerCase()}`
+        diasEstadoEl = <div style={{ fontSize:'11px', fontWeight:'700', color:col2, marginTop:'5px', display:'flex', alignItems:'center', gap:'4px' }}><Icon d={icons.clock} size={11} />{lbl2}</div>
+      }
+    }
 
     return (
       <div onClick={() => onViewOrder(order)}
-        style={{ background: 'var(--white)', border: `1.5px solid ${borderColor}`, borderRadius: 'var(--radius-lg)', padding: '14px 16px', cursor: 'pointer', transition: 'box-shadow 0.15s' }}
-        onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
-        onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            {/* Estado + acción */}
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '5px' }}>
-              <span style={{ fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '20px', background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>{order.estado}</span>
-              {order.accion && <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--brand)', background: 'var(--brand-light)', padding: '2px 8px', borderRadius: '20px' }}>{order.accion}</span>}
-              {urgencia && dias > 0 && <span style={{ fontSize: '11px', fontWeight: '700', color: dias >= 7 ? '#dc2626' : '#d97706', background: dias >= 7 ? '#fef2f2' : '#fffbeb', padding: '2px 8px', borderRadius: '20px' }}>{dias} {dias === 1 ? 'día' : 'días'} vencida</span>}
+        style={{ background:'var(--white)', border:`1.5px solid ${borderColor}`, borderRadius:'var(--radius-lg)', padding:'14px 16px', cursor:'pointer', transition:'box-shadow 0.15s' }}
+        onMouseEnter={e => e.currentTarget.style.boxShadow='var(--shadow)'}
+        onMouseLeave={e => e.currentTarget.style.boxShadow='none'}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'10px' }}>
+          <div style={{ minWidth:0, flex:1 }}>
+            {/* Diff + estado + acción */}
+            <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px', flexWrap:'wrap' }}>
+              {diffLabel && <span style={{ fontSize:'11px', fontWeight:'700', padding:'2px 8px', borderRadius:'20px', background:diffLabel.bg, color:diffLabel.color }}>{diffLabel.label}</span>}
+              <span style={{ fontSize:'11px', fontWeight:'700', padding:'2px 8px', borderRadius:'20px', background:col.bg, color:col.color, border:`1px solid ${col.border}` }}>{order.estado}</span>
+              {urgencia && dias > 0 && <span style={{ fontSize:'11px', fontWeight:'700', color:dias>=7?'#dc2626':'#d97706', background:dias>=7?'#fef2f2':'#fffbeb', padding:'2px 8px', borderRadius:'20px' }}>{dias} {dias===1?'día':'días'} vencida</span>}
             </div>
             {/* Cliente */}
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '700', fontSize: '15px' }}>{order.clienteNombre}</div>
-            {order.clienteNegocio && <div style={{ fontSize: '13px', color: 'var(--muted)' }}>{order.clienteNegocio}</div>}
-            {/* Hora si es de hoy */}
-            {!urgencia && order.siguienteAccionFecha?.toString().includes(' ') && (
-              <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Icon d={icons.clock} size={12} />{order.siguienteAccionFecha.toString().split(' ')[1]}
+            <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px' }}>{order.clienteNombre}</div>
+            {order.clienteNegocio && <div style={{ fontSize:'13px', color:'var(--muted)' }}>{order.clienteNegocio}</div>}
+            {/* Fecha + hora + acción */}
+            {order.siguienteAccionFecha && (
+              <div style={{ display:'flex', alignItems:'center', gap:'6px', marginTop:'6px', flexWrap:'wrap' }}>
+                <span style={{ fontSize:'12px', color:'var(--muted)', display:'flex', alignItems:'center', gap:'4px' }}>
+                  <Icon d={icons.calendar} size={12} />
+                  {formatFecha(order.siguienteAccionFecha)}
+                  {order.siguienteAccionFecha?.toString().includes(' ') && (
+                    <span style={{ display:'inline-flex', alignItems:'center', gap:'3px' }}>
+                      <Icon d={icons.clock} size={12} />{order.siguienteAccionFecha.toString().split(' ')[1]}
+                    </span>
+                  )}
+                </span>
+                {accion && <span style={{ fontSize:'12px', fontWeight:'600', color:'var(--brand)', background:'var(--brand-light)', padding:'1px 7px', borderRadius:'20px' }}>{accion}</span>}
               </div>
             )}
             {/* Contactos */}
             {contactos.length > 0 && (
-              <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                {contactos.map((ct, ci) => ct.type === 'tel' ? (
-                  <a key={ci} href={`https://wa.me/593${ct.value.toString().replace(/\D/g,'').replace(/^0/,'')}`}
-                    target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '600', color: '#16a34a', textDecoration: 'none' }}>
-                    <Icon d={icons.phone} size={12} />{ct.value}
-                  </a>
-                ) : (
-                  <a key={ci} href={`mailto:${ct.value}`} onClick={e => e.stopPropagation()}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '600', color: 'var(--brand)', textDecoration: 'none' }}>
-                    <Icon d={icons.mail} size={12} />{ct.value}
-                  </a>
-                ))}
+              <div style={{ marginTop:'7px', display:'flex', flexDirection:'column', gap:'3px' }}>
+                {contactos.map((ct, ci) => {
+                  if (ct.type==='tel') return (
+                    <a key={ci} href={`https://wa.me/593${ct.value.toString().replace(/\D/g,'').replace(/^0/,'')}`}
+                      target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                      style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'#16a34a', textDecoration:'none' }}
+                      onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                      onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                      <Icon d={icons.phone} size={12} />{ct.value}
+                    </a>
+                  )
+                  if (ct.type==='email') return (
+                    <a key={ci} href={`mailto:${ct.value}`} onClick={e => e.stopPropagation()}
+                      style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--brand)', textDecoration:'none' }}
+                      onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                      onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                      <Icon d={icons.mail} size={12} />{ct.value}
+                    </a>
+                  )
+                  if (ct.type==='dir') return (
+                    <a key={ci} href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ct.value)}`}
+                      target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                      style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--muted)', textDecoration:'none' }}
+                      onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                      onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                      <Icon d={icons.map} size={12} />{ct.value}
+                    </a>
+                  )
+                  return null
+                })}
               </div>
             )}
-            {/* Nota de seguimiento — briefing */}
+            {/* Días en estado */}
+            {diasEstadoEl}
+            {/* Nota de seguimiento */}
             {order.notasSeguimiento && (
-              <div style={{ fontSize: '12px', color: 'var(--ink)', marginTop: '6px', fontStyle: 'italic', lineHeight: '1.5', background: 'var(--cream)', borderRadius: '6px', padding: '6px 10px', borderLeft: '3px solid var(--brand)' }}>
+              <div style={{ fontSize:'12px', color:'var(--ink)', marginTop:'6px', fontStyle:'italic', lineHeight:'1.5', background:'var(--cream)', borderRadius:'6px', padding:'6px 10px', borderLeft:'3px solid var(--brand)' }}>
                 "{order.notasSeguimiento}"
               </div>
             )}
           </div>
           {/* Total */}
-          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '15px', color: 'var(--brand)' }}>{fmtM(order.total)}</div>
-            <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>{order.numOrden}</div>
+          <div style={{ textAlign:'right', flexShrink:0 }}>
+            <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:'var(--brand)' }}>{fmtM(order.total)}</div>
+            <div style={{ fontSize:'10px', color:'var(--muted)', marginTop:'2px' }}>{order.numOrden}</div>
           </div>
         </div>
       </div>
@@ -378,6 +450,9 @@ function MiDia({ onViewOrder }) {
       {/* Header */}
       <div style={{ marginBottom: '20px' }}>
         <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '26px', letterSpacing: '-0.02em' }}>Mi día de hoy</h1>
+        <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: '500', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Icon d={icons.calendar} size={13} />{getTodayLabel()}
+        </div>
 
       </div>
 
@@ -415,16 +490,20 @@ function MiDia({ onViewOrder }) {
               return diff <= diasVencidos + diasExtra
             }).length}
           </button>
-          <button onClick={() => setDiasExtra(d => d + 15)}
-            style={{ padding: '5px 12px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--white)', color: 'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--brand)'; e.currentTarget.style.color = 'var(--brand)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}>
-            + 15 días más
+          <button onClick={() => setDiasExtra(15)}
+            style={{ padding: '5px 12px', borderRadius: '20px', border: `1.5px solid ${diasExtra===15?'var(--brand)':'var(--border)'}`, background: diasExtra===15?'var(--brand-light)':'var(--white)', color: diasExtra===15?'var(--brand)':'var(--muted)', fontSize: '12px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>
+            Vencidas (últimos 30 días) · {actividadesVencidas.filter(o => {
+              const f = parseFechaActividad(o.siguienteAccionFecha)
+              if (!f) return false
+              f.setHours(0,0,0,0)
+              const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
+              return Math.floor((hoy2 - f) / (1000*60*60*24)) <= diasVencidos + 15
+            }).length}
           </button>
           {diasExtra > 0 && (
             <button onClick={() => setDiasExtra(0)}
               style={{ padding: '5px 10px', borderRadius: '20px', border: '1.5px solid var(--border)', background: 'var(--white)', color: 'var(--muted)', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
-              ✕ resetear
+              ✕
             </button>
           )}
         </div>
@@ -447,6 +526,7 @@ function MiDia({ onViewOrder }) {
             if (sortField === 'fecha') {
               const fa = parseFechaActividad(a.siguienteAccionFecha) || new Date(0)
               const fb = parseFechaActividad(b.siguienteAccionFecha) || new Date(0)
+              fa.setHours(0,0,0,0); fb.setHours(0,0,0,0)
               return sortDir === 'asc' ? fa - fb : fb - fa
             }
             return sortDir === 'asc' ? (a.total||0) - (b.total||0) : (b.total||0) - (a.total||0)
