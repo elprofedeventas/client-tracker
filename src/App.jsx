@@ -237,6 +237,8 @@ function Highlight({ text, query }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // MI DÍA DE HOY
 // ─────────────────────────────────────────────────────────────────────────────
+const _hasSpoken = { current: false }
+
 function MiDia({ onViewOrder }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -271,8 +273,7 @@ function MiDia({ onViewOrder }) {
     const numAPalabras = (n) => {
       let num = parseFloat(n) || 0
       // Redondear al millar más cercano si >= 1000, a la centena si < 1000
-      if (num >= 1000) num = Math.round(num / 1000) * 1000
-      else num = Math.round(num / 100) * 100
+      num = Math.round(num / 100) * 100
       num = Math.round(num)
       if (num === 0) return 'cero dólares'
       const unidades = ['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve',
@@ -324,6 +325,7 @@ function MiDia({ onViewOrder }) {
   }
 
   const dataRef = useRef(null)
+  const hasSpoken = _hasSpoken
 
   useEffect(() => {
     fetch(`${API_BASE}?action=getMiDia`)
@@ -342,9 +344,9 @@ function MiDia({ onViewOrder }) {
       .catch(() => {})
   }, [])
 
-  // Auto-hablar cuando carguen los datos
+  // Auto-hablar solo la primera vez que cargan los datos
   useEffect(() => {
-    if (!data || !window.speechSynthesis) return
+    if (!data || !window.speechSynthesis || hasSpoken.current) return
     const timer = setTimeout(() => {
       const d = data
       const totalHoy = d.actividadesHoy.reduce((s,o) => s + (o.total||0), 0)
@@ -362,7 +364,7 @@ function MiDia({ onViewOrder }) {
       const totalVenc = listaVenc.reduce((s,o) => s + (o.total||0), 0)
       const redondear = (n) => {
         const num = parseFloat(n) || 0
-        return num >= 1000 ? Math.round(num / 1000) * 1000 : Math.round(num / 100) * 100
+        return Math.round(num / 100) * 100
       }
       const numAPalabras = (n) => {
         const num = redondear(n)
@@ -394,6 +396,7 @@ function MiDia({ onViewOrder }) {
       utter.onerror = () => setSpeaking(false)
       window.speechSynthesis.cancel()
       setSpeaking(true)
+      hasSpoken.current = true
       window.speechSynthesis.speak(utter)
     }, 800)
     return () => { clearTimeout(timer); window.speechSynthesis.cancel() }
