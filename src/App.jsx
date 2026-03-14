@@ -567,7 +567,6 @@ function MiDia({ onViewOrder }) {
         {/* Medidor verde/rojo */}
         {(() => {
           const listaVenc = actividadesVencidas.filter(o => {
-            if (diasExtra === 0) return true
             const f = parseFechaActividad(o.siguienteAccionFecha)
             if (!f) return false
             f.setHours(0,0,0,0)
