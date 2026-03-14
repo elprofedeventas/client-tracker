@@ -3117,9 +3117,9 @@ function ProximaSemana({ onViewOrder }) {
           {/* Medidor vencidas */}
           {(() => {
             const totalV = vencidasFiltradas.reduce((s,o) => s + (o.total||0), 0)
-            const valorXD = data.valorXSemana || 0
-            const ok = totalV >= valorXD
-            const falt = Math.max(0, valorXD - totalV)
+            const recuperar = data.faltante || 0  // lo que falta de la sección 1
+            const ok = totalV >= recuperar
+            const falt = Math.max(0, recuperar - totalV)
             const vSort = [...vencidasFiltradas].sort((a,b) => {
               if (sortFieldV === 'fecha') {
                 const fa = parseFecha(a.siguienteAccionFecha) || new Date(0)
@@ -3139,7 +3139,7 @@ function ProximaSemana({ onViewOrder }) {
                     </div>
                     <div>
                       <div style={{ fontSize:'10px', fontWeight:'700', color:'#dc2626', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>Recuperar</div>
-                      <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'22px', color:'#dc2626' }}>{fmtM(valorXD)}</div>
+                      <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'22px', color:'#dc2626' }}>{fmtM(recuperar)}</div>
                     </div>
                   </div>
                   <div style={{ fontSize:'13px', fontWeight:'700', color:'#dc2626' }}>
