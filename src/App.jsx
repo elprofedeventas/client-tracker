@@ -245,6 +245,53 @@ function MiDia({ onViewOrder }) {
   const [sortDir, setSortDir] = useState('asc')
 
   const [dashData, setDashData] = useState(null)
+  const [speaking, setSpeaking] = useState(false)
+
+  const hablar = (actividadesHoy, actividadesVencidas, diasVencidos, diasExtra, faltante, totalVencido) => {
+    if (!window.speechSynthesis) return
+    if (speaking) {
+      window.speechSynthesis.cancel()
+      setSpeaking(false)
+      return
+    }
+    const totalHoy = actividadesHoy.reduce((s,o) => s + (o.total||0), 0)
+    const listaVenc = actividadesVencidas.filter(o => {
+      const s = o.siguienteAccionFecha?.toString().trim().split(' ')[0]
+      if (!s || !s.includes('/')) return false
+      const p = s.split('/')
+      if (p.length !== 3) return false
+      const f = new Date(p[2], p[1]-1, p[0])
+      f.setHours(0,0,0,0)
+      const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
+      return Math.floor((hoy2 - f) / (1000*60*60*24)) <= diasVencidos + diasExtra
+    })
+    const numHoy = actividadesHoy.length
+    const numVenc = listaVenc.length
+    const totalVenc = listaVenc.reduce((s,o) => s + (o.total||0), 0)
+    const fmtVoz = (n) => {
+      const num = parseFloat(n) || 0
+      if (num >= 1000) return `${(num/1000).toFixed(1).replace('.', ' punto ')} mil dólares`
+      return `${num.toFixed(0)} dólares`
+    }
+    const hora = getNowGuayaquil().getHours()
+    const saludo = hora < 12 ? 'Buenos días' : hora < 18 ? 'Buenas tardes' : 'Buenas noches'
+    const parteHoy = numHoy === 0
+      ? 'No tienes actividades programadas para hoy.'
+      : `Hoy tienes ${numHoy} ${numHoy === 1 ? 'actividad programada' : 'actividades programadas'} por ${fmtVoz(totalHoy)}.`
+    const parteVenc = numVenc === 0
+      ? 'No tienes órdenes vencidas pendientes.'
+      : `Tienes ${numVenc} ${numVenc === 1 ? 'orden vencida' : 'órdenes vencidas'} y estás regalando ${fmtVoz(totalVenc)} a la competencia.`
+    const texto = `${saludo}. ${parteHoy} ${parteVenc}`
+    const utter = new SpeechSynthesisUtterance(texto)
+    utter.lang = 'es-EC'
+    utter.rate = 0.95
+    utter.pitch = 1
+    utter.onend = () => setSpeaking(false)
+    utter.onerror = () => setSpeaking(false)
+    setSpeaking(true)
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.speak(utter)
+  }
 
   useEffect(() => {
     fetch(`${API_BASE}?action=getMiDia`)
@@ -456,8 +503,17 @@ function MiDia({ onViewOrder }) {
       {/* Header */}
       <div style={{ marginBottom: '16px' }}>
         <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '26px', letterSpacing: '-0.02em' }}>Mi día de hoy</h1>
-        <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: '500', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Icon d={icons.calendar} size={13} />{getTodayLabel()}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Icon d={icons.calendar} size={13} />{getTodayLabel()}
+          </div>
+          {data && (
+            <button onClick={() => hablar(data.actividadesHoy, data.actividadesVencidas, data.diasVencidos, diasExtra, data.faltante, data.totalVencido)}
+              title={speaking ? 'Detener' : 'Escuchar resumen del día'}
+              style={{ background: speaking ? 'var(--brand)' : 'var(--white)', border: `1.5px solid ${speaking ? 'var(--brand)' : 'var(--border)'}`, borderRadius: '50%', width: '34px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0 }}>
+              <span style={{ fontSize: '16px', lineHeight: 1 }}>{speaking ? '⏹' : '🔊'}</span>
+            </button>
+          )}
         </div>
       </div>
 
