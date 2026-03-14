@@ -528,42 +528,8 @@ function MiDia({ onViewOrder }) {
         )}
       </div>
 
-      {/* ── SECCIÓN 2: En juego — actividades vencidas ────────────────────── */}
+      {/* ── SECCIÓN 2: Dinero que estás dejando en la mesa ─────────────────── */}
       <div>
-        <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--ink)', marginBottom: '10px' }}>
-          Dinero que estás dejando en la mesa
-        </div>
-        {/* Botones de rango vencidas */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
-          {[{ extra: 0, label: `Vencidas (últimos ${diasVencidos} días)` }, { extra: 15, label: `Vencidas (últimos ${diasVencidos + 15} días)` }].map(({ extra, label }) => {
-            const cnt = actividadesVencidas.filter(o => {
-              const f = parseFechaActividad(o.siguienteAccionFecha)
-              if (!f) return false
-              f.setHours(0,0,0,0)
-              const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
-              return Math.floor((hoy2 - f) / (1000*60*60*24)) <= diasVencidos + extra
-            }).length
-            const activo = diasExtra === extra
-            return (
-              <button key={extra} onClick={() => setDiasExtra(extra)}
-                style={{ display:'flex', alignItems:'center', gap:'6px', padding:'5px 12px', borderRadius:'20px', border:`1.5px solid ${activo?'var(--brand)':'var(--border)'}`, background:activo?'var(--brand-light)':'var(--white)', color:activo?'var(--brand)':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s' }}>
-                {activo && <Icon d={icons.alert} size={12} />}
-                {label} · {cnt}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Botones sort */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-          {[['fecha','Fecha'],['total','$']].map(([f,lbl]) => (
-            <button key={f} onClick={() => toggleSort(f)}
-              style={{ padding: '4px 12px', borderRadius: '20px', border: `1.5px solid ${sortField === f ? 'var(--brand)' : 'var(--border)'}`, background: sortField === f ? 'var(--brand-light)' : 'var(--white)', color: sortField === f ? 'var(--brand)' : 'var(--muted)', fontSize: '11px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>
-              {lbl} {sortField === f ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
-            </button>
-          ))}
-        </div>
-
         {/* Medidor verde/rojo */}
         {(() => {
           const listaVenc = actividadesVencidas.filter(o => {
@@ -589,7 +555,7 @@ function MiDia({ onViewOrder }) {
 
           return (
             <>
-              <div style={{ background: ok ? '#f0fdf4' : '#fef2f2', border: `1.5px solid ${ok ? '#bbf7d0' : '#fecaca'}`, borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '10px' }}>
+              <div style={{ background: ok ? '#f0fdf4' : '#fef2f2', border: `1.5px solid ${ok ? '#bbf7d0' : '#fecaca'}`, borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '12px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '10px' }}>
                   <div>
                     <div style={{ fontSize: '10px', fontWeight: '700', color: ok ? '#16a34a' : '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>Dinero que estás dejando en la mesa</div>
@@ -603,6 +569,37 @@ function MiDia({ onViewOrder }) {
                 <div style={{ fontSize: '13px', fontWeight: '700', color: ok ? '#16a34a' : '#dc2626' }}>
                   {ok ? '✓ Estás en camino — tienes suficiente en juego' : `⚠ Te faltan ${fmtM(falt)} — necesitas prospectar más hoy`}
                 </div>
+              </div>
+
+              {/* Botones de rango */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                {[{ extra: 0, label: `Vencidas (últimos ${diasVencidos} días)` }, { extra: 15, label: `Vencidas (últimos ${diasVencidos + 15} días)` }].map(({ extra, label }) => {
+                  const cnt = actividadesVencidas.filter(o => {
+                    const f = parseFechaActividad(o.siguienteAccionFecha)
+                    if (!f) return false
+                    f.setHours(0,0,0,0)
+                    const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
+                    return Math.floor((hoy2 - f) / (1000*60*60*24)) <= diasVencidos + extra
+                  }).length
+                  const activo = diasExtra === extra
+                  return (
+                    <button key={extra} onClick={() => setDiasExtra(extra)}
+                      style={{ display:'flex', alignItems:'center', gap:'6px', padding:'5px 12px', borderRadius:'20px', border:`1.5px solid ${activo?'var(--brand)':'var(--border)'}`, background:activo?'var(--brand-light)':'var(--white)', color:activo?'var(--brand)':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s' }}>
+                      {activo && <Icon d={icons.alert} size={12} />}
+                      {label} · {cnt}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Botones sort */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                {[['fecha','Fecha'],['total','$']].map(([f,lbl]) => (
+                  <button key={f} onClick={() => toggleSort(f)}
+                    style={{ padding: '4px 12px', borderRadius: '20px', border: `1.5px solid ${sortField === f ? 'var(--brand)' : 'var(--border)'}`, background: sortField === f ? 'var(--brand-light)' : 'var(--white)', color: sortField === f ? 'var(--brand)' : 'var(--muted)', fontSize: '11px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>
+                    {lbl} {sortField === f ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+                  </button>
+                ))}
               </div>
 
               {/* Lista */}
