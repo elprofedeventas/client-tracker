@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  const base = 'https://script.google.com/macros/s/AKfycbzJ4Jbrk_z765AoDyoXZXWxUhJ2ccKnlXAv48AcWzE0LILKS0F2UwWvBUATu5iaBjs/exec'
+  const base = 'https://script.google.com/macros/s/AKfycbyBxGEHvpN0CcGScSFKWhfe1eXWEpsyOBQHculJ2LsDIzXCh-v1psr5sVmYxsYJNnhm/exec'
   
   const url = `${base}?${new URLSearchParams(req.query)}`
   
