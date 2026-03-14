@@ -244,12 +244,18 @@ function MiDia({ onViewOrder }) {
   const [sortField, setSortField] = useState('fecha')
   const [sortDir, setSortDir] = useState('asc')
 
+  const [dashData, setDashData] = useState(null)
+
   useEffect(() => {
     fetch(`${API_BASE}?action=getMiDia`)
       .then(r => r.json())
       .then(d => { if (d.success) setData(d.data) })
       .catch(() => {})
       .finally(() => setLoading(false))
+    fetch(`${API_BASE}?action=dashboard`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setDashData(d.data) })
+      .catch(() => {})
   }, [])
 
   const toggleSort = (field) => {
@@ -448,13 +454,53 @@ function MiDia({ onViewOrder }) {
     <div style={{ animation: 'fadeUp 0.4s ease', paddingBottom: '40px' }}>
 
       {/* Header */}
-      <div style={{ marginBottom: '20px' }}>
+      <div style={{ marginBottom: '16px' }}>
         <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '26px', letterSpacing: '-0.02em' }}>Mi día de hoy</h1>
         <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: '500', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Icon d={icons.calendar} size={13} />{getTodayLabel()}
         </div>
-
       </div>
+
+      {/* Meta y Avance del mes */}
+      {dashData && (() => {
+        const now2    = getNowGuayaquil()
+        const mesLbl2 = MESES_LARGO[now2.getMonth()].charAt(0).toUpperCase() + MESES_LARGO[now2.getMonth()].slice(1)
+        const anio2   = now2.getFullYear()
+        const meta2    = dashData.meta    || 0
+        const vendido2 = dashData.vendido || 0
+        const pct2     = meta2 > 0 ? Math.round((vendido2 / meta2) * 100) : 0
+        const verde2   = '#16a34a'
+        const cv       = dashData.conteos || {}
+        return (
+          <>
+            <div style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:'10px', boxShadow:'var(--shadow)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                <div style={{ width:'32px', height:'32px', borderRadius:'8px', background:'#eef2ff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <Icon d={icons.target} size={15} stroke="#6366f1" />
+                </div>
+                <div style={{ fontSize:'12px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Meta {mesLbl2} {anio2}</div>
+              </div>
+              <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'#6366f1' }}>{fmtMoney(meta2)}</div>
+            </div>
+            <div style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:'16px', boxShadow:'var(--shadow)' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
+                <span style={{ fontSize:'12px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Avance del mes</span>
+                <span style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'16px', color: pct2 >= 100 ? verde2 : 'var(--ink)' }}>{pct2}%</span>
+              </div>
+              <div style={{ background:'var(--cream)', borderRadius:'100px', height:'8px', overflow:'hidden', marginBottom:'6px' }}>
+                <div style={{ height:'100%', width:`${Math.min(100,pct2)}%`, background: pct2>=100 ? verde2 : pct2>=60 ? '#2563eb' : 'var(--brand)', borderRadius:'100px', transition:'width 0.8s ease' }} />
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:'10px', fontSize:'12px', color:'var(--muted)' }}>
+                <span style={{ fontWeight:'600', color:verde2 }}>{fmtMoney(vendido2)} vendido</span>
+                <span>·</span>
+                <span>{cv.Vendido?.clientes||0} {(cv.Vendido?.clientes||0)===1?'cliente':'clientes'}</span>
+                <span>·</span>
+                <span>{cv.Vendido?.ordenes||0} {(cv.Vendido?.ordenes||0)===1?'orden':'órdenes'}</span>
+              </div>
+            </div>
+          </>
+        )
+      })()}
 
       {/* ── SECCIÓN 1: Actividades de hoy ─────────────────────────────────── */}
       <div style={{ marginBottom: '24px' }}>
@@ -471,6 +517,15 @@ function MiDia({ onViewOrder }) {
             {actividadesHoy.map(o => <CardActividad key={o.numOrden} order={o} urgencia={false} />)}
           </div>
         )}
+        {actividadesHoy.length > 0 && (() => {
+          const totalHoy = actividadesHoy.reduce((s,o) => s + (o.total||0), 0)
+          return (
+            <div style={{ background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:'var(--radius-lg)', padding:'12px 18px', marginTop:'10px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <span style={{ fontSize:'12px', fontWeight:'700', color:'#16a34a', textTransform:'uppercase', letterSpacing:'0.06em' }}>Total hoy</span>
+              <span style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'#16a34a' }}>{fmtM(totalHoy)}</span>
+            </div>
+          )
+        })()}
       </div>
 
       {/* ── SECCIÓN 2: En juego — actividades vencidas ────────────────────── */}
@@ -547,11 +602,11 @@ function MiDia({ onViewOrder }) {
               <div style={{ background: ok ? '#f0fdf4' : '#fef2f2', border: `1.5px solid ${ok ? '#bbf7d0' : '#fecaca'}`, borderRadius: 'var(--radius-lg)', padding: '16px 20px', marginBottom: '10px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '10px' }}>
                   <div>
-                    <div style={{ fontSize: '10px', fontWeight: '700', color: ok ? '#16a34a' : '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>En juego</div>
+                    <div style={{ fontSize: '10px', fontWeight: '700', color: ok ? '#16a34a' : '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>Dinero que estás dejando en la mesa</div>
                     <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '22px', color: ok ? '#16a34a' : '#dc2626' }}>{fmtM(totalV)}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '10px', fontWeight: '700', color: ok ? '#16a34a' : '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>Necesitas</div>
+                    <div style={{ fontSize: '10px', fontWeight: '700', color: ok ? '#16a34a' : '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>Recuperar</div>
                     <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '22px', color: ok ? '#16a34a' : '#dc2626' }}>{fmtM(valorX)}</div>
                   </div>
                 </div>
