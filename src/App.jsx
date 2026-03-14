@@ -2000,7 +2000,7 @@ Total:             ${fmtMoney(order.total)}`
 }
 const ACCION_PHONE_EMAIL = ['Mensaje','Solicitar Referidos','Enviar Propuesta','Seguimiento','Resolver Objeción','Cerrar Venta','Post Venta','Venta Cruzada','Venta Ascendente']
 
-function ActividadesView({ onViewOrder }) {
+function ActividadesView({ onViewOrder, modoInicial }) {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [busqueda, setBusqueda] = useState('')
@@ -2010,7 +2010,7 @@ function ActividadesView({ onViewOrder }) {
   const [accionesDisp, setAccionesDisp] = useState([])
   const [accionDropOpen, setAccionDropOpen] = useState(false)
   // 'pendientes' | 'vencidas' | 'sinFecha' | 'historial'
-  const [modo, setModo] = useState('pendientes')
+  const [modo, setModo] = useState(modoInicial || 'pendientes')
   const [historialOpen, setHistorialOpen] = useState(false)
   const [fechaInicio, setFechaInicio] = useState('')
   const [fechaFin, setFechaFin] = useState('')
@@ -2859,6 +2859,7 @@ export default function App() {
   const [view, setView] = useState('midia')
   const [ordersKey, setOrdersKey] = useState(0)
   const [ordersFiltro, setOrdersFiltro] = useState('Negociando')
+  const [activitiesModo, setActivitiesModo] = useState('pendientes')
   const [menuOpen, setMenuOpen] = useState(false)
   const [voiceState, setVoiceState] = useState('idle') // 'idle' | 'listening' | 'success' | 'error'
   const recognitionRef = useRef(null)
@@ -2924,7 +2925,7 @@ export default function App() {
     finally { setLoading(false) }
   }
 
-  const navigate = (v) => { setView(v); setMenuOpen(false); if (v !== 'edit') setEditingClient(null); if (v !== 'view') setViewingClient(null); if (v !== 'viewOrder' && v !== 'newOrder') setViewingOrder(null); if (v === 'orders') { setOrdersKey(k => k + 1); setOrdersFiltro('Negociando') } }
+  const navigate = (v) => { setView(v); setMenuOpen(false); if (v !== 'edit') setEditingClient(null); if (v !== 'view') setViewingClient(null); if (v !== 'viewOrder' && v !== 'newOrder') setViewingOrder(null); if (v === 'orders') { setOrdersKey(k => k + 1); setOrdersFiltro('Negociando') } if (v === 'activities') setActivitiesModo('pendientes') }
 
   const voiceSpeak = (texto) => {
     if (!window.speechSynthesis) return
@@ -2963,10 +2964,16 @@ export default function App() {
       else if (incluye(['nueva orden', 'crear orden', 'nuevo pedido']))         { destino = 'newOrder';  confirmacion = 'Abriendo nueva orden.' }
       else if (incluye(['nuevo cliente', 'crear cliente', 'agregar cliente']))  { destino = 'form';      confirmacion = 'Abriendo nuevo cliente.' }
       else if (incluye(['clientes', 'ver clientes', 'mis clientes']))           { destino = 'list';      confirmacion = 'Abriendo clientes.' }
+      else if (incluye(['vencidas', 'actividades vencidas', 'vencidos']))      { destino = 'activities-vencidas'; confirmacion = 'Abriendo actividades vencidas.' }
       if (destino) {
         setVoiceState('success')
         voiceSpeak(confirmacion)
-        navigate(destino)
+        if (destino === 'activities-vencidas') {
+          setActivitiesModo('vencidas')
+          navigate('activities')
+        } else {
+          navigate(destino)
+        }
         setTimeout(() => setVoiceState('idle'), 1500)
       } else {
         setVoiceState('error')
@@ -3122,7 +3129,7 @@ export default function App() {
 
         {/* ── ACTIVIDADES ───────────────────────────────────────────────────── */}
         {view === 'activities' && (
-          <ActividadesView onViewOrder={(o) => handleViewOrder(o, 'activities')} />
+          <ActividadesView onViewOrder={(o) => handleViewOrder(o, 'activities')} modoInicial={activitiesModo} />
         )}
 
         {/* ── ÓRDENES ───────────────────────────────────────────────────────── */}
