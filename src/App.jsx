@@ -344,11 +344,59 @@ function MiDia({ onViewOrder }) {
 
   // Auto-hablar cuando carguen los datos
   useEffect(() => {
-    if (!data) return
+    if (!data || !window.speechSynthesis) return
     const timer = setTimeout(() => {
-      hablar(data.actividadesHoy, data.actividadesVencidas, data.diasVencidos, 0, data.faltante, data.totalVencido)
+      const d = data
+      const totalHoy = d.actividadesHoy.reduce((s,o) => s + (o.total||0), 0)
+      const listaVenc = d.actividadesVencidas.filter(o => {
+        const s = o.siguienteAccionFecha?.toString().trim().split(' ')[0]
+        if (!s || !s.includes('/')) return false
+        const p = s.split('/')
+        if (p.length !== 3) return false
+        const f = new Date(p[2], p[1]-1, p[0]); f.setHours(0,0,0,0)
+        const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
+        return Math.floor((hoy2 - f) / (1000*60*60*24)) <= d.diasVencidos
+      })
+      const numHoy = d.actividadesHoy.length
+      const numVenc = listaVenc.length
+      const totalVenc = listaVenc.reduce((s,o) => s + (o.total||0), 0)
+      const redondear = (n) => {
+        const num = parseFloat(n) || 0
+        return num >= 1000 ? Math.round(num / 1000) * 1000 : Math.round(num / 100) * 100
+      }
+      const numAPalabras = (n) => {
+        const num = redondear(n)
+        if (num === 0) return 'cero dólares'
+        const unidades = ['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce','quince','dieciséis','diecisiete','dieciocho','diecinueve']
+        const decenas = ['','','veinte','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa']
+        const centenas = ['','cien','doscientos','trescientos','cuatrocientos','quinientos','seiscientos','setecientos','ochocientos','novecientos']
+        const p = (n) => {
+          if (n === 0) return ''
+          if (n < 20) return unidades[n]
+          if (n < 100) { const d = Math.floor(n/10), u = n%10; return u===0?decenas[d]:`${d===2?'veinti'+unidades[u]:decenas[d]+' y '+unidades[u]}` }
+          if (n < 1000) { const cv = Math.floor(n/100), r = n%100; const sc = cv===1&&r===0?'cien':cv===1?'ciento':centenas[cv]; return r===0?sc:`${sc} ${p(r)}` }
+          if (n < 1000000) { const miles = Math.floor(n/1000), r = n%1000; const sm = miles===1?'mil':`${p(miles)} mil`; return r===0?sm:`${sm} ${p(r)}` }
+          return n.toString()
+        }
+        return `${p(num)} dólares`
+      }
+      const hora = getNowGuayaquil().getHours()
+      const saludo = hora < 12 ? 'Buenos días' : hora < 18 ? 'Buenas tardes' : 'Buenas noches'
+      const nombre = d.nombreUsuario ? `, ${d.nombreUsuario}` : ''
+      const parteHoy = numHoy === 0 ? 'No tienes actividades programadas para hoy.' : `Hoy tienes ${numHoy} ${numHoy===1?'actividad programada':'actividades programadas'} por ${numAPalabras(totalHoy)}.`
+      const parteVenc = numVenc === 0 ? 'No tienes órdenes vencidas pendientes.' : `Tienes ${numVenc} ${numVenc===1?'orden vencida':'órdenes vencidas'} y estás regalando ${numAPalabras(totalVenc)} a la competencia.`
+      const texto = `${saludo}${nombre}. ${parteHoy} ${parteVenc}`
+      const utter = new SpeechSynthesisUtterance(texto)
+      utter.lang = 'es-EC'
+      utter.rate = 0.95
+      utter.pitch = 1
+      utter.onend = () => setSpeaking(false)
+      utter.onerror = () => setSpeaking(false)
+      window.speechSynthesis.cancel()
+      setSpeaking(true)
+      window.speechSynthesis.speak(utter)
     }, 800)
-    return () => clearTimeout(timer)
+    return () => { clearTimeout(timer); window.speechSynthesis.cancel() }
   }, [data])
 
   const toggleSort = (field) => {
