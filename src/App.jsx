@@ -441,134 +441,113 @@ function MiDia({ onViewOrder }) {
   }
 
   const CardActividad = ({ order, urgencia }) => {
-    const col = ESTADO_COLORS[order.estado] || { bg: 'var(--cream)', color: 'var(--muted)', border: 'var(--border)' }
     const dias = diasDesdeVencimiento(order.siguienteAccionFecha)
     const accion = (order.accion || '').trim()
     const na = norm(accion)
-    const borderColor = urgencia ? (dias >= 7 ? '#dc2626' : '#d97706') : 'var(--border)'
 
-    // Diff label (Hoy / Hace X días / En X días)
-    const fechaAct = parseFechaActividad(order.siguienteAccionFecha)
-    let diffLabel = null
-    if (fechaAct) {
-      const hoyD = getNowGuayaquil(); hoyD.setHours(0,0,0,0)
-      const fD = new Date(fechaAct); fD.setHours(0,0,0,0)
-      const diff = Math.round((fD - hoyD) / 86400000)
-      if (diff < 0)  diffLabel = { label: `Hace ${Math.abs(diff)} día${Math.abs(diff)!==1?'s':''}`, color:'#dc2626', bg:'#fef2f2' }
-      else if (diff === 0) diffLabel = { label:'Hoy', color:'#d97706', bg:'#fffbeb' }
-      else if (diff === 1) diffLabel = { label:'Mañana', color:'#2563eb', bg:'#eff6ff' }
-      else diffLabel = { label:`En ${diff} días`, color:'var(--muted)', bg:'var(--cream)' }
-    }
-
-    // Contactos por tipo de acción
+    // Contactos
     const contactos = []
     if (na === norm('Visitar')) {
       if (order.clienteTelefono)  contactos.push({ type:'tel',   value:order.clienteTelefono })
       if (order.clienteEmail)     contactos.push({ type:'email', value:order.clienteEmail })
       if (order.clienteDireccion) contactos.push({ type:'dir',   value:order.clienteDireccion })
-    } else if (na === norm('Llamar')) {
-      if (order.clienteTelefono) contactos.push({ type:'tel',   value:order.clienteTelefono })
-      if (order.clienteEmail)    contactos.push({ type:'email', value:order.clienteEmail })
     } else {
-      if (order.clienteTelefono) contactos.push({ type:'tel',   value:order.clienteTelefono })
+      if (order.clienteTelefono) contactos.push({ type:'tel', value:order.clienteTelefono })
       if (order.clienteEmail)    contactos.push({ type:'email', value:order.clienteEmail })
     }
 
-    // Días en estado
-    let diasEstadoEl = null
-    if (order.fechaCambioEstado) {
-      const s = order.fechaCambioEstado.toString().trim()
-      let fcs = null
-      if (s.includes('/')) { const p = s.split(' ')[0].split('/'); if (p.length === 3) fcs = new Date(p[2], p[1]-1, p[0]) }
-      if (fcs) {
-        fcs.setHours(0,0,0,0)
-        const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
-        const d2 = Math.max(0, Math.floor((hoy2 - fcs) / (1000*60*60*24)))
-        const col2 = d2 >= 7 ? '#dc2626' : d2 >= 3 ? '#d97706' : 'var(--muted)'
-        const lbl2 = d2 === 0 ? `Hoy en ${order.estado.toLowerCase()}` : `${d2} ${d2===1?'día':'días'} en ${order.estado.toLowerCase()}`
-        diasEstadoEl = <div style={{ fontSize:'11px', fontWeight:'700', color:col2, marginTop:'5px', display:'flex', alignItems:'center', gap:'4px' }}><Icon d={icons.clock} size={11} />{lbl2}</div>
-      }
-    }
+    // Fecha formateada con día de la semana
+    const fechaAct = parseFechaActividad(order.siguienteAccionFecha)
+    const DIAS_ES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+    const MESES_ES2 = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+    const fechaLabel = fechaAct
+      ? `${DIAS_ES[fechaAct.getDay()]} ${fechaAct.getDate()} de ${MESES_ES2[fechaAct.getMonth()]} ${fechaAct.getFullYear()}`
+      : ''
+    const hora = order.siguienteAccionFecha?.toString().includes(' ') ? order.siguienteAccionFecha.toString().split(' ')[1] : ''
+
+    // Color sección 1: rojo si vencida, amarillo si hoy, azul si futura
+    const hoyD = getNowGuayaquil(); hoyD.setHours(0,0,0,0)
+    const fD = fechaAct ? new Date(fechaAct) : null; if (fD) fD.setHours(0,0,0,0)
+    const diffDias = fD ? Math.round((fD - hoyD) / 86400000) : 0
+    const sec1Bg = urgencia || diffDias < 0 ? '#fef2f2' : diffDias === 0 ? '#fffbeb' : '#eff6ff'
+    const sec1Color = urgencia || diffDias < 0 ? '#dc2626' : diffDias === 0 ? '#d97706' : '#2563eb'
+    const sec1Label = diffDias < 0
+      ? `${Math.abs(diffDias)} ${Math.abs(diffDias)===1?'día':'días'} vencida`
+      : diffDias === 0 ? 'Hoy' : diffDias === 1 ? 'Mañana' : `En ${diffDias} días`
 
     return (
       <div onClick={() => onViewOrder(order)}
-        style={{ background:'var(--white)', border:`1.5px solid ${borderColor}`, borderRadius:'var(--radius-lg)', padding:'14px 16px', cursor:'pointer', transition:'box-shadow 0.15s' }}
-        onMouseEnter={e => e.currentTarget.style.boxShadow='var(--shadow)'}
-        onMouseLeave={e => e.currentTarget.style.boxShadow='none'}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'10px' }}>
-          <div style={{ minWidth:0, flex:1 }}>
-            {/* Diff + estado + acción */}
-            <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px', flexWrap:'wrap' }}>
-              {diffLabel && <span style={{ fontSize:'11px', fontWeight:'700', padding:'2px 8px', borderRadius:'20px', background:diffLabel.bg, color:diffLabel.color }}>{diffLabel.label}</span>}
-              <span style={{ fontSize:'11px', fontWeight:'700', padding:'2px 8px', borderRadius:'20px', background:col.bg, color:col.color, border:`1px solid ${col.border}` }}>{order.estado}</span>
-              {urgencia && dias > 0 && <span style={{ fontSize:'11px', fontWeight:'700', color:dias>=7?'#dc2626':'#d97706', background:dias>=7?'#fef2f2':'#fffbeb', padding:'2px 8px', borderRadius:'20px' }}>{dias} {dias===1?'día':'días'} vencida</span>}
-            </div>
-            {/* Cliente */}
-            <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px' }}>{order.clienteNombre}</div>
-            {order.clienteNegocio && <div style={{ fontSize:'13px', color:'var(--muted)' }}>{order.clienteNegocio}</div>}
-            {/* Fecha + hora + acción */}
-            {order.siguienteAccionFecha && (
-              <div style={{ display:'flex', alignItems:'center', gap:'6px', marginTop:'6px', flexWrap:'wrap' }}>
-                <span style={{ fontSize:'12px', color:'var(--muted)', display:'flex', alignItems:'center', gap:'4px' }}>
-                  <Icon d={icons.calendar} size={12} />
-                  {formatFecha(order.siguienteAccionFecha)}
-                  {order.siguienteAccionFecha?.toString().includes(' ') && (
-                    <span style={{ display:'inline-flex', alignItems:'center', gap:'3px' }}>
-                      <Icon d={icons.clock} size={12} />{order.siguienteAccionFecha.toString().split(' ')[1]}
-                    </span>
-                  )}
-                </span>
-                {accion && <span style={{ fontSize:'12px', fontWeight:'600', color:'var(--brand)', background:'var(--brand-light)', padding:'1px 7px', borderRadius:'20px' }}>{accion}</span>}
-              </div>
-            )}
-            {/* Contactos */}
-            {contactos.length > 0 && (
-              <div style={{ marginTop:'7px', display:'flex', flexDirection:'column', gap:'3px' }}>
-                {contactos.map((ct, ci) => {
-                  if (ct.type==='tel') return (
-                    <a key={ci} href={`https://wa.me/593${ct.value.toString().replace(/\D/g,'').replace(/^0/,'')}`}
-                      target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                      style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'#16a34a', textDecoration:'none' }}
-                      onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
-                      onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
-                      <Icon d={icons.phone} size={12} />{ct.value}
-                    </a>
-                  )
-                  if (ct.type==='email') return (
-                    <a key={ci} href={`mailto:${ct.value}`} onClick={e => e.stopPropagation()}
-                      style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--brand)', textDecoration:'none' }}
-                      onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
-                      onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
-                      <Icon d={icons.mail} size={12} />{ct.value}
-                    </a>
-                  )
-                  if (ct.type==='dir') return (
-                    <a key={ci} href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ct.value)}`}
-                      target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
-                      style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--muted)', textDecoration:'none' }}
-                      onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
-                      onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
-                      <Icon d={icons.map} size={12} />{ct.value}
-                    </a>
-                  )
-                  return null
-                })}
-              </div>
-            )}
-            {/* Días en estado */}
-            {diasEstadoEl}
-            {/* Nota de seguimiento */}
-            {order.notasSeguimiento && (
-              <div style={{ fontSize:'12px', color:'var(--ink)', marginTop:'6px', fontStyle:'italic', lineHeight:'1.5', background:'var(--cream)', borderRadius:'6px', padding:'6px 10px', borderLeft:'3px solid var(--brand)' }}>
-                "{order.notasSeguimiento}"
-              </div>
-            )}
+        style={{ borderRadius:'var(--radius-lg)', overflow:'hidden', cursor:'pointer', boxShadow:'var(--shadow)', border:'1.5px solid var(--border)', transition:'box-shadow 0.15s' }}
+        onMouseEnter={e => e.currentTarget.style.boxShadow='var(--shadow-lg)'}
+        onMouseLeave={e => e.currentTarget.style.boxShadow='var(--shadow)'}>
+
+        {/* Sección 1 — rojo/amarillo/azul: días vencida + monto + orden */}
+        <div style={{ background:sec1Bg, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+            <span style={{ fontSize:'12px', fontWeight:'800', color:sec1Color }}>{sec1Label}</span>
+            <span style={{ fontSize:'11px', fontWeight:'600', color:sec1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', opacity:0.85 }}>{order.estado}</span>
           </div>
-          {/* Total */}
           <div style={{ textAlign:'right', flexShrink:0 }}>
-            <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:'var(--brand)' }}>{fmtM(order.total)}</div>
-            <div style={{ fontSize:'10px', color:'var(--muted)', marginTop:'2px' }}>{order.numOrden}</div>
+            <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:sec1Color }}>{fmtM(order.total)}</div>
+            <div style={{ fontSize:'10px', color:sec1Color, opacity:0.7 }}>{order.numOrden}</div>
           </div>
+        </div>
+
+        {/* Sección 2 — blanco: cliente + contactos */}
+        <div style={{ background:'var(--white)', padding:'10px 14px' }}>
+          <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px', color:'var(--ink)' }}>{order.clienteNombre}</div>
+          {order.clienteNegocio && <div style={{ fontSize:'13px', color:'var(--muted)', marginTop:'1px' }}>{order.clienteNegocio}</div>}
+          {contactos.length > 0 && (
+            <div style={{ marginTop:'6px', display:'flex', flexDirection:'column', gap:'3px' }}>
+              {contactos.map((ct, ci) => {
+                if (ct.type==='tel') return (
+                  <a key={ci} href={`https://wa.me/593${ct.value.toString().replace(/\D/g,'').replace(/^0/,'')}`}
+                    target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                    style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'#16a34a', textDecoration:'none' }}
+                    onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                    onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                    <Icon d={icons.phone} size={12} />{ct.value}
+                  </a>
+                )
+                if (ct.type==='email') return (
+                  <a key={ci} href={`mailto:${ct.value}`} onClick={e => e.stopPropagation()}
+                    style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--brand)', textDecoration:'none' }}
+                    onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                    onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                    <Icon d={icons.mail} size={12} />{ct.value}
+                  </a>
+                )
+                if (ct.type==='dir') return (
+                  <a key={ci} href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ct.value)}`}
+                    target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                    style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--muted)', textDecoration:'none' }}
+                    onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                    onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                    <Icon d={icons.map} size={12} />{ct.value}
+                  </a>
+                )
+                return null
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Sección 3 — celeste: fecha + actividad + nota */}
+        <div style={{ background:'#eff6ff', padding:'8px 14px', borderTop:'1px solid #bfdbfe' }}>
+          {fechaLabel && (
+            <div style={{ fontSize:'12px', fontWeight:'700', color:'#1d4ed8', marginBottom:'2px', display:'flex', alignItems:'center', gap:'5px' }}>
+              <Icon d={icons.calendar} size={12} />
+              {fechaLabel}{hora ? ` · ${hora}` : ''}
+            </div>
+          )}
+          {accion && (
+            <div style={{ fontSize:'12px', color:'#1d4ed8', fontWeight:'600' }}>Actividad: {accion}</div>
+          )}
+          {order.notasSeguimiento && (
+            <div style={{ fontSize:'12px', color:'#1e40af', marginTop:'4px', fontStyle:'italic', lineHeight:'1.4' }}>
+              "{order.notasSeguimiento}"
+            </div>
+          )}
         </div>
       </div>
     )
@@ -2979,52 +2958,107 @@ function ProximaSemana({ onViewOrder }) {
   })
 
   const CardOrden = ({ order, mostrarDia }) => {
-    const col = ESTADO_COLORS[order.estado] || { bg:'var(--cream)', color:'var(--muted)', border:'var(--border)' }
     const f = parseFecha(order.siguienteAccionFecha)
-    const diaLabel = f ? DIAS_ES[f.getDay()] : ''
+    const DIAS_ES2 = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+    const MESES_ES3 = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+    const fechaLabel = f ? `${DIAS_ES2[f.getDay()]} ${f.getDate()} de ${MESES_ES3[f.getMonth()]} ${f.getFullYear()}` : ''
     const hora = order.siguienteAccionFecha?.toString().includes(' ') ? order.siguienteAccionFecha.toString().split(' ')[1] : ''
+    const accion = (order.accion || '').trim()
 
-    // Días en estado
-    let diasEstLabel = null
-    if (order.fechaCambioEstado) {
-      const s = order.fechaCambioEstado.toString().trim()
-      if (s.includes('/')) {
-        const p = s.split(' ')[0].split('/')
-        if (p.length === 3) {
-          const fcs = new Date(p[2], p[1]-1, p[0]); fcs.setHours(0,0,0,0)
-          const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
-          const d2 = Math.max(0, Math.floor((hoy2 - fcs) / (1000*60*60*24)))
-          const col2 = d2 >= 7 ? '#dc2626' : d2 >= 3 ? '#d97706' : 'var(--muted)'
-          diasEstLabel = <div style={{ fontSize:'11px', fontWeight:'700', color:col2, marginTop:'4px', display:'flex', alignItems:'center', gap:'4px' }}><Icon d={icons.clock} size={11} />{d2===0?`Hoy en ${order.estado.toLowerCase()}`:`${d2} ${d2===1?'día':'días'} en ${order.estado.toLowerCase()}`}</div>
-        }
-      }
+    // Color sección 1
+    const hoyD = getNowGuayaquil(); hoyD.setHours(0,0,0,0)
+    const fD = f ? new Date(f) : null; if (fD) fD.setHours(0,0,0,0)
+    const diffDias = fD ? Math.round((fD - hoyD) / 86400000) : 0
+    const esVencida = diffDias < 0
+    const sec1Bg = esVencida ? '#fef2f2' : '#eff6ff'
+    const sec1Color = esVencida ? '#dc2626' : '#2563eb'
+    const sec1Label = esVencida
+      ? `${Math.abs(diffDias)} ${Math.abs(diffDias)===1?'día':'días'} vencida`
+      : diffDias === 0 ? 'Hoy' : diffDias === 1 ? 'Mañana' : `En ${diffDias} días`
+
+    // Contactos
+    const na = norm(accion)
+    const contactos = []
+    if (na === norm('Visitar')) {
+      if (order.clienteTelefono)  contactos.push({ type:'tel',   value:order.clienteTelefono })
+      if (order.clienteEmail)     contactos.push({ type:'email', value:order.clienteEmail })
+      if (order.clienteDireccion) contactos.push({ type:'dir',   value:order.clienteDireccion })
+    } else {
+      if (order.clienteTelefono) contactos.push({ type:'tel',   value:order.clienteTelefono })
+      if (order.clienteEmail)    contactos.push({ type:'email', value:order.clienteEmail })
     }
 
     return (
       <div onClick={() => onViewOrder(order)}
-        style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 16px', cursor:'pointer', transition:'box-shadow 0.15s' }}
-        onMouseEnter={e => e.currentTarget.style.boxShadow='var(--shadow)'}
-        onMouseLeave={e => e.currentTarget.style.boxShadow='none'}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'10px' }}>
-          <div style={{ minWidth:0, flex:1 }}>
-            <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginBottom:'5px', alignItems:'center' }}>
-              <span style={{ fontSize:'11px', fontWeight:'700', padding:'2px 8px', borderRadius:'20px', background:col.bg, color:col.color, border:`1px solid ${col.border}` }}>{order.estado}</span>
-              {order.accion && <span style={{ fontSize:'11px', fontWeight:'600', color:'var(--brand)', background:'var(--brand-light)', padding:'2px 8px', borderRadius:'20px' }}>{order.accion}</span>}
-              {mostrarDia && diaLabel && <span style={{ fontSize:'11px', fontWeight:'700', color:'var(--brand)', textTransform:'capitalize' }}>{diaLabel}{hora ? ` ${hora}` : ''}</span>}
-            </div>
-            <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px' }}>{order.clienteNombre}</div>
-            {order.clienteNegocio && <div style={{ fontSize:'13px', color:'var(--muted)' }}>{order.clienteNegocio}</div>}
-            {diasEstLabel}
-            {order.notasSeguimiento && (
-              <div style={{ fontSize:'12px', color:'var(--ink)', marginTop:'6px', fontStyle:'italic', lineHeight:'1.5', background:'var(--cream)', borderRadius:'6px', padding:'6px 10px', borderLeft:'3px solid var(--brand)' }}>
-                "{order.notasSeguimiento}"
-              </div>
-            )}
+        style={{ borderRadius:'var(--radius-lg)', overflow:'hidden', cursor:'pointer', boxShadow:'var(--shadow)', border:'1.5px solid var(--border)', transition:'box-shadow 0.15s' }}
+        onMouseEnter={e => e.currentTarget.style.boxShadow='var(--shadow-lg)'}
+        onMouseLeave={e => e.currentTarget.style.boxShadow='var(--shadow)'}>
+
+        {/* Sección 1 */}
+        <div style={{ background:sec1Bg, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+            <span style={{ fontSize:'12px', fontWeight:'800', color:sec1Color }}>{sec1Label}</span>
+            <span style={{ fontSize:'11px', fontWeight:'600', color:sec1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', opacity:0.85 }}>{order.estado}</span>
           </div>
           <div style={{ textAlign:'right', flexShrink:0 }}>
-            <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:'var(--brand)' }}>{fmtM(order.total)}</div>
-            <div style={{ fontSize:'10px', color:'var(--muted)', marginTop:'2px' }}>{order.numOrden}</div>
+            <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:sec1Color }}>{fmtM(order.total)}</div>
+            <div style={{ fontSize:'10px', color:sec1Color, opacity:0.7 }}>{order.numOrden}</div>
           </div>
+        </div>
+
+        {/* Sección 2 — blanco: cliente + contactos */}
+        <div style={{ background:'var(--white)', padding:'10px 14px' }}>
+          <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px', color:'var(--ink)' }}>{order.clienteNombre}</div>
+          {order.clienteNegocio && <div style={{ fontSize:'13px', color:'var(--muted)', marginTop:'1px' }}>{order.clienteNegocio}</div>}
+          {contactos.length > 0 && (
+            <div style={{ marginTop:'6px', display:'flex', flexDirection:'column', gap:'3px' }}>
+              {contactos.map((ct, ci) => {
+                if (ct.type==='tel') return (
+                  <a key={ci} href={`https://wa.me/593${ct.value.toString().replace(/\D/g,'').replace(/^0/,'')}`}
+                    target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                    style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'#16a34a', textDecoration:'none' }}
+                    onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                    onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                    <Icon d={icons.phone} size={12} />{ct.value}
+                  </a>
+                )
+                if (ct.type==='email') return (
+                  <a key={ci} href={`mailto:${ct.value}`} onClick={e => e.stopPropagation()}
+                    style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--brand)', textDecoration:'none' }}
+                    onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                    onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                    <Icon d={icons.mail} size={12} />{ct.value}
+                  </a>
+                )
+                if (ct.type==='dir') return (
+                  <a key={ci} href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ct.value)}`}
+                    target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                    style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--muted)', textDecoration:'none' }}
+                    onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                    onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                    <Icon d={icons.map} size={12} />{ct.value}
+                  </a>
+                )
+                return null
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Sección 3 — celeste: fecha + actividad + nota */}
+        <div style={{ background:'#eff6ff', padding:'8px 14px', borderTop:'1px solid #bfdbfe' }}>
+          {fechaLabel && (
+            <div style={{ fontSize:'12px', fontWeight:'700', color:'#1d4ed8', marginBottom:'2px', display:'flex', alignItems:'center', gap:'5px' }}>
+              <Icon d={icons.calendar} size={12} />
+              {fechaLabel}{hora ? ` · ${hora}` : ''}
+            </div>
+          )}
+          {accion && <div style={{ fontSize:'12px', color:'#1d4ed8', fontWeight:'600' }}>Actividad: {accion}</div>}
+          {order.notasSeguimiento && (
+            <div style={{ fontSize:'12px', color:'#1e40af', marginTop:'4px', fontStyle:'italic', lineHeight:'1.4' }}>
+              "{order.notasSeguimiento}"
+            </div>
+          )}
         </div>
       </div>
     )
