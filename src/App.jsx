@@ -269,7 +269,11 @@ function MiDia({ onViewOrder }) {
     const numVenc = listaVenc.length
     const totalVenc = listaVenc.reduce((s,o) => s + (o.total||0), 0)
     const numAPalabras = (n) => {
-      const num = Math.round(parseFloat(n) || 0)
+      let num = parseFloat(n) || 0
+      // Redondear al millar más cercano si >= 1000, a la centena si < 1000
+      if (num >= 1000) num = Math.round(num / 1000) * 1000
+      else num = Math.round(num / 100) * 100
+      num = Math.round(num)
       if (num === 0) return 'cero dólares'
       const unidades = ['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve',
         'diez','once','doce','trece','catorce','quince','dieciséis','diecisiete','dieciocho','diecinueve']
