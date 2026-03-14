@@ -2572,13 +2572,10 @@ function ViewPista({ pista, onBack, onEdit, showToast }) {
 
   return (
     <div style={{ animation: 'fadeUp 0.4s ease', paddingBottom: '40px' }}>
-      <button onClick={onBack} style={{ display:'flex', alignItems:'center', gap:'6px', background:'none', border:'1.5px solid var(--border)', borderRadius:'var(--radius)', padding:'7px 14px', fontSize:'13px', fontWeight:'600', color:'var(--muted)', cursor:'pointer', marginBottom:'14px', transition:'all 0.15s' }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor='var(--brand)'; e.currentTarget.style.color='var(--brand)' }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--muted)' }}>
-        <Icon d={icons.back} size={15} /> Volver a pistas
+      <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', padding: '0', marginBottom: '24px' }}>
+        <Icon d={icons.arrowLeft} size={15} /> Volver a pistas
       </button>
       <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{ flex:0 }}></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '24px', letterSpacing: '-0.02em', margin: 0 }}>{pista.nombre}</h1>
           {pista.negocio && <p style={{ color: 'var(--muted)', fontSize: '13px', marginTop: '2px' }}>{pista.negocio}</p>}
@@ -2682,10 +2679,8 @@ function ViewPista({ pista, onBack, onEdit, showToast }) {
         </div>
 
         {/* Volver abajo */}
-        <button onClick={onBack} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', background:'none', border:'1.5px solid var(--border)', borderRadius:'var(--radius)', padding:'10px 14px', fontSize:'13px', fontWeight:'600', color:'var(--muted)', cursor:'pointer', width:'100%', transition:'all 0.15s' }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor='var(--brand)'; e.currentTarget.style.color='var(--brand)' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--muted)' }}>
-          <Icon d={icons.back} size={15} /> Volver a pistas
+        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', padding: '0', marginTop: '8px' }}>
+          <Icon d={icons.arrowLeft} size={15} /> Volver a pistas
         </button>
       </div>
     </div>
