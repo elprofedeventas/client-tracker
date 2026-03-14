@@ -2855,6 +2855,241 @@ function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRÓXIMA SEMANA
+// ─────────────────────────────────────────────────────────────────────────────
+function ProximaSemana({ onViewOrder }) {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [diasExtraVenc, setDiasExtraVenc] = useState(0)
+  const [sortField, setSortField] = useState('fecha')
+  const [sortDir, setSortDir] = useState('asc')
+
+  useEffect(() => {
+    fetch(`${API_BASE}?action=getProximaSemana`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setData(d.data) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const toggleSort = (field) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortDir(field === 'total' ? 'desc' : 'asc') }
+  }
+
+  const parseFecha = (s) => {
+    if (!s) return null
+    const p = s.toString().trim().split(' ')[0].split('/')
+    if (p.length === 3) return new Date(p[2], p[1]-1, p[0])
+    return null
+  }
+
+  const fmtM = (n) => `$${(parseFloat(n)||0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+  const DIAS_ES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado']
+
+  if (loading) return (
+    <div style={{ textAlign:'center', padding:'80px', color:'var(--muted)' }}>
+      <div style={{ fontSize:'28px', marginBottom:'12px', animation:'pulse 1s infinite' }}>⏳</div>
+      Cargando próxima semana...
+    </div>
+  )
+  if (!data) return (
+    <div style={{ textAlign:'center', padding:'80px', color:'var(--muted)' }}>
+      <div style={{ fontSize:'36px', marginBottom:'12px' }}>😕</div>
+      No se pudo cargar la información
+    </div>
+  )
+
+  const { lunesProximo, finSemana, semanaLaboral, metaMes, valorXSemana,
+          ordenesProximaSemana, ordenesVencidas, totalProximaSemana,
+          enCamino, faltante, diasVencidos1, diasVencidos2 } = data
+
+  // Filtrar vencidas por rango activo
+  const limiteVenc = diasVencidos1 + diasExtraVenc
+  const vencidasFiltradas = ordenesVencidas.filter(o => {
+    const f = parseFecha(o.siguienteAccionFecha)
+    if (!f) return false
+    f.setHours(0,0,0,0)
+    const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
+    return Math.floor((hoy2 - f) / (1000*60*60*24)) <= limiteVenc
+  })
+
+  // Sort lista próxima semana
+  const listaSorted = [...ordenesProximaSemana].sort((a,b) => {
+    if (sortField === 'fecha') {
+      const fa = parseFecha(a.siguienteAccionFecha) || new Date(0)
+      const fb = parseFecha(b.siguienteAccionFecha) || new Date(0)
+      return sortDir === 'asc' ? fa - fb : fb - fa
+    }
+    return sortDir === 'asc' ? (a.total||0) - (b.total||0) : (b.total||0) - (a.total||0)
+  })
+
+  const CardOrden = ({ order, mostrarDia }) => {
+    const col = ESTADO_COLORS[order.estado] || { bg:'var(--cream)', color:'var(--muted)', border:'var(--border)' }
+    const f = parseFecha(order.siguienteAccionFecha)
+    const diaLabel = f ? DIAS_ES[f.getDay()] : ''
+    const hora = order.siguienteAccionFecha?.toString().includes(' ') ? order.siguienteAccionFecha.toString().split(' ')[1] : ''
+
+    // Días en estado
+    let diasEstLabel = null
+    if (order.fechaCambioEstado) {
+      const s = order.fechaCambioEstado.toString().trim()
+      if (s.includes('/')) {
+        const p = s.split(' ')[0].split('/')
+        if (p.length === 3) {
+          const fcs = new Date(p[2], p[1]-1, p[0]); fcs.setHours(0,0,0,0)
+          const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
+          const d2 = Math.max(0, Math.floor((hoy2 - fcs) / (1000*60*60*24)))
+          const col2 = d2 >= 7 ? '#dc2626' : d2 >= 3 ? '#d97706' : 'var(--muted)'
+          diasEstLabel = <div style={{ fontSize:'11px', fontWeight:'700', color:col2, marginTop:'4px', display:'flex', alignItems:'center', gap:'4px' }}><Icon d={icons.clock} size={11} />{d2===0?`Hoy en ${order.estado.toLowerCase()}`:`${d2} ${d2===1?'día':'días'} en ${order.estado.toLowerCase()}`}</div>
+        }
+      }
+    }
+
+    return (
+      <div onClick={() => onViewOrder(order)}
+        style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 16px', cursor:'pointer', transition:'box-shadow 0.15s' }}
+        onMouseEnter={e => e.currentTarget.style.boxShadow='var(--shadow)'}
+        onMouseLeave={e => e.currentTarget.style.boxShadow='none'}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'10px' }}>
+          <div style={{ minWidth:0, flex:1 }}>
+            <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginBottom:'5px', alignItems:'center' }}>
+              <span style={{ fontSize:'11px', fontWeight:'700', padding:'2px 8px', borderRadius:'20px', background:col.bg, color:col.color, border:`1px solid ${col.border}` }}>{order.estado}</span>
+              {order.accion && <span style={{ fontSize:'11px', fontWeight:'600', color:'var(--brand)', background:'var(--brand-light)', padding:'2px 8px', borderRadius:'20px' }}>{order.accion}</span>}
+              {mostrarDia && diaLabel && <span style={{ fontSize:'11px', fontWeight:'700', color:'var(--brand)', textTransform:'capitalize' }}>{diaLabel}{hora ? ` ${hora}` : ''}</span>}
+            </div>
+            <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px' }}>{order.clienteNombre}</div>
+            {order.clienteNegocio && <div style={{ fontSize:'13px', color:'var(--muted)' }}>{order.clienteNegocio}</div>}
+            {diasEstLabel}
+            {order.notasSeguimiento && (
+              <div style={{ fontSize:'12px', color:'var(--ink)', marginTop:'6px', fontStyle:'italic', lineHeight:'1.5', background:'var(--cream)', borderRadius:'6px', padding:'6px 10px', borderLeft:'3px solid var(--brand)' }}>
+                "{order.notasSeguimiento}"
+              </div>
+            )}
+          </div>
+          <div style={{ textAlign:'right', flexShrink:0 }}>
+            <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:'var(--brand)' }}>{fmtM(order.total)}</div>
+            <div style={{ fontSize:'10px', color:'var(--muted)', marginTop:'2px' }}>{order.numOrden}</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ animation:'fadeUp 0.4s ease', paddingBottom:'40px' }}>
+
+      {/* Header */}
+      <div style={{ marginBottom:'20px' }}>
+        <h1 style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'26px', letterSpacing:'-0.02em' }}>Próxima semana</h1>
+        <div style={{ fontSize:'13px', color:'var(--muted)', fontWeight:'500', marginTop:'4px' }}>
+          {lunesProximo} — {finSemana} · {semanaLaboral} días laborables
+        </div>
+      </div>
+
+      {/* ── SECCIÓN 1: Medidor semana ──────────────────────────────────────────── */}
+      <div style={{ background: enCamino ? '#f0fdf4' : '#fef2f2', border:`1.5px solid ${enCamino ? '#bbf7d0' : '#fecaca'}`, borderRadius:'var(--radius-lg)', padding:'16px 20px', marginBottom:'16px' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'10px' }}>
+          <div>
+            <div style={{ fontSize:'10px', fontWeight:'700', color: enCamino?'#16a34a':'#dc2626', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>En juego próxima semana</div>
+            <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'22px', color: enCamino?'#16a34a':'#dc2626' }}>{fmtM(totalProximaSemana)}</div>
+          </div>
+          <div>
+            <div style={{ fontSize:'10px', fontWeight:'700', color: enCamino?'#16a34a':'#dc2626', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>Necesitas</div>
+            <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'22px', color: enCamino?'#16a34a':'#dc2626' }}>{fmtM(valorXSemana)}</div>
+          </div>
+        </div>
+        {enCamino ? (
+          <div style={{ fontSize:'13px', fontWeight:'700', color:'#16a34a' }}>✓ Tienes suficiente para la próxima semana — ¡estás en camino!</div>
+        ) : (
+          <div style={{ fontSize:'13px', fontWeight:'700', color:'#dc2626' }}>⚠ Te faltan {fmtM(faltante)} — necesitas prospectar o recuperar órdenes esta semana</div>
+        )}
+      </div>
+
+      {/* ── SECCIÓN 2: Órdenes próxima semana ─────────────────────────────────── */}
+      <div style={{ marginBottom:'24px' }}>
+        <div style={{ fontSize:'11px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'10px', display:'flex', alignItems:'center', gap:'6px' }}>
+          <Icon d={icons.calendar} size={13} />
+          Actividades programadas · {ordenesProximaSemana.length}
+        </div>
+
+        {/* Total */}
+        {ordenesProximaSemana.length > 0 && (
+          <div style={{ background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:'var(--radius-lg)', padding:'12px 18px', marginBottom:'10px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <span style={{ fontSize:'12px', fontWeight:'700', color:'#16a34a', textTransform:'uppercase', letterSpacing:'0.06em' }}>Total en juego</span>
+            <span style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'#16a34a' }}>{fmtM(totalProximaSemana)}</span>
+          </div>
+        )}
+
+        {/* Sort */}
+        {ordenesProximaSemana.length > 0 && (
+          <div style={{ display:'flex', gap:'8px', marginBottom:'10px' }}>
+            {[['fecha','Fecha'],['total','$']].map(([f,lbl]) => (
+              <button key={f} onClick={() => toggleSort(f)}
+                style={{ padding:'4px 12px', borderRadius:'20px', border:`1.5px solid ${sortField===f?'var(--brand)':'var(--border)'}`, background:sortField===f?'var(--brand-light)':'var(--white)', color:sortField===f?'var(--brand)':'var(--muted)', fontSize:'11px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s' }}>
+                {lbl} {sortField===f?(sortDir==='asc'?'↑':'↓'):'↕'}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {listaSorted.length === 0 ? (
+          <div style={{ background:'var(--white)', border:'1.5px dashed var(--border)', borderRadius:'var(--radius-lg)', padding:'20px', textAlign:'center', color:'var(--muted)', fontSize:'13px' }}>
+            Sin actividades programadas para la próxima semana
+          </div>
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+            {listaSorted.map(o => <CardOrden key={o.numOrden} order={o} mostrarDia={true} />)}
+          </div>
+        )}
+      </div>
+
+      {/* ── SECCIÓN 3: Vencidas — si no está en camino ────────────────────────── */}
+      {!enCamino && (
+        <div>
+          <div style={{ textAlign:'center', marginBottom:'10px', padding:'8px 0' }}>
+            <span style={{ fontSize:'13px', fontWeight:'800', color:'#dc2626', textTransform:'uppercase', letterSpacing:'0.12em' }}>💸 Dinero que estás perdiendo</span>
+          </div>
+
+          {/* Botones rango vencidas */}
+          <div style={{ display:'flex', gap:'8px', marginBottom:'12px', flexWrap:'wrap' }}>
+            {[{ extra:0, label:`Vencidas (últimos ${diasVencidos1} días)` }, { extra: diasVencidos2 - diasVencidos1, label:`Vencidas (últimos ${diasVencidos2} días)` }].map(({ extra, label }) => {
+              const cnt = ordenesVencidas.filter(o => {
+                const f = parseFecha(o.siguienteAccionFecha)
+                if (!f) return false
+                f.setHours(0,0,0,0)
+                const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
+                return Math.floor((hoy2 - f) / (1000*60*60*24)) <= diasVencidos1 + extra
+              }).length
+              const activo = diasExtraVenc === extra
+              return (
+                <button key={extra} onClick={() => setDiasExtraVenc(extra)}
+                  style={{ display:'flex', alignItems:'center', gap:'6px', padding:'5px 12px', borderRadius:'20px', border:`1.5px solid ${activo?'var(--brand)':'var(--border)'}`, background:activo?'var(--brand-light)':'var(--white)', color:activo?'var(--brand)':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s' }}>
+                  {activo && <Icon d={icons.alert} size={12} />}
+                  {label} · {cnt}
+                </button>
+              )
+            })}
+          </div>
+
+          {vencidasFiltradas.length === 0 ? (
+            <div style={{ background:'var(--white)', border:'1.5px dashed var(--border)', borderRadius:'var(--radius-lg)', padding:'20px', textAlign:'center', color:'var(--muted)', fontSize:'13px' }}>
+              Sin actividades vencidas en los últimos {limiteVenc} días
+            </div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+              {vencidasFiltradas.map(o => <CardOrden key={o.numOrden} order={o} mostrarDia={false} />)}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function App() {
   const [view, setView] = useState('midia')
   const [ordersKey, setOrdersKey] = useState(0)
@@ -2959,6 +3194,7 @@ export default function App() {
       const incluye = (palabras) => palabras.some(p => alternativas.some(a => n(a).includes(n(p))))
       let destino = null, confirmacion = ''
       if (incluye(['mi dia', 'mi día', 'dia de hoy', 'día de hoy']))           { destino = 'midia';      confirmacion = 'Abriendo mi día de hoy.' }
+      else if (incluye(['proxima semana', 'próxima semana', 'semana proxima', 'semana que viene', 'como viene la semana'])) { destino = 'proximaSemana'; confirmacion = 'Abriendo próxima semana.' }
       else if (incluye(['vencidas', 'actividades vencidas', 'vencidos']))       { destino = 'activities-vencidas'; confirmacion = 'Abriendo actividades vencidas.' }
       else if (incluye(['mis actividades', 'ver actividades', 'actividades']))  { destino = 'activities'; confirmacion = 'Abriendo actividades.' }
       else if (incluye(['ordenes', 'órdenes', 'ver ordenes', 'ver órdenes']))   { destino = 'orders';    confirmacion = 'Abriendo órdenes.' }
@@ -3003,6 +3239,7 @@ export default function App() {
     { key: 'list',        icon: icons.list,        label: 'Clientes' },
     { key: 'newOrder',    icon: icons.plus,        label: 'Nueva orden' },
     { key: 'orders',      icon: icons.orders,      label: 'Órdenes' },
+    { key: 'proximaSemana', icon: icons.trending,  label: 'Próxima semana' },
       ]
 
   return (
@@ -3039,6 +3276,8 @@ export default function App() {
 
         {/* ── DASHBOARD ─────────────────────────────────────────────────────── */}
         {view === 'midia' && <MiDia onViewOrder={(o) => handleViewOrder(o, 'midia')} />}
+
+        {view === 'proximaSemana' && <ProximaSemana onViewOrder={(o) => handleViewOrder(o, 'proximaSemana')} />}
 
         {view === 'dashboard' && <Dashboard />}
 
@@ -3141,7 +3380,7 @@ export default function App() {
 
         {/* ── VER ORDEN ─────────────────────────────────────────────────────── */}
         {view === 'viewOrder' && viewingOrder && (
-          <ViewOrder order={viewingOrder} onBack={() => setView(orderOrigin === 'midia' ? 'midia' : orderOrigin)} onChangeEstado={handleChangeEstado} showToast={showToast} backLabel={orderOrigin === 'view' ? 'Volver al cliente' : orderOrigin === 'midia' ? 'Volver a Mi día' : 'Volver a órdenes'} />
+          <ViewOrder order={viewingOrder} onBack={() => setView(['midia','proximaSemana','activities'].includes(orderOrigin) ? orderOrigin : orderOrigin)} onChangeEstado={handleChangeEstado} showToast={showToast} backLabel={orderOrigin === 'view' ? 'Volver al cliente' : orderOrigin === 'midia' ? 'Volver a Mi día' : orderOrigin === 'proximaSemana' ? 'Volver a próxima semana' : 'Volver a órdenes'} />
         )}
 
         {/* ── NUEVA ORDEN ───────────────────────────────────────────────────── */}
