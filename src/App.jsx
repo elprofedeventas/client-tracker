@@ -2926,7 +2926,7 @@ export default function App() {
     finally { setLoading(false) }
   }
 
-  const navigate = (v) => { setView(v); setMenuOpen(false); if (v !== 'edit') setEditingClient(null); if (v !== 'view') setViewingClient(null); if (v !== 'viewOrder' && v !== 'newOrder') setViewingOrder(null); if (v === 'orders') { setOrdersKey(k => k + 1); setOrdersFiltro('Negociando') } if (v === 'activities') setActivitiesModo('pendientes') }
+  const navigate = (v, opts = {}) => { setView(v); setMenuOpen(false); if (v !== 'edit') setEditingClient(null); if (v !== 'view') setViewingClient(null); if (v !== 'viewOrder' && v !== 'newOrder') setViewingOrder(null); if (v === 'orders') { setOrdersKey(k => k + 1); setOrdersFiltro('Negociando') } if (v === 'activities' && !opts.keepModo) setActivitiesModo('pendientes') }
 
   const voiceSpeak = (texto) => {
     if (!window.speechSynthesis) return
@@ -2972,7 +2972,7 @@ export default function App() {
         if (destino === 'activities-vencidas') {
           setActivitiesModo('vencidas')
           setActivitiesKey(k => k + 1)
-          navigate('activities')
+          navigate('activities', { keepModo: true })
         } else {
           navigate(destino)
         }
