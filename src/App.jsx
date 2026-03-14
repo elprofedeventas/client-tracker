@@ -2860,6 +2860,8 @@ export default function App() {
   const [ordersKey, setOrdersKey] = useState(0)
   const [ordersFiltro, setOrdersFiltro] = useState('Negociando')
   const [menuOpen, setMenuOpen] = useState(false)
+  const [voiceState, setVoiceState] = useState('idle') // 'idle' | 'listening' | 'success' | 'error'
+  const recognitionRef = useRef(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -2923,6 +2925,57 @@ export default function App() {
   }
 
   const navigate = (v) => { setView(v); setMenuOpen(false); if (v !== 'edit') setEditingClient(null); if (v !== 'view') setViewingClient(null); if (v !== 'viewOrder' && v !== 'newOrder') setViewingOrder(null); if (v === 'orders') { setOrdersKey(k => k + 1); setOrdersFiltro('Negociando') } }
+
+  const voiceSpeak = (texto) => {
+    if (!window.speechSynthesis) return
+    window.speechSynthesis.cancel()
+    const u = new SpeechSynthesisUtterance(texto)
+    u.lang = 'es-EC'; u.rate = 1.0; u.pitch = 1
+    window.speechSynthesis.speak(u)
+  }
+
+  const startVoice = () => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SR) { showToast('Tu navegador no soporta reconocimiento de voz', 'error'); return }
+    if (voiceState === 'listening') {
+      recognitionRef.current?.stop()
+      setVoiceState('idle')
+      return
+    }
+    const rec = new SR()
+    recognitionRef.current = rec
+    rec.lang = 'es-ES'
+    rec.interimResults = false
+    rec.maxAlternatives = 3
+    rec.onstart = () => setVoiceState('listening')
+    rec.onerror = () => { setVoiceState('error'); setTimeout(() => setVoiceState('idle'), 1500) }
+    rec.onend = () => { if (voiceState === 'listening') setVoiceState('idle') }
+    rec.onresult = (e) => {
+      const alternativas = Array.from(e.results[0]).map(r => r.transcript.toLowerCase().trim())
+      const texto = alternativas[0]
+      const n = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      const incluye = (palabras) => palabras.some(p => alternativas.some(a => n(a).includes(n(p))))
+      let destino = null, confirmacion = ''
+      if (incluye(['mi dia', 'mi día', 'dia de hoy', 'día de hoy']))           { destino = 'midia';      confirmacion = 'Abriendo mi día de hoy.' }
+      else if (incluye(['actividades', 'mis actividades']))                     { destino = 'activities'; confirmacion = 'Abriendo actividades.' }
+      else if (incluye(['ordenes', 'órdenes', 'ver ordenes', 'ver órdenes']))   { destino = 'orders';    confirmacion = 'Abriendo órdenes.' }
+      else if (incluye(['dashboard', 'inicio', 'panel']))                       { destino = 'dashboard'; confirmacion = 'Abriendo dashboard.' }
+      else if (incluye(['nueva orden', 'crear orden', 'nuevo pedido']))         { destino = 'newOrder';  confirmacion = 'Abriendo nueva orden.' }
+      else if (incluye(['nuevo cliente', 'crear cliente', 'agregar cliente']))  { destino = 'form';      confirmacion = 'Abriendo nuevo cliente.' }
+      else if (incluye(['clientes', 'ver clientes', 'mis clientes']))           { destino = 'list';      confirmacion = 'Abriendo clientes.' }
+      if (destino) {
+        setVoiceState('success')
+        voiceSpeak(confirmacion)
+        navigate(destino)
+        setTimeout(() => setVoiceState('idle'), 1500)
+      } else {
+        setVoiceState('error')
+        voiceSpeak('No entendí el comando. Intenta de nuevo.')
+        setTimeout(() => setVoiceState('idle'), 2000)
+      }
+    }
+    rec.start()
+  }
   const handleEdit = (c) => { setEditingClient(c); setViewingClient(null); setView('edit') }
   const handleView = (c) => { setViewingClient(c); setView('view') }
   const handleSaveEdit = (c) => { setClients(p => p.map(x => x.rowIndex === c.rowIndex ? c : x)); showToast(`✓ ${c.nombre} actualizado`); setView('list') }
@@ -3089,6 +3142,31 @@ export default function App() {
       </main>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {/* Botón flotante de voz */}
+      {!['form','edit','newOrder'].includes(view) && (
+        <button onClick={startVoice}
+          title={voiceState === 'listening' ? 'Escuchando... (toca para cancelar)' : 'Comando de voz'}
+          style={{
+            position: 'fixed', bottom: '24px', right: '20px', zIndex: 500,
+            width: '52px', height: '52px', borderRadius: '50%', border: 'none',
+            background: voiceState === 'listening' ? '#dc2626' : voiceState === 'success' ? '#16a34a' : voiceState === 'error' ? '#d97706' : 'var(--brand)',
+            color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: voiceState === 'listening' ? '0 0 0 6px rgba(220,38,38,0.2)' : '0 4px 16px rgba(30,58,95,0.3)',
+            animation: voiceState === 'listening' ? 'pulse 1s infinite' : 'none',
+            transition: 'background 0.2s, box-shadow 0.2s'
+          }}>
+          {voiceState === 'listening' ? (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+          ) : voiceState === 'success' ? (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          ) : voiceState === 'error' ? (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          ) : (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="8" y1="23" x2="16" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
+          )}
+        </button>
+      )}
     </div>
   )
 }
