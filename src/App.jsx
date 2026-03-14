@@ -268,20 +268,50 @@ function MiDia({ onViewOrder }) {
     const numHoy = actividadesHoy.length
     const numVenc = listaVenc.length
     const totalVenc = listaVenc.reduce((s,o) => s + (o.total||0), 0)
-    const fmtVoz = (n) => {
-      const num = parseFloat(n) || 0
-      if (num >= 1000) return `${(num/1000).toFixed(1).replace('.', ' punto ')} mil dólares`
-      return `${num.toFixed(0)} dólares`
+    const numAPalabras = (n) => {
+      const num = Math.round(parseFloat(n) || 0)
+      if (num === 0) return 'cero dólares'
+      const unidades = ['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve',
+        'diez','once','doce','trece','catorce','quince','dieciséis','diecisiete','dieciocho','diecinueve']
+      const decenas = ['','','veinte','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa']
+      const centenas = ['','cien','doscientos','trescientos','cuatrocientos','quinientos',
+        'seiscientos','setecientos','ochocientos','novecientos']
+      const parteEntera = (n) => {
+        if (n === 0) return ''
+        if (n < 20) return unidades[n]
+        if (n < 100) {
+          const d = Math.floor(n/10), u = n%10
+          return u === 0 ? decenas[d] : `${d===2?'veinti':''}${d===2?unidades[u]:decenas[d]+' y '+unidades[u]}`
+        }
+        if (n < 1000) {
+          const c = Math.floor(n/100), r = n%100
+          const sc = c===1&&r===0?'cien':c===1?'ciento':centenas[c]
+          return r===0?sc:`${sc} ${parteEntera(r)}`
+        }
+        if (n < 1000000) {
+          const miles = Math.floor(n/1000), r = n%1000
+          const smiles = miles===1?'mil':`${parteEntera(miles)} mil`
+          return r===0?smiles:`${smiles} ${parteEntera(r)}`
+        }
+        return n.toString()
+      }
+      const cents = Math.round((parseFloat(n)||0) % 1 * 100)
+      const entero = Math.floor(parseFloat(n)||0)
+      const textoEntero = parteEntera(entero) || 'cero'
+      return cents > 0
+        ? `${textoEntero} dólares con ${parteEntera(cents)} centavos`
+        : `${textoEntero} dólares`
     }
     const hora = getNowGuayaquil().getHours()
     const saludo = hora < 12 ? 'Buenos días' : hora < 18 ? 'Buenas tardes' : 'Buenas noches'
+    const nombre = (actividadesHoy[0] && data?.nombreUsuario) ? `, ${data.nombreUsuario}` : ''
     const parteHoy = numHoy === 0
       ? 'No tienes actividades programadas para hoy.'
-      : `Hoy tienes ${numHoy} ${numHoy === 1 ? 'actividad programada' : 'actividades programadas'} por ${fmtVoz(totalHoy)}.`
+      : `Hoy tienes ${numHoy} ${numHoy === 1 ? 'actividad programada' : 'actividades programadas'} por ${numAPalabras(totalHoy)}.`
     const parteVenc = numVenc === 0
       ? 'No tienes órdenes vencidas pendientes.'
-      : `Tienes ${numVenc} ${numVenc === 1 ? 'orden vencida' : 'órdenes vencidas'} y estás regalando ${fmtVoz(totalVenc)} a la competencia.`
-    const texto = `${saludo}. ${parteHoy} ${parteVenc}`
+      : `Tienes ${numVenc} ${numVenc === 1 ? 'orden vencida' : 'órdenes vencidas'} y estás regalando ${numAPalabras(totalVenc)} a la competencia.`
+    const texto = `${saludo}${nombre}. ${parteHoy} ${parteVenc}`
     const utter = new SpeechSynthesisUtterance(texto)
     utter.lang = 'es-EC'
     utter.rate = 0.95
@@ -492,7 +522,7 @@ function MiDia({ onViewOrder }) {
   )
 
   const { metaMes, valorX, diasLaborables, multiplicador, diasVencidos, diasVencidos2,
-          actividadesHoy, actividadesVencidas, totalVencido, enCamino, faltante } = data
+          actividadesHoy, actividadesVencidas, totalVencido, enCamino, faltante, nombreUsuario } = data
 
   const MESES_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
   const mesActual = MESES_ES[new Date().getMonth()]
