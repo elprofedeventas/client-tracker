@@ -3117,7 +3117,7 @@ function ProximaSemana({ onViewOrder }) {
           {/* Medidor vencidas */}
           {(() => {
             const totalV = vencidasFiltradas.reduce((s,o) => s + (o.total||0), 0)
-            const valorXD = data.valorXDia || 0
+            const valorXD = data.valorXSemana || 0
             const ok = totalV >= valorXD
             const falt = Math.max(0, valorXD - totalV)
             const vSort = [...vencidasFiltradas].sort((a,b) => {
