@@ -2863,6 +2863,12 @@ function ProximaSemana({ onViewOrder }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [diasExtraVenc, setDiasExtraVenc] = useState(0)
+  const [sortFieldV, setSortFieldV] = useState('fecha')
+  const [sortDirV, setSortDirV] = useState('asc')
+  const toggleSortV = (field) => {
+    if (sortFieldV === field) setSortDirV(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortFieldV(field); setSortDirV(field === 'total' ? 'desc' : 'asc') }
+  }
   const [sortField, setSortField] = useState('fecha')
   const [sortDir, setSortDir] = useState('asc')
   const [speaking, setSpeaking] = useState(false)
@@ -3035,9 +3041,7 @@ function ProximaSemana({ onViewOrder }) {
             <div style={{ fontSize:'13px', color:'var(--muted)', fontWeight:'500', marginTop:'4px' }}>
               {lunesProximo} — {finSemana} · {semanaLaboral} días laborables
             </div>
-            <div style={{ fontSize:'12px', color:'var(--brand)', fontWeight:'600', marginTop:'3px' }}>
-              Semana {numSemana} del mes · peso {pesoSemana}×
-            </div>
+
           </div>
           <button onClick={() => hablarSemana(data)}
             title={speaking ? 'Detener' : 'Escuchar resumen de la semana'}
@@ -3103,43 +3107,90 @@ function ProximaSemana({ onViewOrder }) {
         )}
       </div>
 
-      {/* ── SECCIÓN 3: Vencidas — si no está en camino ────────────────────────── */}
+      {/* ── SECCIÓN 3: Vencidas ─────────────────────────────────────────────────── */}
       {!enCamino && (
         <div>
           <div style={{ textAlign:'center', marginBottom:'10px', padding:'8px 0' }}>
             <span style={{ fontSize:'13px', fontWeight:'800', color:'#dc2626', textTransform:'uppercase', letterSpacing:'0.12em' }}>💸 Dinero que estás perdiendo</span>
           </div>
 
-          {/* Botones rango vencidas */}
-          <div style={{ display:'flex', gap:'8px', marginBottom:'12px', flexWrap:'wrap' }}>
-            {[{ extra:0, label:`Vencidas (últimos ${diasVencidos1} días)` }, { extra: diasVencidos2 - diasVencidos1, label:`Vencidas (últimos ${diasVencidos2} días)` }].map(({ extra, label }) => {
-              const cnt = ordenesVencidas.filter(o => {
-                const f = parseFecha(o.siguienteAccionFecha)
-                if (!f) return false
-                f.setHours(0,0,0,0)
-                const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
-                return Math.floor((hoy2 - f) / (1000*60*60*24)) <= diasVencidos1 + extra
-              }).length
-              const activo = diasExtraVenc === extra
-              return (
-                <button key={extra} onClick={() => setDiasExtraVenc(extra)}
-                  style={{ display:'flex', alignItems:'center', gap:'6px', padding:'5px 12px', borderRadius:'20px', border:`1.5px solid ${activo?'var(--brand)':'var(--border)'}`, background:activo?'var(--brand-light)':'var(--white)', color:activo?'var(--brand)':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s' }}>
-                  {activo && <Icon d={icons.alert} size={12} />}
-                  {label} · {cnt}
-                </button>
-              )
-            })}
-          </div>
+          {/* Medidor vencidas */}
+          {(() => {
+            const totalV = vencidasFiltradas.reduce((s,o) => s + (o.total||0), 0)
+            const valorXD = data.valorXDia || 0
+            const ok = totalV >= valorXD
+            const falt = Math.max(0, valorXD - totalV)
+            const vSort = [...vencidasFiltradas].sort((a,b) => {
+              if (sortFieldV === 'fecha') {
+                const fa = parseFecha(a.siguienteAccionFecha) || new Date(0)
+                const fb = parseFecha(b.siguienteAccionFecha) || new Date(0)
+                fa.setHours(0,0,0,0); fb.setHours(0,0,0,0)
+                return sortDirV === 'asc' ? fa - fb : fb - fa
+              }
+              return sortDirV === 'asc' ? (a.total||0) - (b.total||0) : (b.total||0) - (a.total||0)
+            })
+            return (
+              <>
+                <div style={{ background:'#fef2f2', border:'1.5px solid #fecaca', borderRadius:'var(--radius-lg)', padding:'16px 20px', marginBottom:'12px' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'10px' }}>
+                    <div>
+                      <div style={{ fontSize:'10px', fontWeight:'700', color:'#dc2626', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>Dinero que estás dejando en la mesa</div>
+                      <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'22px', color:'#dc2626' }}>{fmtM(totalV)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize:'10px', fontWeight:'700', color:'#dc2626', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>Recuperar</div>
+                      <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'22px', color:'#dc2626' }}>{fmtM(valorXD)}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize:'13px', fontWeight:'700', color:'#dc2626' }}>
+                    {ok ? '✓ Estás en camino' : `⚠ Te faltan ${fmtM(falt)} — necesitas prospectar más`}
+                  </div>
+                </div>
 
-          {vencidasFiltradas.length === 0 ? (
-            <div style={{ background:'var(--white)', border:'1.5px dashed var(--border)', borderRadius:'var(--radius-lg)', padding:'20px', textAlign:'center', color:'var(--muted)', fontSize:'13px' }}>
-              Sin actividades vencidas en los últimos {limiteVenc} días
-            </div>
-          ) : (
-            <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-              {vencidasFiltradas.map(o => <CardOrden key={o.numOrden} order={o} mostrarDia={false} />)}
-            </div>
-          )}
+                {/* Botones rango */}
+                <div style={{ display:'flex', gap:'8px', marginBottom:'10px', flexWrap:'wrap' }}>
+                  {[{ extra:0, label:`Vencidas (últimos ${diasVencidos1} días)` }, { extra: diasVencidos2 - diasVencidos1, label:`Vencidas (últimos ${diasVencidos2} días)` }].map(({ extra, label }) => {
+                    const cnt = ordenesVencidas.filter(o => {
+                      const f = parseFecha(o.siguienteAccionFecha)
+                      if (!f) return false
+                      f.setHours(0,0,0,0)
+                      const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
+                      return Math.floor((hoy2 - f) / (1000*60*60*24)) <= diasVencidos1 + extra
+                    }).length
+                    const activo = diasExtraVenc === extra
+                    return (
+                      <button key={extra} onClick={() => setDiasExtraVenc(extra)}
+                        style={{ display:'flex', alignItems:'center', gap:'6px', padding:'5px 12px', borderRadius:'20px', border:`1.5px solid ${activo?'var(--brand)':'var(--border)'}`, background:activo?'var(--brand-light)':'var(--white)', color:activo?'var(--brand)':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s' }}>
+                        {activo && <Icon d={icons.alert} size={12} />}
+                        {label} · {cnt}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Botones sort */}
+                <div style={{ display:'flex', gap:'8px', marginBottom:'12px' }}>
+                  {[['fecha','Fecha'],['total','$']].map(([f,lbl]) => (
+                    <button key={f} onClick={() => toggleSortV(f)}
+                      style={{ padding:'4px 12px', borderRadius:'20px', border:`1.5px solid ${sortFieldV===f?'var(--brand)':'var(--border)'}`, background:sortFieldV===f?'var(--brand-light)':'var(--white)', color:sortFieldV===f?'var(--brand)':'var(--muted)', fontSize:'11px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s' }}>
+                      {lbl} {sortFieldV===f?(sortDirV==='asc'?'↑':'↓'):'↕'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Lista */}
+                {vSort.length === 0 ? (
+                  <div style={{ background:'var(--white)', border:'1.5px dashed var(--border)', borderRadius:'var(--radius-lg)', padding:'20px', textAlign:'center', color:'var(--muted)', fontSize:'13px' }}>
+                    Sin actividades vencidas en los últimos {limiteVenc} días
+                  </div>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+                    {vSort.map(o => <CardOrden key={o.numOrden} order={o} mostrarDia={false} />)}
+                  </div>
+                )}
+              </>
+            )
+          })()}
         </div>
       )}
     </div>
