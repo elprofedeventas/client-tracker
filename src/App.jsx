@@ -2958,13 +2958,13 @@ export default function App() {
       const incluye = (palabras) => palabras.some(p => alternativas.some(a => n(a).includes(n(p))))
       let destino = null, confirmacion = ''
       if (incluye(['mi dia', 'mi día', 'dia de hoy', 'día de hoy']))           { destino = 'midia';      confirmacion = 'Abriendo mi día de hoy.' }
-      else if (incluye(['actividades', 'mis actividades']))                     { destino = 'activities'; confirmacion = 'Abriendo actividades.' }
+      else if (incluye(['vencidas', 'actividades vencidas', 'vencidos']))       { destino = 'activities-vencidas'; confirmacion = 'Abriendo actividades vencidas.' }
+      else if (incluye(['mis actividades', 'ver actividades', 'actividades']))  { destino = 'activities'; confirmacion = 'Abriendo actividades.' }
       else if (incluye(['ordenes', 'órdenes', 'ver ordenes', 'ver órdenes']))   { destino = 'orders';    confirmacion = 'Abriendo órdenes.' }
       else if (incluye(['dashboard', 'inicio', 'panel']))                       { destino = 'dashboard'; confirmacion = 'Abriendo dashboard.' }
       else if (incluye(['nueva orden', 'crear orden', 'nuevo pedido']))         { destino = 'newOrder';  confirmacion = 'Abriendo nueva orden.' }
       else if (incluye(['nuevo cliente', 'crear cliente', 'agregar cliente']))  { destino = 'form';      confirmacion = 'Abriendo nuevo cliente.' }
       else if (incluye(['clientes', 'ver clientes', 'mis clientes']))           { destino = 'list';      confirmacion = 'Abriendo clientes.' }
-      else if (incluye(['vencidas', 'actividades vencidas', 'vencidos']))      { destino = 'activities-vencidas'; confirmacion = 'Abriendo actividades vencidas.' }
       if (destino) {
         setVoiceState('success')
         voiceSpeak(confirmacion)
