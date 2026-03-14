@@ -535,6 +535,9 @@ function MiDia({ onViewOrder }) {
 
       {/* ── SECCIÓN 2: Dinero que estás dejando en la mesa ─────────────────── */}
       <div>
+        <div style={{ textAlign:'center', marginBottom:'10px', padding:'8px 0' }}>
+          <span style={{ fontSize:'13px', fontWeight:'800', color:'#dc2626', textTransform:'uppercase', letterSpacing:'0.12em' }}>💸 Dinero que estás perdiendo</span>
+        </div>
         {/* Medidor verde/rojo */}
         {(() => {
           const listaVenc = actividadesVencidas.filter(o => {
