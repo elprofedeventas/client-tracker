@@ -508,6 +508,16 @@ function MiDia({ onViewOrder }) {
           )}
         </div>
 
+        {/* Botones sort */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+          {[['fecha','Fecha'],['total','$']].map(([f,lbl]) => (
+            <button key={f} onClick={() => toggleSort(f)}
+              style={{ padding: '4px 12px', borderRadius: '20px', border: `1.5px solid ${sortField === f ? 'var(--brand)' : 'var(--border)'}`, background: sortField === f ? 'var(--brand-light)' : 'var(--white)', color: sortField === f ? 'var(--brand)' : 'var(--muted)', fontSize: '11px', fontWeight: '700', cursor: 'pointer', transition: 'all 0.15s' }}>
+              {lbl} {sortField === f ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+            </button>
+          ))}
+        </div>
+
         {/* Medidor verde/rojo */}
         {(() => {
           const listaVenc = actividadesVencidas.filter(o => {
@@ -548,16 +558,6 @@ function MiDia({ onViewOrder }) {
                 <div style={{ fontSize: '13px', fontWeight: '700', color: ok ? '#16a34a' : '#dc2626' }}>
                   {ok ? '✓ Estás en camino — tienes suficiente en juego' : `⚠ Te faltan ${fmtM(falt)} — necesitas prospectar más hoy`}
                 </div>
-              </div>
-
-              {/* Botones sort */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                {[['fecha','Fecha'],['total','$']].map(([f,lbl]) => (
-                  <button key={f} onClick={() => toggleSort(f)}
-                    style={{ padding: '4px 12px', borderRadius: '20px', border: `1.5px solid ${sortField === f ? 'var(--brand)' : 'var(--border)'}`, background: sortField === f ? 'var(--brand-light)' : 'var(--white)', color: sortField === f ? 'var(--brand)' : 'var(--muted)', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}>
-                    {lbl} {sortField === f ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
-                  </button>
-                ))}
               </div>
 
               {/* Lista */}
