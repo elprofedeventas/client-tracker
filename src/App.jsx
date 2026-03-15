@@ -2175,7 +2175,7 @@ function ActividadesView({ onViewOrder, onViewPista, modoInicial }) {
       <div style={{ marginBottom:'14px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px' }}>
           <div>
-            <h1 style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'28px', letterSpacing:'-0.02em', margin:0 }}>Actividades</h1>
+            <h1 style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'28px', letterSpacing:'-0.02em', margin:0 }}>Seguimiento</h1>
             <div style={{ fontSize:'13px', color:'var(--muted)', fontWeight:'500', marginTop:'4px', display:'flex', alignItems:'center', gap:'6px' }}>
               <Icon d={icons.calendar} size={13} />{getTodayLabel()}
             </div>
@@ -4162,9 +4162,9 @@ export default function App() {
       if (incluye(['mi dia', 'mi día', 'dia de hoy', 'día de hoy']))           { destino = 'midia';      confirmacion = 'Abriendo mi día de hoy.' }
       else if (incluye(['proxima semana', 'próxima semana', 'semana proxima', 'semana que viene', 'como viene la semana'])) { destino = 'proximaSemana'; confirmacion = 'Abriendo próxima semana.' }
       else if (incluye(['pistas', 'ver pistas', 'mis pistas']))                    { destino = 'pistas'; confirmacion = 'Abriendo pistas.' }
-      else if (incluye(['vencidas', 'actividades vencidas', 'vencidos']))       { destino = 'activities-vencidas'; confirmacion = 'Abriendo actividades vencidas.' }
+      else if (incluye(['vencidas', 'seguimiento vencidas', 'actividades vencidas', 'vencidos']))       { destino = 'activities-vencidas'; confirmacion = 'Abriendo seguimiento vencidas.' }
       else if (incluye(['pistas', 'ver pistas', 'mis pistas']))                           { destino = 'pistas'; confirmacion = 'Abriendo pistas.' }
-      else if (incluye(['mis actividades', 'ver actividades', 'actividades']))  { destino = 'activities'; confirmacion = 'Abriendo actividades.' }
+      else if (incluye(['seguimiento', 'mis actividades', 'ver actividades', 'actividades']))  { destino = 'activities'; confirmacion = 'Abriendo seguimiento.' }
       else if (incluye(['ordenes', 'órdenes', 'ver ordenes', 'ver órdenes']))   { destino = 'orders';    confirmacion = 'Abriendo órdenes.' }
       else if (incluye(['panel', 'inicio', 'dashboard']))                       { destino = 'dashboard'; confirmacion = 'Abriendo panel.' }
       else if (incluye(['nueva orden', 'crear orden', 'nuevo pedido']))         { destino = 'newOrder';  confirmacion = 'Abriendo nueva orden.' }
@@ -4200,15 +4200,15 @@ export default function App() {
   const fp = (f, x = {}) => ({ style: gs(f), value: form[f], onChange: e => inp(f, e.target.value), onFocus: () => setFocusedField(f), onBlur: () => setFocusedField(null), ...x })
 
   const menuItems = [
-    { key: 'midia',       icon: icons.calendar,   label: 'Mi día de hoy' },
-    { key: 'proximaSemana', icon: icons.trending,  label: 'Próxima semana' },
-    { key: 'dashboard',   icon: icons.dashboard,  label: 'Panel' },
-    { key: 'activities',  icon: icons.activity,   label: 'Actividades' },
-    { key: 'newPista',    icon: icons.plus,        label: 'Nueva pista' },
-    { key: 'pistas',      icon: icons.search,      label: 'Pistas' },
-    { key: 'list',        icon: icons.list,        label: 'Clientes' },
-    { key: 'newOrder',    icon: icons.plus,        label: 'Nueva orden' },
-    { key: 'orders',      icon: icons.orders,      label: 'Órdenes' },
+    { key: 'midia',         icon: icons.calendar,   label: 'Mi día de hoy' },
+    { key: 'proximaSemana', icon: icons.trending,   label: 'Próxima semana' },
+    { key: 'activities',    icon: icons.activity,   label: 'Seguimiento' },
+    { key: 'newPista',      icon: icons.plus,       label: 'Nueva pista' },
+    { key: 'newOrder',      icon: icons.plus,       label: 'Nueva orden' },
+    { key: 'pistas',        icon: icons.search,     label: 'Pistas' },
+    { key: 'list',          icon: icons.list,       label: 'Clientes' },
+    { key: 'orders',        icon: icons.orders,     label: 'Órdenes' },
+    { key: 'dashboard',     icon: icons.dashboard,  label: 'Panel' },
       ]
 
   return (
