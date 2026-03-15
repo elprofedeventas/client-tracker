@@ -5303,7 +5303,6 @@ export default function App() {
 
   const menuItems = [
     { key: 'midia',         icon: icons.calendar,   label: 'Mi día de hoy' },
-    { key: 'proximaSemana', icon: icons.trending,   label: 'Próxima semana' },
     { key: 'activities',    icon: icons.activity,   label: 'Seguimiento' },
     { key: 'newPista',      icon: icons.plus,       label: 'Nueva pista' },
     { key: 'newOrder',      icon: icons.plus,       label: 'Nueva orden' },
