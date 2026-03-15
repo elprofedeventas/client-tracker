@@ -3286,6 +3286,110 @@ function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CARD ORDEN GLOBAL
+// ─────────────────────────────────────────────────────────────────────────────
+function CardOrdenGlobal({ order, mostrarDia, onClick, fmtM: fmtMProp }) {
+  const fmtM2 = fmtMProp || ((n) => `$${(parseFloat(n)||0).toLocaleString('es-EC',{minimumFractionDigits:2,maximumFractionDigits:2})}`)
+  const parseFechaLocal = (s) => {
+    if (!s) return null
+    const p = s.toString().trim().split(' ')[0].split('/')
+    if (p.length===3) { const f=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0])); f.setHours(0,0,0,0); return f }
+    return null
+  }
+  const f = parseFechaLocal(order.siguienteAccionFecha)
+  const DIAS_ES2 = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+  const MESES_ES3 = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+  const fechaLabel = f ? `${DIAS_ES2[f.getDay()]} ${f.getDate()} de ${MESES_ES3[f.getMonth()]} ${f.getFullYear()}` : ''
+  const hora = order.siguienteAccionFecha?.toString().includes(' ') ? order.siguienteAccionFecha.toString().split(' ')[1] : ''
+  const accion = (order.accion || '').trim()
+  const hoyD = getNowGuayaquil(); hoyD.setHours(0,0,0,0)
+  const fD = f ? new Date(f) : null; if (fD) fD.setHours(0,0,0,0)
+  const diffDias = fD ? Math.round((fD - hoyD) / 86400000) : 0
+  const esVencida = diffDias < 0
+  const sec1Bg = esVencida ? '#fef2f2' : '#f0fdf4'
+  const sec1Color = esVencida ? '#dc2626' : '#16a34a'
+  const sec1Label = esVencida
+    ? `${Math.abs(diffDias)} ${Math.abs(diffDias)===1?'día':'días'} vencida`
+    : diffDias===0?'Hoy':diffDias===1?'Mañana':`En ${diffDias} días`
+  const na = norm(accion)
+  const contactos = []
+  if (na===norm('Visitar')) {
+    if (order.clienteTelefono)  contactos.push({ type:'tel',   value:order.clienteTelefono })
+    if (order.clienteEmail)     contactos.push({ type:'email', value:order.clienteEmail })
+    if (order.clienteDireccion) contactos.push({ type:'dir',   value:order.clienteDireccion })
+  } else {
+    if (order.clienteTelefono) contactos.push({ type:'tel',   value:order.clienteTelefono })
+    if (order.clienteEmail)    contactos.push({ type:'email', value:order.clienteEmail })
+  }
+  return (
+    <div onClick={onClick}
+      style={{ borderRadius:'var(--radius-lg)', overflow:'hidden', cursor:'pointer', boxShadow:'var(--shadow)', border:'1.5px solid var(--border)', transition:'box-shadow 0.15s' }}
+      onMouseEnter={e => e.currentTarget.style.boxShadow='var(--shadow-lg)'}
+      onMouseLeave={e => e.currentTarget.style.boxShadow='var(--shadow)'}>
+      <div style={{ background:sec1Bg, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px' }}>
+        <span style={{ fontSize:'12px', fontWeight:'800', color:sec1Color }}>{sec1Label}</span>
+        <div style={{ textAlign:'right', flexShrink:0 }}>
+          <span style={{ fontSize:'11px', fontWeight:'700', color:sec1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', display:'block', marginBottom:'3px', opacity:0.9 }}>{order.estado}</span>
+          <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:sec1Color }}>{fmtM2(order.total)}</div>
+          <div style={{ fontSize:'10px', color:sec1Color, opacity:0.7 }}>{order.numOrden}</div>
+        </div>
+      </div>
+      <div style={{ background:esVencida?'#fef2f2':'#f0fdf4', padding:'10px 14px' }}>
+        <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px', color:'var(--ink)' }}>{order.clienteNombre}</div>
+        {order.clienteNegocio && <div style={{ fontSize:'13px', color:'var(--muted)', marginTop:'1px' }}>{order.clienteNegocio}</div>}
+        {contactos.length > 0 && (
+          <div style={{ marginTop:'6px', display:'flex', flexDirection:'column', gap:'3px' }}>
+            {contactos.map((ct,ci) => {
+              if (ct.type==='tel') return (
+                <a key={ci} href={`https://wa.me/593${ct.value.toString().replace(/\D/g,'').replace(/^0/,'')}`}
+                  target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                  style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'#16a34a', textDecoration:'none' }}
+                  onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                  onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                  <Icon d={icons.phone} size={12} />{ct.value}
+                </a>
+              )
+              if (ct.type==='email') return (
+                <a key={ci} href={`mailto:${ct.value}`} onClick={e => e.stopPropagation()}
+                  style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--brand)', textDecoration:'none' }}
+                  onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                  onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                  <Icon d={icons.mail} size={12} />{ct.value}
+                </a>
+              )
+              if (ct.type==='dir') return (
+                <a key={ci} href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ct.value)}`}
+                  target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                  style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:'12px', fontWeight:'600', color:'var(--muted)', textDecoration:'none' }}
+                  onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
+                  onMouseLeave={e => e.currentTarget.style.textDecoration='none'}>
+                  <Icon d={icons.map} size={12} />{ct.value}
+                </a>
+              )
+              return null
+            })}
+          </div>
+        )}
+      </div>
+      <div style={{ background:'#0f172a', padding:'10px 14px', borderTop:'1px solid #1e293b' }}>
+        {accion && <div style={{ fontSize:'12px', color:'#f8fafc', fontWeight:'700', marginBottom:'3px' }}>Actividad: {accion}</div>}
+        {fechaLabel && (
+          <div style={{ fontSize:'12px', fontWeight:'600', color:'#94a3b8', display:'flex', alignItems:'center', gap:'5px' }}>
+            <Icon d={icons.calendar} size={12} fill="#94a3b8" />
+            {fechaLabel}{hora ? ` · ${hora}` : ''}
+          </div>
+        )}
+        {order.notasSeguimiento && (
+          <div style={{ fontSize:'12px', color:'#cbd5e1', marginTop:'5px', fontStyle:'italic', lineHeight:'1.4', borderTop:'1px solid #1e293b', paddingTop:'5px' }}>
+            "{order.notasSeguimiento}"
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // ESTA SEMANA
 // ═════════════════════════════════════════════════════════════════════════════
@@ -3450,7 +3554,7 @@ function EstaSemana({ onViewOrder, onViewMiDia, onViewProximaSemana }) {
           </div>
         ) : (
           <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
-            {ordenesSort.map(o => <CardOrden key={o.numOrden} order={o} mostrarDia={true} onClick={() => onViewOrder(o)} />)}
+            {ordenesSort.map(o => <CardOrdenGlobal key={o.numOrden} order={o} mostrarDia={true} onClick={() => onViewOrder(o)} fmtM={fmtM} />)}
           </div>
         )}
       </div>
@@ -3514,7 +3618,7 @@ function EstaSemana({ onViewOrder, onViewMiDia, onViewProximaSemana }) {
           </div>
         ) : (
           <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
-            {vSort.map(o => <CardOrden key={o.numOrden} order={o} mostrarDia={false} onClick={() => onViewOrder(o)} />)}
+            {vSort.map(o => <CardOrdenGlobal key={o.numOrden} order={o} mostrarDia={false} onClick={() => onViewOrder(o)} fmtM={fmtM} />)}
           </div>
         )}
       </div>
@@ -3743,37 +3847,9 @@ function ProximaSemana({ onViewOrder, onViewMiDia, onViewEstaSemana, initialVist
     return sortDir === 'asc' ? (a.total||0) - (b.total||0) : (b.total||0) - (a.total||0)
   })
 
-  const CardOrden = ({ order, mostrarDia }) => {
-    const f = parseFecha(order.siguienteAccionFecha)
-    const DIAS_ES2 = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
-    const MESES_ES3 = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
-    const fechaLabel = f ? `${DIAS_ES2[f.getDay()]} ${f.getDate()} de ${MESES_ES3[f.getMonth()]} ${f.getFullYear()}` : ''
-    const hora = order.siguienteAccionFecha?.toString().includes(' ') ? order.siguienteAccionFecha.toString().split(' ')[1] : ''
-    const accion = (order.accion || '').trim()
+  const CardOrden = ({ order, mostrarDia, onClick }) => <CardOrdenGlobal order={order} mostrarDia={mostrarDia} onClick={onClick || (() => onViewOrder(order))} fmtM={fmtM} />
 
-    // Color sección 1
-    const hoyD = getNowGuayaquil(); hoyD.setHours(0,0,0,0)
-    const fD = f ? new Date(f) : null; if (fD) fD.setHours(0,0,0,0)
-    const diffDias = fD ? Math.round((fD - hoyD) / 86400000) : 0
-    const esVencida = diffDias < 0
-    const sec1Bg = esVencida ? '#fef2f2' : '#f0fdf4'
-    const sec1Color = esVencida ? '#dc2626' : '#16a34a'
-    const sec1Label = esVencida
-      ? `${Math.abs(diffDias)} ${Math.abs(diffDias)===1?'día':'días'} vencida`
-      : diffDias === 0 ? 'Hoy' : diffDias === 1 ? 'Mañana' : `En ${diffDias} días`
-
-    // Contactos
-    const na = norm(accion)
-    const contactos = []
-    if (na === norm('Visitar')) {
-      if (order.clienteTelefono)  contactos.push({ type:'tel',   value:order.clienteTelefono })
-      if (order.clienteEmail)     contactos.push({ type:'email', value:order.clienteEmail })
-      if (order.clienteDireccion) contactos.push({ type:'dir',   value:order.clienteDireccion })
-    } else {
-      if (order.clienteTelefono) contactos.push({ type:'tel',   value:order.clienteTelefono })
-      if (order.clienteEmail)    contactos.push({ type:'email', value:order.clienteEmail })
-    }
-
+  const _CardOrdenUnused = ({ order, mostrarDia }) => {
     return (
       <div onClick={() => onViewOrder(order)}
         style={{ borderRadius:'var(--radius-lg)', overflow:'hidden', cursor:'pointer', boxShadow:'var(--shadow)', border:'1.5px solid var(--border)', transition:'box-shadow 0.15s' }}
