@@ -5040,7 +5040,9 @@ export default function App() {
               <div style={{ fontSize:'13px', fontWeight:'700', color:'white' }}>Instalar ORDEN PPP</div>
               {isIOS
                 ? <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.65)', marginTop:'1px' }}>Toca <strong style={{color:'#fbbf24'}}>Compartir</strong> → "Agregar a inicio"</div>
-                : <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.65)', marginTop:'1px' }}>Agrega a tu pantalla de inicio</div>
+                : pwaPrompt
+                  ? <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.65)', marginTop:'1px' }}>Toca Instalar para agregar a tu celular</div>
+                  : <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.65)', marginTop:'1px' }}>Menú Chrome ⋮ → "Agregar a pantalla inicio"</div>
               }
             </div>
             {!isIOS && pwaPrompt && (
