@@ -471,8 +471,9 @@ function MiDia({ onViewOrder }) {
     const hoyD = getNowGuayaquil(); hoyD.setHours(0,0,0,0)
     const fD = fechaAct ? new Date(fechaAct) : null; if (fD) fD.setHours(0,0,0,0)
     const diffDias = fD ? Math.round((fD - hoyD) / 86400000) : 0
-    const sec1Bg = urgencia || diffDias < 0 ? '#fef2f2' : diffDias === 0 ? '#fffbeb' : '#eff6ff'
-    const sec1Color = urgencia || diffDias < 0 ? '#dc2626' : diffDias === 0 ? '#d97706' : '#2563eb'
+    const esVencidaAct = urgencia || diffDias < 0
+    const sec1Bg = esVencidaAct ? '#fef2f2' : '#f0fdf4'
+    const sec1Color = esVencidaAct ? '#dc2626' : '#16a34a'
     const sec1Label = diffDias < 0
       ? `${Math.abs(diffDias)} ${Math.abs(diffDias)===1?'día':'días'} vencida`
       : diffDias === 0 ? 'Hoy' : diffDias === 1 ? 'Mañana' : `En ${diffDias} días`
@@ -493,8 +494,8 @@ function MiDia({ onViewOrder }) {
           </div>
         </div>
 
-        {/* Sección 2 — blanco: cliente + contactos */}
-        <div style={{ background:'var(--white)', padding:'10px 14px' }}>
+        {/* Sección 2 — rojo si vencida, verde si no */}
+        <div style={{ background: esVencidaAct ? '#fef2f2' : '#f0fdf4', padding:'10px 14px' }}>
           <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px', color:'var(--ink)' }}>{order.clienteNombre}</div>
           {order.clienteNegocio && <div style={{ fontSize:'13px', color:'var(--muted)', marginTop:'1px' }}>{order.clienteNegocio}</div>}
           {contactos.length > 0 && (
@@ -3446,8 +3447,8 @@ function ProximaSemana({ onViewOrder }) {
     const fD = f ? new Date(f) : null; if (fD) fD.setHours(0,0,0,0)
     const diffDias = fD ? Math.round((fD - hoyD) / 86400000) : 0
     const esVencida = diffDias < 0
-    const sec1Bg = esVencida ? '#fef2f2' : '#eff6ff'
-    const sec1Color = esVencida ? '#dc2626' : '#2563eb'
+    const sec1Bg = esVencida ? '#fef2f2' : '#f0fdf4'
+    const sec1Color = esVencida ? '#dc2626' : '#16a34a'
     const sec1Label = esVencida
       ? `${Math.abs(diffDias)} ${Math.abs(diffDias)===1?'día':'días'} vencida`
       : diffDias === 0 ? 'Hoy' : diffDias === 1 ? 'Mañana' : `En ${diffDias} días`
@@ -3480,8 +3481,8 @@ function ProximaSemana({ onViewOrder }) {
           </div>
         </div>
 
-        {/* Sección 2 — blanco: cliente + contactos */}
-        <div style={{ background:'var(--white)', padding:'10px 14px' }}>
+        {/* Sección 2 — rojo si vencida, verde si no */}
+        <div style={{ background: esVencida ? '#fef2f2' : '#f0fdf4', padding:'10px 14px' }}>
           <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px', color:'var(--ink)' }}>{order.clienteNombre}</div>
           {order.clienteNegocio && <div style={{ fontSize:'13px', color:'var(--muted)', marginTop:'1px' }}>{order.clienteNegocio}</div>}
           {contactos.length > 0 && (
