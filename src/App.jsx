@@ -3485,11 +3485,11 @@ function ProximaSemana({ onViewOrder }) {
         </div>
       </div>
       {/* ── SECCIÓN 1: Medidor semana ──────────────────────────────────────────── */}
-      {!enCamino && (
-        <div style={{ background:'#dc2626', borderRadius:'var(--radius-lg)', padding:'8px 16px', marginBottom:'8px', textAlign:'center' }}>
-          <span style={{ fontSize:'13px', fontWeight:'900', color:'white', letterSpacing:'0.12em', textTransform:'uppercase' }}>🔴 Estás en rojo</span>
-        </div>
-      )}
+      <div style={{ background: enCamino ? '#16a34a' : '#dc2626', borderRadius:'var(--radius-lg)', padding:'8px 16px', marginBottom:'8px', textAlign:'center' }}>
+        <span style={{ fontSize:'13px', fontWeight:'900', color:'white', letterSpacing:'0.12em', textTransform:'uppercase' }}>
+          {enCamino ? '🟢 Estás en verde' : '🔴 Estás en rojo'}
+        </span>
+      </div>
       <div style={{ background: enCamino ? '#f0fdf4' : '#fef2f2', border:`1.5px solid ${enCamino ? '#bbf7d0' : '#fecaca'}`, borderRadius:'var(--radius-lg)', padding:'16px 20px', marginBottom:'16px' }}>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'10px' }}>
           <div>
