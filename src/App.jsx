@@ -2292,41 +2292,46 @@ function ActividadesView({ onViewOrder, onViewPista, modoInicial }) {
               if (order.clienteEmail)    contactos.push({ type:'email', value:order.clienteEmail })
             }
 
-            return (
-              <div key={order.estado === 'Pista' ? `pista-${order.rowIndex}` : order.numOrden}
-                onClick={() => order.estado === 'Pista' ? onViewPista && onViewPista(order) : onViewOrder(order)}
-                style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', cursor:'pointer', transition:'box-shadow 0.15s', animation:`fadeUp 0.2s ${Math.min(i,5)*0.04}s ease both` }}
-                onMouseEnter={e => e.currentTarget.style.boxShadow='var(--shadow)'}
-                onMouseLeave={e => e.currentTarget.style.boxShadow='none'}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'12px' }}>
-                  <div style={{ minWidth:0, flex:1 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px', flexWrap:'wrap' }}>
-                      {diff && <span style={{ fontSize:'11px', fontWeight:'700', padding:'2px 8px', borderRadius:'20px', background:diff.bg, color:diff.color }}>{diff.label}</span>}
-                      <span style={{ fontSize:'11px', fontWeight:'700', padding:'2px 8px', borderRadius:'20px', background:c.bg, color:c.color, border:`1px solid ${c.border}` }}>{order.estado}</span>
+            {
+              // Calcular colores sección 1 igual que CardActividad
+              const esPistaCard2 = order.esPista === true || order.estado === 'Pista'
+              const hoyD2 = getNowGuayaquil(); hoyD2.setHours(0,0,0,0)
+              const fD2 = order._fecha ? new Date(order._fecha) : null; if (fD2) fD2.setHours(0,0,0,0)
+              const diffDias2 = fD2 ? Math.round((fD2 - hoyD2) / 86400000) : 0
+              const esVencida2 = !esPistaCard2 && (diffDias2 < 0)
+              const s1Bg = esPistaCard2 ? '#eff6ff' : esVencida2 ? '#fef2f2' : '#f0fdf4'
+              const s1Color = esPistaCard2 ? '#2563eb' : esVencida2 ? '#dc2626' : '#16a34a'
+              const s1Label = diff ? diff.label : (modo === 'sinFecha' ? 'Sin fecha' : '')
+              const DIAS_ES3 = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+              const MESES_ES4 = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+              const fechaLabel2 = fD2 ? `${DIAS_ES3[fD2.getDay()]} ${fD2.getDate()} de ${MESES_ES4[fD2.getMonth()]} ${fD2.getFullYear()}` : ''
+              const hora2 = order.siguienteAccionFecha?.toString().includes(' ') ? order.siguienteAccionFecha.toString().split(' ')[1] : ''
+              return (
+                <div key={order.estado === 'Pista' ? `pista-${order.rowIndex}` : order.numOrden}
+                  onClick={() => order.estado === 'Pista' ? onViewPista && onViewPista(order) : onViewOrder(order)}
+                  style={{ borderRadius:'var(--radius-lg)', overflow:'hidden', cursor:'pointer', boxShadow:'var(--shadow)', border:'1.5px solid var(--border)', transition:'box-shadow 0.15s', animation:`fadeUp 0.2s ${Math.min(i,5)*0.04}s ease both` }}
+                  onMouseEnter={e => e.currentTarget.style.boxShadow='var(--shadow-lg)'}
+                  onMouseLeave={e => e.currentTarget.style.boxShadow='var(--shadow)'}>
+
+                  {/* Sección 1 */}
+                  <div style={{ background:s1Bg, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px' }}>
+                    <div style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
+                      <span style={{ fontSize:'11px', fontWeight:'700', color:s1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', alignSelf:'flex-start', opacity:0.9 }}>{esPistaCard2 ? 'Pista' : order.estado}</span>
+                      {s1Label && <span style={{ fontSize:'12px', fontWeight:'800', color:s1Color }}>{s1Label}</span>}
                     </div>
-                    <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px' }}>{order.clienteNombre || order.nombre}</div>
-                    {(order.clienteNegocio || order.negocio) && <div style={{ fontSize:'13px', color:'var(--muted)' }}>{order.clienteNegocio || order.negocio}</div>}
-                    {order.siguienteAccionFecha && (
-                      <div style={{ display:'flex', alignItems:'center', gap:'6px', marginTop:'6px', flexWrap:'wrap' }}>
-                        <span style={{ fontSize:'12px', color:'var(--muted)', display:'flex', alignItems:'center', gap:'4px' }}>
-                          <Icon d={icons.calendar} size={12} />
-                          {formatFecha(order.siguienteAccionFecha)}
-                          {order.siguienteAccionFecha?.includes(' ') && (
-                            <span style={{ display:'inline-flex', alignItems:'center', gap:'3px' }}>
-                              <Icon d={icons.clock} size={12} />{order.siguienteAccionFecha.split(' ')[1]}
-                            </span>
-                          )}
-                        </span>
-                        {accion && <span style={{ fontSize:'12px', fontWeight:'600', color:'var(--brand)', background:'var(--brand-light)', padding:'1px 7px', borderRadius:'20px' }}>{accion}</span>}
-                      </div>
-                    )}
-                    {modo === 'sinFecha' && (
-                      <div style={{ fontSize:'12px', color:'#d97706', fontWeight:'600', marginTop:'4px', display:'flex', alignItems:'center', gap:'4px' }}>
-                        <Icon d={icons.alert} size={12} /> Sin fecha de seguimiento
-                      </div>
-                    )}
+                    <div style={{ textAlign:'right', flexShrink:0 }}>
+                      {!esPistaCard2 && order.total > 0 && <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:s1Color }}>{fmtMoney(order.total)}</div>}
+                      {order.numOrden && <div style={{ fontSize:'10px', color:s1Color, opacity:0.7 }}>{order.numOrden}</div>}
+                      {esPistaCard2 && order.potencial && <span style={{ fontSize:'11px', fontWeight:'700', color:s1Color }}>{order.potencial}</span>}
+                    </div>
+                  </div>
+
+                  {/* Sección 2 — verde o rojo */}
+                  <div style={{ background: esPistaCard2 ? '#eff6ff' : esVencida2 ? '#fef2f2' : '#f0fdf4', padding:'10px 14px' }}>
+                    <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px', color:'var(--ink)' }}>{order.clienteNombre || order.nombre}</div>
+                    {(order.clienteNegocio || order.negocio) && <div style={{ fontSize:'13px', color:'var(--muted)', marginTop:'1px' }}>{order.clienteNegocio || order.negocio}</div>}
                     {contactos.length > 0 && (
-                      <div style={{ marginTop:'7px', display:'flex', flexDirection:'column', gap:'3px' }}>
+                      <div style={{ marginTop:'6px', display:'flex', flexDirection:'column', gap:'3px' }}>
                         {contactos.map((ct, ci) => {
                           if (ct.type==='tel') return (
                             <a key={ci} href={`https://wa.me/593${ct.value.replace(/\D/g,'').replace(/^0/,'')}`}
@@ -2358,37 +2363,27 @@ function ActividadesView({ onViewOrder, onViewPista, modoInicial }) {
                         })}
                       </div>
                     )}
-                    {/* Días en estado — briefing */}
-                    {(() => {
-                      if (!order.fechaCambioEstado) return null
-                      const s = order.fechaCambioEstado.toString().trim()
-                      let fcs = null
-                      if (s.includes('/')) { const p = s.split(' ')[0].split('/'); if (p.length === 3) fcs = new Date(p[2], p[1]-1, p[0]) }
-                      if (!fcs) return null
-                      fcs.setHours(0,0,0,0)
-                      const hoy = getNowGuayaquil(); hoy.setHours(0,0,0,0)
-                      const dias = Math.max(0, Math.floor((hoy - fcs) / (1000*60*60*24)))
-                      const color = dias >= 7 ? '#dc2626' : dias >= 3 ? '#d97706' : 'var(--muted)'
-                      const label = dias === 0 ? `Hoy en ${order.estado.toLowerCase()}` : `${dias} ${dias === 1 ? 'día' : 'días'} en ${order.estado.toLowerCase()}`
-                      return <div style={{ fontSize:'11px', fontWeight:'700', color, marginTop:'5px', display:'flex', alignItems:'center', gap:'4px' }}><Icon d={icons.clock} size={11} />{label}</div>
-                    })()}
-                    {/* Última nota — briefing completo */}
+                  </div>
+
+                  {/* Sección 3 — negro */}
+                  <div style={{ background:'#0f172a', padding:'10px 14px', borderTop:'1px solid #1e293b' }}>
+                    {accion && <div style={{ fontSize:'12px', color:'#f8fafc', fontWeight:'700', marginBottom:'3px' }}>Actividad: {accion}</div>}
+                    {modo === 'sinFecha' && !accion && <div style={{ fontSize:'12px', color:'#94a3b8', fontWeight:'600' }}>Sin fecha de seguimiento</div>}
+                    {fechaLabel2 && (
+                      <div style={{ fontSize:'12px', fontWeight:'600', color:'#94a3b8', display:'flex', alignItems:'center', gap:'5px' }}>
+                        <Icon d={icons.calendar} size={12} fill="#94a3b8" />
+                        {fechaLabel2}{hora2 ? ` · ${hora2}` : ''}
+                      </div>
+                    )}
                     {order.notasSeguimiento && (
-                      <div style={{ fontSize:'12px', color:'var(--ink)', marginTop:'6px', fontStyle:'italic', lineHeight:'1.5', background:'var(--cream)', borderRadius:'6px', padding:'6px 10px', borderLeft:'3px solid var(--brand)' }}>
+                      <div style={{ fontSize:'12px', color:'#cbd5e1', marginTop:'5px', fontStyle:'italic', lineHeight:'1.4', borderTop:'1px solid #1e293b', paddingTop:'5px' }}>
                         "{order.notasSeguimiento}"
                       </div>
                     )}
                   </div>
-                  <div style={{ textAlign:'right', flexShrink:0 }}>
-                    {order.estado !== 'Pista' && <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px' }}>{fmtMoney(order.total)}</div>}
-                    {order.numOrden && <div style={{ fontSize:'11px', color:'var(--muted)', marginTop:'2px' }}>{order.numOrden}</div>}
-                    {order.estado === 'Pista' && order.potencial && (
-                      <span style={{ fontSize:'11px', fontWeight:'700', color: order.potencial==='Alto'?'#16a34a':order.potencial==='Medio'?'#d97706':'#dc2626', background: order.potencial==='Alto'?'#f0fdf4':order.potencial==='Medio'?'#fffbeb':'#fef2f2', padding:'2px 8px', borderRadius:'20px' }}>{order.potencial}</span>
-                    )}
-                  </div>
                 </div>
-              </div>
-            )
+              )
+            }
           })}
         </div>
       )}
@@ -3490,6 +3485,11 @@ function ProximaSemana({ onViewOrder }) {
         </div>
       </div>
       {/* ── SECCIÓN 1: Medidor semana ──────────────────────────────────────────── */}
+      {!enCamino && (
+        <div style={{ background:'#dc2626', borderRadius:'var(--radius-lg)', padding:'8px 16px', marginBottom:'8px', textAlign:'center' }}>
+          <span style={{ fontSize:'13px', fontWeight:'900', color:'white', letterSpacing:'0.12em', textTransform:'uppercase' }}>🔴 Estás en rojo</span>
+        </div>
+      )}
       <div style={{ background: enCamino ? '#f0fdf4' : '#fef2f2', border:`1.5px solid ${enCamino ? '#bbf7d0' : '#fecaca'}`, borderRadius:'var(--radius-lg)', padding:'16px 20px', marginBottom:'16px' }}>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'10px' }}>
           <div>
