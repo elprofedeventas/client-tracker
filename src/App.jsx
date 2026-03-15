@@ -3289,9 +3289,10 @@ function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // PRÓXIMA SEMANA
 // ─────────────────────────────────────────────────────────────────────────────
-function ProximaSemana({ onViewOrder, onViewMiDia }) {
+function ProximaSemana({ onViewOrder, onViewMiDia, initialVista }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [vistaActiva, setVistaActiva] = useState(initialVista || 'proxima')
   const [diasExtraVenc, setDiasExtraVenc] = useState(0)
   const [sortFieldV, setSortFieldV] = useState('fecha')
   const [sortDirV, setSortDirV] = useState('asc')
@@ -3536,13 +3537,43 @@ function ProximaSemana({ onViewOrder, onViewMiDia }) {
         {/* Botones navegación */}
         <div style={{ display:'flex', gap:'6px', marginTop:'10px' }}>
           {[['hoy','Hoy'],['semana','Esta semana'],['proxima','Próxima semana']].map(([key, lbl]) => (
-            <button key={key} onClick={() => { if (key === 'hoy' && onViewMiDia) onViewMiDia(); else if (key === 'semana' && onViewMiDia) onViewMiDia('semana') }}
-              style={{ padding:'6px 14px', borderRadius:'20px', border:`1.5px solid ${key==='proxima'?'var(--brand)':'var(--border)'}`, background:key==='proxima'?'var(--brand)':'var(--white)', color:key==='proxima'?'white':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}>
+            <button key={key} onClick={() => {
+              if (key === 'hoy' && onViewMiDia) { onViewMiDia('hoy'); return }
+              setVistaActiva(key)
+            }}
+              style={{ padding:'6px 14px', borderRadius:'20px', border:`1.5px solid ${vistaActiva===key?'var(--brand)':'var(--border)'}`, background:vistaActiva===key?'var(--brand)':'var(--white)', color:vistaActiva===key?'white':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}>
               {lbl}
             </button>
           ))}
         </div>
       </div>
+      {/* ── VISTA: ESTA SEMANA ─────────────────────────────────────────────────── */}
+      {vistaActiva === 'semana' && (() => {
+        const { lunesEstaSemana: lunes, finEstaSemana: fin, tipoSemana, diasSemana } = data
+        // Órdenes de esta semana: misma lógica que próxima semana pero con rango de esta
+        const parseLbl = (s) => { if (!s) return null; const p = s.toString().trim().split(' ')[0].split('/'); if (p.length===3) { const f=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0])); f.setHours(0,0,0,0); return f; } return null; }
+        const lunesD = parseLbl(lunes); const finD = parseLbl(fin);
+        return (
+          <div>
+            <div style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:'12px', boxShadow:'var(--shadow)' }}>
+              <div style={{ fontSize:'11px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'6px' }}>Esta semana</div>
+              <div style={{ fontSize:'15px', fontWeight:'800', color:'var(--ink)' }}>{lunes} — {fin}</div>
+              <div style={{ fontSize:'12px', color:'var(--muted)', marginTop:'4px' }}>
+                {tipoSemana === 'LV' ? 'Lunes a viernes' : tipoSemana === 'LS' ? 'Lunes a sábado' : 'Lunes a domingo'} · {diasSemana} días
+              </div>
+            </div>
+            <div style={{ background:'var(--white)', border:'1.5px dashed var(--border)', borderRadius:'var(--radius-lg)', padding:'40px 20px', textAlign:'center', color:'var(--muted)' }}>
+              <div style={{ fontSize:'28px', marginBottom:'12px' }}>🚧</div>
+              <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'16px', marginBottom:'6px', color:'var(--ink)' }}>Esta semana</div>
+              <div style={{ fontSize:'13px' }}>Vista en construcción — próximamente</div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* ── VISTA: PRÓXIMA SEMANA ───────────────────────────────────────────────── */}
+      {vistaActiva === 'proxima' && <>
+
       {/* ── SECCIÓN 1: Medidor semana ──────────────────────────────────────────── */}
       <div style={{ background: enCamino ? '#16a34a' : '#dc2626', borderRadius:'var(--radius-lg)', padding:'8px 16px', marginBottom:'8px', textAlign:'center' }}>
         <span style={{ fontSize:'13px', fontWeight:'900', color:'white', letterSpacing:'0.12em', textTransform:'uppercase' }}>
@@ -3749,6 +3780,7 @@ function Laboratorio() {
       {tab === 'proyeccion' && data && <LabProyeccion data={data} fmtM={fmtM} pct={pct} />}
       {tab === 'cotizador'  && data && <LabCotizador data={data} fmtM={fmtM} labConfig={labConfig} />}
       {tab === 'copiloto'   && data && <LabCopiloto data={data} labConfig={labConfig} />}
+    </>}
     </div>
   )
 }
