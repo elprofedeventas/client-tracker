@@ -4711,8 +4711,16 @@ export default function App() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {})
     }
+    // Android: escucha el evento automático
     const handler = (e) => { e.preventDefault(); setPwaPrompt(e); setPwaBanner(true) }
     window.addEventListener('beforeinstallprompt', handler)
+    // iOS y otros: mostrar banner manual si no está instalada y no fue descartada
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
+    const dismissed = localStorage.getItem('pwa_banner_dismissed')
+    if (!isStandalone && !dismissed) {
+      setTimeout(() => setPwaBanner(true), 3000)
+    }
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
@@ -5021,17 +5029,27 @@ export default function App() {
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* Banner PWA */}
-      {pwaBanner && (
-        <div style={{ position:'fixed', bottom: fabOpen ? '320px' : '92px', left:'16px', right:'16px', zIndex:550, background:'#1e3a5f', borderRadius:'var(--radius-lg)', padding:'14px 16px', boxShadow:'0 8px 32px rgba(0,0,0,0.3)', display:'flex', alignItems:'center', gap:'12px', animation:'fadeUp 0.3s ease' }}>
-          <div style={{ width:'40px', height:'40px', borderRadius:'10px', background:'#fbbf24', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:'22px', fontWeight:'900', fontFamily:'Georgia,serif', color:'#1e3a5f' }}>O</div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:'13px', fontWeight:'700', color:'white' }}>Instalar ORDEN PPP</div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.65)', marginTop:'1px' }}>Agrega a tu pantalla de inicio</div>
+      {pwaBanner && (() => {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
+        const isInStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
+        if (isInStandalone) return null
+        return (
+          <div style={{ position:'fixed', bottom: fabOpen ? '320px' : '92px', left:'16px', right:'16px', zIndex:550, background:'#1e3a5f', borderRadius:'var(--radius-lg)', padding:'14px 16px', boxShadow:'0 8px 32px rgba(0,0,0,0.3)', display:'flex', alignItems:'center', gap:'12px', animation:'fadeUp 0.3s ease' }}>
+            <div style={{ width:'40px', height:'40px', borderRadius:'10px', background:'#fbbf24', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:'22px', fontWeight:'900', fontFamily:'Georgia,serif', color:'#1e3a5f' }}>O</div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:'13px', fontWeight:'700', color:'white' }}>Instalar ORDEN PPP</div>
+              {isIOS
+                ? <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.65)', marginTop:'1px' }}>Toca <strong style={{color:'#fbbf24'}}>Compartir</strong> → "Agregar a inicio"</div>
+                : <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.65)', marginTop:'1px' }}>Agrega a tu pantalla de inicio</div>
+              }
+            </div>
+            {!isIOS && pwaPrompt && (
+              <button onClick={instalarPwa} style={{ padding:'7px 14px', background:'#fbbf24', color:'#1e3a5f', border:'none', borderRadius:'var(--radius)', fontSize:'12px', fontWeight:'800', cursor:'pointer', flexShrink:0 }}>Instalar</button>
+            )}
+            <button onClick={() => { setPwaBanner(false); localStorage.setItem('pwa_banner_dismissed','1') }} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.5)', cursor:'pointer', fontSize:'18px', padding:'2px', flexShrink:0, lineHeight:1 }}>✕</button>
           </div>
-          <button onClick={instalarPwa} style={{ padding:'7px 14px', background:'#fbbf24', color:'#1e3a5f', border:'none', borderRadius:'var(--radius)', fontSize:'12px', fontWeight:'800', cursor:'pointer', flexShrink:0 }}>Instalar</button>
-          <button onClick={() => setPwaBanner(false)} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.5)', cursor:'pointer', fontSize:'18px', padding:'2px', flexShrink:0, lineHeight:1 }}>✕</button>
-        </div>
-      )}
+        )
+      })()}
 
       {/* ── FAB: Relámpago + herramientas ─────────────────────────────────── */}
       {!['form','edit','editPista'].includes(view) && (
