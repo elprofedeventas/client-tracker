@@ -2035,8 +2035,7 @@ function ActividadesView({ onViewOrder, modoInicial }) {
   const ESTADOS   = ['Negociando', 'Detenido', 'Perdido']
 
   // Switch data source based on tipoDato
-  // For pistas: map to same shape as orders so existing filters work
-  const pistasComoOrdenes = pistasData.map(p => ({
+  const pistasComoOrdenes = useMemo(() => pistasData.map(p => ({
     ...p,
     clienteNombre: p.nombre,
     clienteNegocio: p.negocio,
@@ -2046,8 +2045,8 @@ function ActividadesView({ onViewOrder, modoInicial }) {
     estado: 'Pista',
     total: 0,
     numOrden: '',
-  }))
-  const activeOrders = tipoDato === 'pistas' ? pistasComoOrdenes : orders
+  })), [pistasData])
+  const activeOrders = useMemo(() => tipoDato === 'pistas' ? pistasComoOrdenes : orders, [tipoDato, pistasComoOrdenes, orders])
   const mesNombre = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][hoy.getMonth()]
 
   const conFecha = useMemo(() => {
@@ -2055,13 +2054,13 @@ function ActividadesView({ onViewOrder, modoInicial }) {
       ? pistasComoOrdenes.filter(o => o.siguienteAccionFecha)
       : activeOrders.filter(o => ESTADOS.includes(o.estado) && o.siguienteAccionFecha)
     return src.map(o => ({ ...o, _fecha: parseFechaSeg(o.siguienteAccionFecha) })).filter(o => o._fecha !== null)
-  }, [orders, pistasData, tipoDato])
+  }, [orders, pistasComoOrdenes, tipoDato])
 
   const sinFechaList = useMemo(() => {
     return tipoDato === 'pistas'
       ? pistasComoOrdenes.filter(o => !o.siguienteAccionFecha)
       : activeOrders.filter(o => ESTADOS.includes(o.estado) && !o.siguienteAccionFecha)
-  }, [orders, pistasData, tipoDato])
+  }, [orders, pistasComoOrdenes, tipoDato])
 
   // Conteos para badges
   const cntPendientes = useMemo(() => tipoDato === 'pistas'
@@ -2251,7 +2250,7 @@ function ActividadesView({ onViewOrder, modoInicial }) {
       {/* Botones de modo */}
       <div style={{ display:'flex', gap:'6px', marginBottom:'14px', flexWrap:'wrap', alignItems:'center' }}>
         <ModoBtn key_="pendientes" label="actividades" count={cntPendientes} />
-        <ModoBtn key_="vencidas" label={`vencidas en ${mesNombre}`} count={cntVencidas} color="#dc2626" />
+        <ModoBtn key_="vencidas" label={tipoDato === 'pistas' ? 'vencidas' : `vencidas en ${mesNombre}`} count={cntVencidas} color="#dc2626" />
         <ModoBtn key_="sinFecha" label="sin fecha" count={cntSinFecha} color="#d97706" />
         {/* Historial */}
         <div style={{ position:'relative' }} onClick={e => e.stopPropagation()}>
