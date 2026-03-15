@@ -771,8 +771,8 @@ function MiDia({ onViewOrder, onViewPista, onViewProximaSemana }) {
           )
         })()}
 
+    </div>
       </>
-      </div>
     </div>
   )
 }
