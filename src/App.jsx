@@ -3715,6 +3715,7 @@ function ProximaSemana({ onViewOrder, onViewMiDia, initialVista }) {
           })()}
         </div>
       )}
+      </>}
     </div>
   )
 }
@@ -3780,7 +3781,6 @@ function Laboratorio() {
       {tab === 'proyeccion' && data && <LabProyeccion data={data} fmtM={fmtM} pct={pct} />}
       {tab === 'cotizador'  && data && <LabCotizador data={data} fmtM={fmtM} labConfig={labConfig} />}
       {tab === 'copiloto'   && data && <LabCopiloto data={data} labConfig={labConfig} />}
-    </>}
     </div>
   )
 }
