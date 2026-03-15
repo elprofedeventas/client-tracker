@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { API_BASE, Icon, icons, fmt, norm, formatFecha, getNowGuayaquil, getTodayLabel, Field, DatePicker, Toast, Highlight, inputStyle, sectionTitle, EMPTY_FORM, DIAS, MESES_LARGO, CARD_STYLE, CARD_STYLE_COMPACT, BTN_PRIMARY, BTN_GHOST, BTN_DANGER, SECTION_HEADER, BADGE_BASE, PILL_STYLE, FLOAT_PANEL } from './shared.jsx'
 
-function EstaSemana({ onViewOrder, onViewMiDia, onViewProximaSemana }) {
+export function EstaSemana({ onViewOrder, onViewMiDia, onViewProximaSemana }) {
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [diasExtra, setDiasExtra] = useState(0)
@@ -281,7 +281,7 @@ function EstaSemana({ onViewOrder, onViewMiDia, onViewProximaSemana }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // ESTA SEMANA — SECCIÓN VENCIDAS
 // ─────────────────────────────────────────────────────────────────────────────
-function EstaSemanaVencidas({ ordenesVencidas, diasVencidos1, diasVencidos2, faltanteEsta, fmtM, onViewOrder }) {
+export function EstaSemanaVencidas({ ordenesVencidas, diasVencidos1, diasVencidos2, faltanteEsta, fmtM, onViewOrder }) {
   const [diasExtra, setDiasExtra] = useState(0)
   const [sortField, setSortField] = useState('fecha')
   const [sortDir, setSortDir] = useState('asc')

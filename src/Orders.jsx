@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { API_BASE, Icon, icons, fmt, norm, formatFecha, getNowGuayaquil, getTodayLabel, Field, DatePicker, Toast, Highlight, inputStyle, sectionTitle, EMPTY_FORM, DIAS, MESES_LARGO, CARD_STYLE, CARD_STYLE_COMPACT, BTN_PRIMARY, BTN_GHOST, BTN_DANGER, SECTION_HEADER, BADGE_BASE, PILL_STYLE, FLOAT_PANEL } from './shared.jsx'
 
-function EstadoBadge({ estado }) {
+export function EstadoBadge({ estado }) {
   const c = ESTADO_COLORS[estado] || { bg: 'var(--cream)', color: 'var(--muted)', border: 'var(--border)' }
   return (
     <span style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}`, borderRadius: '20px', padding: '3px 10px', fontSize: '11px', fontWeight: '700', letterSpacing: '0.04em' }}>
@@ -10,7 +10,7 @@ function EstadoBadge({ estado }) {
   )
 }
 
-function OrderRow({ order, index, onView }) {
+export function OrderRow({ order, index, onView }) {
   return (
     <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', animation: `fadeUp 0.2s ${Math.min(index,5)*0.04}s ease both`, cursor: 'pointer', transition: 'box-shadow 0.15s' }}
       onClick={() => onView(order)}
@@ -47,7 +47,7 @@ function OrderRow({ order, index, onView }) {
   )
 }
 
-function ViewOrder({ order, onBack, onChangeEstado, showToast, backLabel = 'Volver a órdenes' }) {
+export function ViewOrder({ order, onBack, onChangeEstado, showToast, backLabel = 'Volver a órdenes' }) {
   const [estado, setEstado] = useState(order.estado)
   const [saving, setSaving] = useState(false)
   const [notas, setNotas] = useState(order.notas || '')

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { API_BASE, Icon, icons, fmt, norm, formatFecha, getNowGuayaquil, getTodayLabel, Field, DatePicker, Toast, Highlight, inputStyle, sectionTitle, EMPTY_FORM, DIAS, MESES_LARGO, CARD_STYLE, CARD_STYLE_COMPACT, BTN_PRIMARY, BTN_GHOST, BTN_DANGER, SECTION_HEADER, BADGE_BASE, PILL_STYLE, FLOAT_PANEL } from './shared.jsx'
 
-function CapturaRapida({ onClose, showToast }) {
+export function CapturaRapida({ onClose, showToast }) {
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [saving, setSaving] = useState(false)
@@ -43,7 +43,7 @@ function CapturaRapida({ onClose, showToast }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // CONVERSOR RÁPIDO
 // ─────────────────────────────────────────────────────────────────────────────
-function ConversorRapido() {
+export function ConversorRapido() {
   const [raw, setRaw] = useState('') // solo dígitos y punto decimal
   const IVA = 0.15
 
@@ -99,7 +99,7 @@ function ConversorRapido() {
 // ─────────────────────────────────────────────────────────────────────────────
 // WHATSAPP RÁPIDO
 // ─────────────────────────────────────────────────────────────────────────────
-function WhatsAppRapido({ onClose }) {
+export function WhatsAppRapido({ onClose }) {
   const [numero, setNumero] = useState('')
   const [mensaje, setMensaje] = useState('')
 
@@ -133,7 +133,7 @@ function WhatsAppRapido({ onClose }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // CALCULADORA FLOTANTE
 // ─────────────────────────────────────────────────────────────────────────────
-function Calculadora() {
+export function Calculadora() {
   const [display, setDisplay] = useState('0')
   const [prev, setPrev] = useState(null)
   const [op, setOp] = useState(null)
@@ -218,7 +218,7 @@ function Calculadora() {
 // ─────────────────────────────────────────────────────────────────────────────
 // CALENDARIO FLOTANTE
 // ─────────────────────────────────────────────────────────────────────────────
-function CalendarioFlotante() {
+export function CalendarioFlotante() {
   const hoy = getNowGuayaquil()
   const [mes, setMes] = useState(hoy.getMonth())
   const [anio, setAnio] = useState(hoy.getFullYear())
@@ -278,7 +278,7 @@ function CalendarioFlotante() {
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTAS RÁPIDAS FLOTANTE
 // ─────────────────────────────────────────────────────────────────────────────
-function NotasRapidas({ valor, onChange }) {
+export function NotasRapidas({ valor, onChange }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 

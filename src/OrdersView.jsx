@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { API_BASE, Icon, icons, fmt, norm, formatFecha, getNowGuayaquil, getTodayLabel, Field, DatePicker, Toast, Highlight, inputStyle, sectionTitle, EMPTY_FORM, DIAS, MESES_LARGO, CARD_STYLE, CARD_STYLE_COMPACT, BTN_PRIMARY, BTN_GHOST, BTN_DANGER, SECTION_HEADER, BADGE_BASE, PILL_STYLE, FLOAT_PANEL } from './shared.jsx'
 
-function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
+export function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [filtroEstado, setFiltroEstadoLocal] = useState(filtroInicial || 'Negociando')
@@ -218,7 +218,7 @@ function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // CARD ORDEN GLOBAL
 // ─────────────────────────────────────────────────────────────────────────────
-function CardOrdenGlobal({ order, mostrarDia, onClick, fmtM: fmtMProp }) {
+export function CardOrdenGlobal({ order, mostrarDia, onClick, fmtM: fmtMProp }) {
   const fmtM2 = fmtMProp || ((n) => `$${(parseFloat(n)||0).toLocaleString('es-EC',{minimumFractionDigits:2,maximumFractionDigits:2})}`)
   const parseFechaLocal = (s) => {
     if (!s) return null

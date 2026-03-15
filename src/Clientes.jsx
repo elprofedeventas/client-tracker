@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { API_BASE, Icon, icons, fmt, norm, formatFecha, getNowGuayaquil, getTodayLabel, Field, DatePicker, Toast, Highlight, inputStyle, sectionTitle, EMPTY_FORM, DIAS, MESES_LARGO, CARD_STYLE, CARD_STYLE_COMPACT, BTN_PRIMARY, BTN_GHOST, BTN_DANGER, SECTION_HEADER, BADGE_BASE, PILL_STYLE, FLOAT_PANEL } from './shared.jsx'
 
-function ClientRow({ client, index, onEdit, onView, query }) {
+export function ClientRow({ client, index, onEdit, onView, query }) {
   return (
     <div style={{ background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', animation: `fadeUp 0.2s ${Math.min(index, 5) * 0.04}s ease both`, transition: 'box-shadow 0.2s' }}
       onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
@@ -38,7 +38,7 @@ function ClientRow({ client, index, onEdit, onView, query }) {
 }
 
 // ─── ViewClient ───────────────────────────────────────────────────────────────
-function ViewClient({ client, onEdit, onBack, onViewOrder }) {
+export function ViewClient({ client, onEdit, onBack, onViewOrder }) {
   const fields = [
     { icon: 'id',      label: 'Identificación', val: client.identificacion },
     { icon: 'phone',   label: 'Teléfono',        val: client.telefono },
@@ -270,7 +270,7 @@ function ViewClient({ client, onEdit, onBack, onViewOrder }) {
 }
 
 // ─── EditForm ─────────────────────────────────────────────────────────────────
-function EditForm({ client, onSave, onCancel }) {
+export function EditForm({ client, onSave, onCancel }) {
   const [form, setForm] = useState({ nombre: client.nombre || '', negocio: client.negocio || '', identificacion: client.identificacion || '', telefono: client.telefono || '', email: client.email || '', direccion: client.direccion || '', contacto: client.contacto || '', telefonoContacto: client.telefonoContacto || '', notas: client.notas || '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)

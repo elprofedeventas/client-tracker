@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { API_BASE, Icon, icons, fmt, norm, formatFecha, getNowGuayaquil, getTodayLabel, Field, DatePicker, Toast, Highlight, inputStyle, sectionTitle, EMPTY_FORM, DIAS, MESES_LARGO, CARD_STYLE, CARD_STYLE_COMPACT, BTN_PRIMARY, BTN_GHOST, BTN_DANGER, SECTION_HEADER, BADGE_BASE, PILL_STYLE, FLOAT_PANEL } from './shared.jsx'
 
-function PistasView({ onViewPista }) {
+export function PistasView({ onViewPista }) {
   const [pistas, setPistas] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -101,7 +101,7 @@ function PistasView({ onViewPista }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // VIEW PISTA
 // ─────────────────────────────────────────────────────────────────────────────
-function ViewPista({ pista, onBack, onEdit, showToast }) {
+export function ViewPista({ pista, onBack, onEdit, showToast }) {
   const potencialColor = (p) => p === 'Alto' ? '#16a34a' : p === 'Medio' ? '#d97706' : p === 'Bajo' ? '#dc2626' : 'var(--muted)'
   const potencialBg    = (p) => p === 'Alto' ? '#f0fdf4' : p === 'Medio' ? '#fffbeb' : p === 'Bajo' ? '#fef2f2' : 'var(--cream)'
 
@@ -225,7 +225,7 @@ function ViewPista({ pista, onBack, onEdit, showToast }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // EDIT PISTA
 // ─────────────────────────────────────────────────────────────────────────────
-function EditPista({ pista, onSave, onCancel, showToast }) {
+export function EditPista({ pista, onSave, onCancel, showToast }) {
   const [form, setForm] = useState({
     nombre: pista.nombre || '',
     negocio: pista.negocio || '',
