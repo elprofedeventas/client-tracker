@@ -241,7 +241,7 @@ function Highlight({ text, query }) {
 // ─────────────────────────────────────────────────────────────────────────────
 const _hasSpoken = { current: false }
 
-function MiDia({ onViewOrder }) {
+function MiDia({ onViewOrder, onViewPista }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [diasExtra, setDiasExtra] = useState(0)
@@ -471,15 +471,17 @@ function MiDia({ onViewOrder }) {
     const hoyD = getNowGuayaquil(); hoyD.setHours(0,0,0,0)
     const fD = fechaAct ? new Date(fechaAct) : null; if (fD) fD.setHours(0,0,0,0)
     const diffDias = fD ? Math.round((fD - hoyD) / 86400000) : 0
-    const esVencidaAct = urgencia || diffDias < 0
-    const sec1Bg = esVencidaAct ? '#fef2f2' : '#f0fdf4'
-    const sec1Color = esVencidaAct ? '#dc2626' : '#16a34a'
+    const esPistaCard = order.esPista === true || order.estado === 'Pista'
+    const esVencidaAct = !esPistaCard && (urgencia || diffDias < 0)
+    const sec1Bg = esPistaCard ? '#eff6ff' : esVencidaAct ? '#fef2f2' : '#f0fdf4'
+    const sec1Color = esPistaCard ? '#2563eb' : esVencidaAct ? '#dc2626' : '#16a34a'
     const sec1Label = diffDias < 0
       ? `${Math.abs(diffDias)} ${Math.abs(diffDias)===1?'día':'días'} vencida`
       : diffDias === 0 ? 'Hoy' : diffDias === 1 ? 'Mañana' : `En ${diffDias} días`
+    const potencialColor = (p) => p === 'Alto' ? '#16a34a' : p === 'Medio' ? '#d97706' : '#dc2626'
 
     return (
-      <div onClick={() => onViewOrder(order)}
+      <div onClick={() => esPistaCard ? onViewPista && onViewPista(order) : onViewOrder(order)}
         style={{ borderRadius:'var(--radius-lg)', overflow:'hidden', cursor:'pointer', boxShadow:'var(--shadow)', border:'1.5px solid var(--border)', transition:'box-shadow 0.15s' }}
         onMouseEnter={e => e.currentTarget.style.boxShadow='var(--shadow-lg)'}
         onMouseLeave={e => e.currentTarget.style.boxShadow='var(--shadow)'}>
@@ -488,14 +490,22 @@ function MiDia({ onViewOrder }) {
         <div style={{ background:sec1Bg, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px' }}>
           <span style={{ fontSize:'12px', fontWeight:'800', color:sec1Color }}>{sec1Label}</span>
           <div style={{ textAlign:'right', flexShrink:0 }}>
-            <span style={{ fontSize:'11px', fontWeight:'700', color:sec1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', display:'block', marginBottom:'3px', opacity:0.9 }}>{order.estado}</span>
-            <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:sec1Color }}>{fmtM(order.total)}</div>
-            <div style={{ fontSize:'10px', color:sec1Color, opacity:0.7 }}>{order.numOrden}</div>
+            <span style={{ fontSize:'11px', fontWeight:'700', color:sec1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', display:'block', marginBottom:'3px', opacity:0.9 }}>{esPistaCard ? 'Pista' : order.estado}</span>
+            {esPistaCard ? (
+              order.potencial
+                ? <div style={{ fontSize:'11px', fontWeight:'700', color:potencialColor(order.potencial) }}>Potencial {order.potencial.toLowerCase()}</div>
+                : null
+            ) : (
+              <>
+                <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:sec1Color }}>{fmtM(order.total)}</div>
+                <div style={{ fontSize:'10px', color:sec1Color, opacity:0.7 }}>{order.numOrden}</div>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Sección 2 — rojo si vencida, verde si no */}
-        <div style={{ background: esVencidaAct ? '#fef2f2' : '#f0fdf4', padding:'10px 14px' }}>
+        {/* Sección 2 — color según tipo */}
+        <div style={{ background: esPistaCard ? '#eff6ff' : esVencidaAct ? '#fef2f2' : '#f0fdf4', padding:'10px 14px' }}>
           <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px', color:'var(--ink)' }}>{order.clienteNombre}</div>
           {order.clienteNegocio && <div style={{ fontSize:'13px', color:'var(--muted)', marginTop:'1px' }}>{order.clienteNegocio}</div>}
           {contactos.length > 0 && (
@@ -4118,7 +4128,7 @@ export default function App() {
       <main style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 20px' }}>
 
         {/* ── DASHBOARD ─────────────────────────────────────────────────────── */}
-        {view === 'midia' && <MiDia onViewOrder={(o) => handleViewOrder(o, 'midia')} />}
+        {view === 'midia' && <MiDia onViewOrder={(o) => handleViewOrder(o, 'midia')} onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} />}
 
         {view === 'pistas' && (
           <PistasView onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} />
