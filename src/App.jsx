@@ -3719,58 +3719,6 @@ function ProximaSemana({ onViewOrder }) {
 }
 
 
-  const pct  = (a,b) => b > 0 ? Math.min(100, Math.round((a/b)*100)) : 0
-
-  if (loading) return (
-    <div style={{textAlign:'center',padding:'80px',color:'var(--muted)'}}>
-      <div style={{fontSize:'32px',marginBottom:'12px',animation:'pulse 1s infinite'}}>⚗️</div>
-      Cargando laboratorio...
-    </div>
-  )
-
-  return (
-    <div style={{animation:'fadeUp 0.4s ease',paddingBottom:'60px'}}>
-      {/* Header */}
-      <div style={{marginBottom:'20px'}}>
-        <h1 style={{fontFamily:'var(--font-display)',fontWeight:'800',fontSize:'28px',letterSpacing:'-0.02em',display:'flex',alignItems:'center',gap:'10px'}}>
-          ⚗️ Laboratorio
-        </h1>
-        <p style={{color:'var(--muted)',fontSize:'14px',marginTop:'4px'}}>Análisis, proyecciones e inteligencia artificial</p>
-      </div>
-
-      {/* Tabs */}
-      <div style={{display:'flex',gap:'6px',marginBottom:'24px',overflowX:'auto',paddingBottom:'4px'}}>
-        {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            style={{padding:'8px 16px',borderRadius:'var(--radius)',border:`1.5px solid ${tab===t.key?'var(--brand)':'var(--border)'}`,background:tab===t.key?'var(--brand)':'var(--white)',color:tab===t.key?'white':'var(--muted)',fontSize:'13px',fontWeight:'700',cursor:'pointer',whiteSpace:'nowrap',transition:'all 0.15s',display:'flex',alignItems:'center',gap:'6px'}}>
-            {t.icon} {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── TAB: PANEL ──────────────────────────────────────────────────────── */}
-      {tab === 'panel' && data && (
-        <LabPanel data={data} fmtM={fmtM} pct={pct} />
-      )}
-
-      {/* ── TAB: PROYECCIONES ───────────────────────────────────────────────── */}
-      {tab === 'proyeccion' && data && (
-        <LabProyeccion data={data} fmtM={fmtM} pct={pct} />
-      )}
-
-      {/* ── TAB: COTIZADOR ──────────────────────────────────────────────────── */}
-      {tab === 'cotizador' && data && (
-        <LabCotizador data={data} fmtM={fmtM} />
-      )}
-
-      {/* ── TAB: COPILOTO ───────────────────────────────────────────────────── */}
-      {tab === 'copiloto' && data && (
-        <LabCopiloto data={data} />
-      )}
-    </div>
-  )
-}
-
 
 // ═════════════════════════════════════════════════════════════════════════════
 // LABORATORIO
