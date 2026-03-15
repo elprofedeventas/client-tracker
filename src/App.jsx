@@ -4374,28 +4374,28 @@ function Calculadora() {
   const fmt = (n) => {
     const s = parseFloat(n).toString()
     if (s.length > 10) return parseFloat(n).toExponential(4)
-    return s
+    return s.replace('.', ',')
   }
 
   const press = (val) => {
     if (val === 'C') { setDisplay('0'); setPrev(null); setOp(null); setReset(false); return }
     if (val === '⌫') { setDisplay(d => d.length > 1 ? d.slice(0,-1) : '0'); return }
-    if (val === '%') { setDisplay(d => fmt(parseFloat(d) / 100)); return }
-    if (val === '+/-') { setDisplay(d => fmt(parseFloat(d) * -1)); return }
+    if (val === '%') { setDisplay(d => fmt(parseFloat(d.replace(',','.')) / 100)); return }
+    if (val === '+/-') { setDisplay(d => fmt(parseFloat(d.replace(',','.')) * -1)); return }
     if (['+','-','×','÷'].includes(val)) {
-      setPrev(parseFloat(display)); setOp(val); setReset(true); return
+      setPrev(parseFloat(display.replace(',','.'))); setOp(val); setReset(true); return
     }
     if (val === '=') {
       if (prev === null || !op) return
-      const a = prev, b = parseFloat(display)
+      const a = prev, b = parseFloat(display.replace(',','.'))
       const res = op==='+' ? a+b : op==='-' ? a-b : op==='×' ? a*b : b!==0 ? a/b : 'Error'
       setDisplay(res === 'Error' ? 'Error' : fmt(res))
       setPrev(null); setOp(null); setReset(false)
       return
     }
-    if (val === '.') {
-      if (reset) { setDisplay('0.'); setReset(false); return }
-      setDisplay(d => d.includes('.') ? d : d + '.')
+    if (val === ',') {
+      if (reset) { setDisplay('0,'); setReset(false); return }
+      setDisplay(d => d.includes(',') ? d : d + ',')
       return
     }
     setDisplay(d => {
@@ -4409,7 +4409,7 @@ function Calculadora() {
     ['7','8','9','×'],
     ['4','5','6','-'],
     ['1','2','3','+'],
-    ['0','.','⌫','='],
+    ['0',',','⌫','='],
   ]
   const opColor = '#0891b2'
   const isOp = (v) => ['÷','×','-','+','='].includes(v)
