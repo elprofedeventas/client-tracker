@@ -3769,10 +3769,27 @@ function CapturaRapida({ onClose, showToast }) {
 // CONVERSOR RÁPIDO
 // ─────────────────────────────────────────────────────────────────────────────
 function ConversorRapido() {
-  const [monto, setMonto] = useState('')
+  const [raw, setRaw] = useState('') // solo dígitos y punto decimal
   const IVA = 0.15
 
-  const n = parseFloat(monto.replace(/,/g,'')) || 0
+  // Formatea el raw como $1.234,56 mientras escribe
+  const fmtInput = (r) => {
+    if (!r) return ''
+    const partes = r.split('.')
+    const entero = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    return '$' + entero + (partes.length > 1 ? ',' + partes[1] : '')
+  }
+
+  const handleChange = (e) => {
+    // Extraer solo dígitos y un punto decimal del input
+    const val = e.target.value.replace(/[^0-9.]/g, '')
+    // Permitir solo un punto decimal
+    const parts = val.split('.')
+    const clean = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : val
+    setRaw(clean)
+  }
+
+  const n = parseFloat(raw) || 0
   const fmt = (v) => v > 0 ? `$${v.toLocaleString('es-EC', { minimumFractionDigits:2, maximumFractionDigits:2 })}` : '—'
 
   const filas = [
@@ -3789,8 +3806,9 @@ function ConversorRapido() {
 
   return (
     <div style={{ padding:'12px' }}>
-      <input value={monto} onChange={e => setMonto(e.target.value)} placeholder="Ingresa un monto..." type="number"
-        autoFocus style={{ ...inputStyle, fontSize:'18px', fontWeight:'700', textAlign:'right', marginBottom:'10px', width:'100%', boxSizing:'border-box' }} />
+      <input value={fmtInput(raw)} onChange={handleChange} placeholder="$ 0"
+        inputMode="decimal" autoFocus
+        style={{ ...inputStyle, fontSize:'20px', fontWeight:'800', textAlign:'right', marginBottom:'10px', width:'100%', boxSizing:'border-box', fontFamily:'var(--font-display)', letterSpacing:'-0.01em' }} />
       <div style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
         {filas.map(({ label, valor }) => (
           <div key={label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'6px 8px', borderRadius:'6px', background: valor > 0 ? 'var(--cream)' : 'transparent' }}>
