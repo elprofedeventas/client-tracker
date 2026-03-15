@@ -4372,22 +4372,26 @@ function Calculadora() {
   const [reset, setReset] = useState(false)
 
   const fmt = (n) => {
-    const s = parseFloat(n).toString()
-    if (s.length > 10) return parseFloat(n).toExponential(4)
-    return s.replace('.', ',')
+    const num = parseFloat(n)
+    if (isNaN(num)) return '0'
+    // Formatear con separador de miles (.) y decimal (,)
+    const parts = num.toFixed(10).replace(/\.?0+$/, '').split('.')
+    const entero = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    const decimal = parts[1] ? ',' + parts[1] : ''
+    return entero + decimal
   }
 
   const press = (val) => {
     if (val === 'C') { setDisplay('0'); setPrev(null); setOp(null); setReset(false); return }
     if (val === '⌫') { setDisplay(d => d.length > 1 ? d.slice(0,-1) : '0'); return }
-    if (val === '%') { setDisplay(d => fmt(parseFloat(d.replace(',','.')) / 100)); return }
-    if (val === '+/-') { setDisplay(d => fmt(parseFloat(d.replace(',','.')) * -1)); return }
+    if (val === '%') { setDisplay(d => fmt(parseFloat(d.replace(/\./g,'').replace(',','.')) / 100)); return }
+    if (val === '+/-') { setDisplay(d => fmt(parseFloat(d.replace(/\./g,'').replace(',','.')) * -1)); return }
     if (['+','-','×','÷'].includes(val)) {
-      setPrev(parseFloat(display.replace(',','.'))); setOp(val); setReset(true); return
+      setPrev(parseFloat(display.replace(/\./g,'').replace(',','.'))); setOp(val); setReset(true); return
     }
     if (val === '=') {
       if (prev === null || !op) return
-      const a = prev, b = parseFloat(display.replace(',','.'))
+      const a = prev, b = parseFloat(display.replace(/\./g,'').replace(',','.'))
       const res = op==='+' ? a+b : op==='-' ? a-b : op==='×' ? a*b : b!==0 ? a/b : 'Error'
       setDisplay(res === 'Error' ? 'Error' : fmt(res))
       setPrev(null); setOp(null); setReset(false)
