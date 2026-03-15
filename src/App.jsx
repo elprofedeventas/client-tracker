@@ -2315,11 +2315,9 @@ function ActividadesView({ onViewOrder, onViewPista, modoInicial }) {
 
                   {/* Sección 1 */}
                   <div style={{ background:s1Bg, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px' }}>
-                    <div style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
-                      <span style={{ fontSize:'11px', fontWeight:'700', color:s1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', alignSelf:'flex-start', opacity:0.9 }}>{esPistaCard2 ? 'Pista' : order.estado}</span>
-                      {s1Label && <span style={{ fontSize:'12px', fontWeight:'800', color:s1Color }}>{s1Label}</span>}
-                    </div>
+                    <span style={{ fontSize:'12px', fontWeight:'800', color:s1Color }}>{s1Label}</span>
                     <div style={{ textAlign:'right', flexShrink:0 }}>
+                      <span style={{ fontSize:'11px', fontWeight:'700', color:s1Color, background:'var(--white)', padding:'1px 8px', borderRadius:'20px', display:'block', marginBottom:'3px', opacity:0.9 }}>{esPistaCard2 ? 'Pista' : order.estado}</span>
                       {!esPistaCard2 && order.total > 0 && <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'15px', color:s1Color }}>{fmtMoney(order.total)}</div>}
                       {order.numOrden && <div style={{ fontSize:'10px', color:s1Color, opacity:0.7 }}>{order.numOrden}</div>}
                       {esPistaCard2 && order.potencial && <span style={{ fontSize:'11px', fontWeight:'700', color:s1Color }}>{order.potencial}</span>}
