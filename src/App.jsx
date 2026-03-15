@@ -607,7 +607,8 @@ function MiDia({ onViewOrder, onViewPista, onViewProximaSemana, initialVista }) 
         <div style={{ display:'flex', gap:'6px', marginTop:'10px' }}>
           {[['hoy','Hoy'],['semana','Esta semana'],['proxima','Próxima semana']].map(([key, lbl]) => (
             <button key={key} onClick={() => {
-              if (key === 'proxima' && onViewProximaSemana) { onViewProximaSemana(); return }
+              if (key === 'proxima' && onViewProximaSemana) { onViewProximaSemana('proxima'); return }
+              if (key === 'semana' && onViewProximaSemana) { onViewProximaSemana('semana'); return }
               setVistaActiva(key)
             }}
               style={{ padding:'6px 14px', borderRadius:'20px', border:`1.5px solid ${vistaActiva===key?'var(--brand)':'var(--border)'}`, background:vistaActiva===key?'var(--brand)':'var(--white)', color:vistaActiva===key?'white':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}>
@@ -617,11 +618,7 @@ function MiDia({ onViewOrder, onViewPista, onViewProximaSemana, initialVista }) 
         </div>
       </div>
 
-      {vistaActiva === 'semana' && (() => {
-        // Navegar a ProximaSemana con vista esta semana
-        if (onViewProximaSemana) onViewProximaSemana('semana')
-        return null
-      })()}
+
 
       {vistaActiva === 'hoy' && <div>
 
@@ -3288,6 +3285,244 @@ function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
 // PRÓXIMA SEMANA
 // ─────────────────────────────────────────────────────────────────────────────
 
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ESTA SEMANA
+// ═════════════════════════════════════════════════════════════════════════════
+function EstaSemana({ onViewOrder, onViewMiDia, onViewProximaSemana }) {
+  const [data, setData]       = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [diasExtra, setDiasExtra] = useState(0)
+  const [sortField, setSortField] = useState('fecha')
+  const [sortDir, setSortDir]     = useState('asc')
+  const [sortFieldV, setSortFieldV] = useState('fecha')
+  const [sortDirV, setSortDirV]     = useState('asc')
+
+  useEffect(() => {
+    fetch(`${API_BASE}?action=getProximaSemana`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setData(d.data) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const toggleSort  = (f) => { if (sortField===f) setSortDir(d=>d==='asc'?'desc':'asc'); else { setSortField(f); setSortDir(f==='total'?'desc':'asc') } }
+  const toggleSortV = (f) => { if (sortFieldV===f) setSortDirV(d=>d==='asc'?'desc':'asc'); else { setSortFieldV(f); setSortDirV(f==='total'?'desc':'asc') } }
+
+  const parseFecha = (s) => {
+    if (!s) return null
+    const p = s.toString().trim().split(' ')[0].split('/')
+    if (p.length === 3) { const f = new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0])); f.setHours(0,0,0,0); return f }
+    return null
+  }
+  const fmtM = (n) => `$${(parseFloat(n)||0).toLocaleString('es-EC',{minimumFractionDigits:2,maximumFractionDigits:2})}`
+
+  if (loading) return (
+    <div style={{textAlign:'center',padding:'80px',color:'var(--muted)'}}>
+      <div style={{fontSize:'28px',marginBottom:'12px',animation:'pulse 1s infinite'}}>⏳</div>
+      Cargando esta semana...
+    </div>
+  )
+  if (!data) return (
+    <div style={{textAlign:'center',padding:'80px',color:'var(--muted)'}}>
+      <div style={{fontSize:'36px',marginBottom:'12px'}}>😕</div>
+      No se pudo cargar la información
+    </div>
+  )
+
+  const {
+    lunesEstaSemana: lunesEsta, finEstaSemana: finEsta,
+    tipoSemana, diasSemana,
+    ordenesEstaSemana = [], totalEstaSemana = 0,
+    enCaminoEsta, faltanteEsta, numSemanaEsta, pesoSemanaEsta, valorXSemanaEsta = 0,
+    ordenesVencidas = [], diasVencidos1 = 15, diasVencidos2 = 30,
+  } = data
+
+  const tipoLabel = tipoSemana === 'LV' ? 'Lunes a viernes' : tipoSemana === 'LS' ? 'Lunes a sábado' : 'Lunes a domingo'
+
+  // Sort actividades programadas
+  const ordenesSort = [...ordenesEstaSemana].sort((a,b) => {
+    if (sortField==='fecha') {
+      const fa = parseFecha(a.siguienteAccionFecha)||new Date(0)
+      const fb = parseFecha(b.siguienteAccionFecha)||new Date(0)
+      return sortDir==='asc' ? fa-fb : fb-fa
+    }
+    return sortDir==='asc' ? (a.total||0)-(b.total||0) : (b.total||0)-(a.total||0)
+  })
+
+  // Vencidas filtradas
+  const limiteVenc = diasVencidos1 + diasExtra
+  const listaVenc = ordenesVencidas.filter(o => {
+    const f = parseFecha(o.siguienteAccionFecha)
+    if (!f) return false
+    const hoy2 = getNowGuayaquil(); hoy2.setHours(0,0,0,0)
+    return Math.floor((hoy2-f)/(1000*60*60*24)) <= limiteVenc
+  })
+  const totalV    = listaVenc.reduce((s,o) => s+(o.total||0), 0)
+  const recuperar = faltanteEsta || 0
+  const okV       = totalV >= recuperar
+  const faltV     = Math.max(0, recuperar - totalV)
+  const vSort = [...listaVenc].sort((a,b) => {
+    if (sortFieldV==='fecha') {
+      const fa=parseFecha(a.siguienteAccionFecha)||new Date(0)
+      const fb=parseFecha(b.siguienteAccionFecha)||new Date(0)
+      return sortDirV==='asc' ? fa-fb : fb-fa
+    }
+    return sortDirV==='asc' ? (a.total||0)-(b.total||0) : (b.total||0)-(a.total||0)
+  })
+
+  return (
+    <div style={{animation:'fadeUp 0.4s ease',paddingBottom:'40px'}}>
+
+      {/* Header */}
+      <div style={{marginBottom:'16px'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div>
+            <h1 style={{fontFamily:'var(--font-display)',fontWeight:'800',fontSize:'26px',letterSpacing:'-0.02em',margin:0}}>Esta semana</h1>
+            <div style={{fontSize:'13px',color:'var(--muted)',fontWeight:'500',marginTop:'4px'}}>
+              {lunesEsta} — {finEsta} · {diasSemana} días laborables
+            </div>
+          </div>
+        </div>
+        {/* Botones navegación */}
+        <div style={{display:'flex',gap:'6px',marginTop:'10px'}}>
+          {[['hoy','Hoy'],['semana','Esta semana'],['proxima','Próxima semana']].map(([key,lbl]) => (
+            <button key={key} onClick={() => {
+              if (key==='hoy' && onViewMiDia) { onViewMiDia('hoy'); return }
+              if (key==='proxima' && onViewProximaSemana) { onViewProximaSemana(); return }
+            }}
+              style={{padding:'6px 14px',borderRadius:'20px',border:`1.5px solid ${key==='semana'?'var(--brand)':'var(--border)'}`,background:key==='semana'?'var(--brand)':'var(--white)',color:key==='semana'?'white':'var(--muted)',fontSize:'12px',fontWeight:'700',cursor:'pointer',transition:'all 0.15s',whiteSpace:'nowrap'}}>
+              {lbl}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Banner */}
+      <div style={{background:enCaminoEsta?'#16a34a':'#dc2626',borderRadius:'var(--radius-lg)',padding:'8px 16px',marginBottom:'8px',textAlign:'center'}}>
+        <span style={{fontSize:'13px',fontWeight:'900',color:'white',letterSpacing:'0.12em',textTransform:'uppercase'}}>
+          {enCaminoEsta ? '🟢 Estás en verde' : '🔴 Estás en rojo'}
+        </span>
+      </div>
+
+      {/* Medidor */}
+      <div style={{background:enCaminoEsta?'#f0fdf4':'#fef2f2',border:`1.5px solid ${enCaminoEsta?'#bbf7d0':'#fecaca'}`,borderRadius:'var(--radius-lg)',padding:'16px 20px',marginBottom:'16px'}}>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'10px'}}>
+          <div>
+            <div style={{fontSize:'10px',fontWeight:'700',color:enCaminoEsta?'#16a34a':'#dc2626',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:'2px'}}>En juego esta semana</div>
+            <div style={{fontFamily:'var(--font-display)',fontWeight:'800',fontSize:'22px',color:enCaminoEsta?'#16a34a':'#dc2626'}}>{fmtM(totalEstaSemana)}</div>
+          </div>
+          <div>
+            <div style={{fontSize:'10px',fontWeight:'700',color:enCaminoEsta?'#16a34a':'#dc2626',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:'2px'}}>Necesitas</div>
+            <div style={{fontFamily:'var(--font-display)',fontWeight:'800',fontSize:'22px',color:enCaminoEsta?'#16a34a':'#dc2626'}}>{fmtM(valorXSemanaEsta)}</div>
+          </div>
+        </div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'6px'}}>
+          {enCaminoEsta ? (
+            <div style={{fontSize:'13px',fontWeight:'700',color:'#16a34a'}}>✓ Tienes suficiente para esta semana — ¡estás en camino!</div>
+          ) : (
+            <div style={{fontSize:'13px',fontWeight:'700',color:'#dc2626'}}>⚠ Te faltan {fmtM(faltanteEsta)} — necesitas prospectar o recuperar órdenes esta semana</div>
+          )}
+          <span style={{fontSize:'11px',fontWeight:'700',color:'var(--muted)',background:'var(--cream)',padding:'2px 8px',borderRadius:'20px',whiteSpace:'nowrap'}}>
+            Sem {numSemanaEsta} · ×{pesoSemanaEsta}
+          </span>
+        </div>
+      </div>
+
+      {/* Actividades programadas */}
+      <div style={{marginBottom:'24px'}}>
+        <div style={{fontSize:'11px',fontWeight:'700',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:'10px',display:'flex',alignItems:'center',gap:'6px'}}>
+          <Icon d={icons.calendar} size={13} />
+          Actividades programadas · {ordenesEstaSemana.length}
+        </div>
+        {/* Sort */}
+        <div style={{display:'flex',gap:'8px',marginBottom:'10px'}}>
+          {[['fecha','Fecha'],['total','$']].map(([f,lbl]) => (
+            <button key={f} onClick={() => toggleSort(f)}
+              style={{padding:'4px 12px',borderRadius:'20px',border:`1.5px solid ${sortField===f?'var(--brand)':'var(--border)'}`,background:sortField===f?'var(--brand-light)':'var(--white)',color:sortField===f?'var(--brand)':'var(--muted)',fontSize:'11px',fontWeight:'700',cursor:'pointer',transition:'all 0.15s'}}>
+              {lbl} {sortField===f?(sortDir==='asc'?'↑':'↓'):'↕'}
+            </button>
+          ))}
+        </div>
+        {ordenesSort.length === 0 ? (
+          <div style={{background:'var(--white)',border:'1.5px dashed var(--border)',borderRadius:'var(--radius-lg)',padding:'20px',textAlign:'center',color:'var(--muted)',fontSize:'13px'}}>
+            Sin actividades programadas para esta semana
+          </div>
+        ) : (
+          <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+            {ordenesSort.map(o => <CardOrden key={o.numOrden} order={o} mostrarDia={true} onClick={() => onViewOrder(o)} />)}
+          </div>
+        )}
+      </div>
+
+      {/* Dinero que estás perdiendo */}
+      <div>
+        <div style={{background:'#dc2626',borderRadius:'var(--radius-lg)',padding:'8px 16px',marginBottom:'12px',textAlign:'center'}}>
+          <span style={{fontSize:'13px',fontWeight:'900',color:'white',letterSpacing:'0.12em',textTransform:'uppercase'}}>💸 Dinero que estás perdiendo</span>
+        </div>
+
+        {/* Medidor vencidas */}
+        <div style={{background:okV?'#f0fdf4':'#fef2f2',border:`1.5px solid ${okV?'#bbf7d0':'#fecaca'}`,borderRadius:'var(--radius-lg)',padding:'16px 20px',marginBottom:'12px'}}>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px',marginBottom:'10px'}}>
+            <div>
+              <div style={{fontSize:'10px',fontWeight:'700',color:okV?'#16a34a':'#dc2626',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:'2px'}}>Dinero que estás dejando en la mesa</div>
+              <div style={{fontFamily:'var(--font-display)',fontWeight:'800',fontSize:'22px',color:okV?'#16a34a':'#dc2626'}}>{fmtM(totalV)}</div>
+            </div>
+            <div>
+              <div style={{fontSize:'10px',fontWeight:'700',color:okV?'#16a34a':'#dc2626',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:'2px'}}>Recuperar</div>
+              <div style={{fontFamily:'var(--font-display)',fontWeight:'800',fontSize:'22px',color:okV?'#16a34a':'#dc2626'}}>{fmtM(recuperar)}</div>
+            </div>
+          </div>
+          <div style={{fontSize:'13px',fontWeight:'700',color:okV?'#16a34a':'#dc2626'}}>
+            {okV ? '✓ Estás en camino — tienes suficiente en juego' : `⚠ Te faltan ${fmtM(faltV)} — necesitas prospectar más`}
+          </div>
+        </div>
+
+        {/* Botones rango */}
+        <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}}>
+          {[{extra:0,label:`Vencidas (últimos ${diasVencidos1} días)`},{extra:diasVencidos2-diasVencidos1,label:`Vencidas (últimos ${diasVencidos2} días)`}].map(({extra,label}) => {
+            const cnt = ordenesVencidas.filter(o => {
+              const f=parseFecha(o.siguienteAccionFecha); if(!f) return false
+              const h=getNowGuayaquil(); h.setHours(0,0,0,0)
+              return Math.floor((h-f)/(1000*60*60*24)) <= diasVencidos1+extra
+            }).length
+            const activo = diasExtra===extra
+            return (
+              <button key={extra} onClick={() => setDiasExtra(extra)}
+                style={{display:'flex',alignItems:'center',gap:'6px',padding:'5px 12px',borderRadius:'20px',border:`1.5px solid ${activo?'var(--brand)':'var(--border)'}`,background:activo?'var(--brand-light)':'var(--white)',color:activo?'var(--brand)':'var(--muted)',fontSize:'12px',fontWeight:'700',cursor:'pointer',transition:'all 0.15s'}}>
+                {activo && <Icon d={icons.alert} size={12} />}
+                {label} · {cnt}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Sort vencidas */}
+        <div style={{display:'flex',gap:'8px',marginBottom:'12px'}}>
+          {[['fecha','Fecha'],['total','$']].map(([f,lbl]) => (
+            <button key={f} onClick={() => toggleSortV(f)}
+              style={{padding:'4px 12px',borderRadius:'20px',border:`1.5px solid ${sortFieldV===f?'var(--brand)':'var(--border)'}`,background:sortFieldV===f?'var(--brand-light)':'var(--white)',color:sortFieldV===f?'var(--brand)':'var(--muted)',fontSize:'11px',fontWeight:'700',cursor:'pointer',transition:'all 0.15s'}}>
+              {lbl} {sortFieldV===f?(sortDirV==='asc'?'↑':'↓'):'↕'}
+            </button>
+          ))}
+        </div>
+
+        {/* Lista vencidas */}
+        {vSort.length === 0 ? (
+          <div style={{background:'var(--white)',border:'1.5px dashed var(--border)',borderRadius:'var(--radius-lg)',padding:'20px',textAlign:'center',color:'var(--muted)',fontSize:'13px'}}>
+            Sin actividades vencidas en los últimos {limiteVenc} días
+          </div>
+        ) : (
+          <div style={{display:'flex',flexDirection:'column',gap:'10px'}}>
+            {vSort.map(o => <CardOrden key={o.numOrden} order={o} mostrarDia={false} onClick={() => onViewOrder(o)} />)}
+          </div>
+        )}
+      </div>
+
+    </div>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ESTA SEMANA — SECCIÓN VENCIDAS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3388,7 +3623,7 @@ function EstaSemanaVencidas({ ordenesVencidas, diasVencidos1, diasVencidos2, fal
   )
 }
 
-function ProximaSemana({ onViewOrder, onViewMiDia, initialVista }) {
+function ProximaSemana({ onViewOrder, onViewMiDia, onViewEstaSemana, initialVista }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [vistaActiva, setVistaActiva] = useState(initialVista || 'proxima')
@@ -3638,6 +3873,7 @@ function ProximaSemana({ onViewOrder, onViewMiDia, initialVista }) {
           {[['hoy','Hoy'],['semana','Esta semana'],['proxima','Próxima semana']].map(([key, lbl]) => (
             <button key={key} onClick={() => {
               if (key === 'hoy' && onViewMiDia) { onViewMiDia('hoy'); return }
+              if (key === 'semana' && onViewEstaSemana) { onViewEstaSemana(); return }
               setVistaActiva(key)
             }}
               style={{ padding:'6px 14px', borderRadius:'20px', border:`1.5px solid ${vistaActiva===key?'var(--brand)':'var(--border)'}`, background:vistaActiva===key?'var(--brand)':'var(--white)', color:vistaActiva===key?'white':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}>
@@ -4799,7 +5035,6 @@ export default function App() {
   const recognitionRef = useRef(null)
   const [fabOpen, setFabOpen] = useState(false)
   const [midiaVista, setMidiaVista] = useState('hoy')
-  const [psVista, setPsVista] = useState('proxima')
   const [fabTool, setFabTool] = useState(null) // 'calc' | 'cal' | 'notes'
   const [notasRapidas, setNotasRapidas] = useState(() => { try { return localStorage.getItem('notas_rapidas') || '' } catch { return '' } })
   const [form, setForm] = useState(EMPTY_FORM)
@@ -4915,6 +5150,7 @@ export default function App() {
       else if (incluye(['seguimiento', 'mis actividades', 'ver actividades', 'actividades']))  { destino = 'activities'; confirmacion = 'Abriendo seguimiento.' }
       else if (incluye(['ordenes', 'órdenes', 'ver ordenes', 'ver órdenes']))   { destino = 'orders';    confirmacion = 'Abriendo órdenes.' }
       else if (incluye(['laboratorio', 'lab'])){ destino = 'laboratorio'; confirmacion = 'Abriendo laboratorio.' }
+      else if (incluye(['esta semana', 'semana actual']))                     { destino = 'estaSemana'; confirmacion = 'Abriendo esta semana.' }
       else if (incluye(['laboratorio', 'lab']))                               { destino = 'laboratorio'; confirmacion = 'Abriendo laboratorio.' }
       else if (incluye(['panel', 'inicio', 'dashboard']))                       { destino = 'dashboard'; confirmacion = 'Abriendo panel.' }
       else if (incluye(['nueva orden', 'crear orden', 'nuevo pedido']))         { destino = 'newOrder';  confirmacion = 'Abriendo nueva orden.' }
@@ -4995,7 +5231,7 @@ export default function App() {
       <main style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 20px' }}>
 
         {/* ── DASHBOARD ─────────────────────────────────────────────────────── */}
-        {view === 'midia' && <MiDia key={midiaVista} onViewOrder={(o) => handleViewOrder(o, 'midia')} onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} onViewProximaSemana={(vista) => { setMidiaVista('hoy'); navigate('proximaSemana'); setPsVista(vista || 'proxima') }} initialVista={midiaVista} />}
+        {view === 'midia' && <MiDia key={midiaVista} onViewOrder={(o) => handleViewOrder(o, 'midia')} onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} onViewProximaSemana={(vista) => { setMidiaVista('hoy'); navigate(vista === 'semana' ? 'estaSemana' : 'proximaSemana') }} initialVista={midiaVista} />}
 
         {view === 'pistas' && (
           <PistasView onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} />
@@ -5011,7 +5247,9 @@ export default function App() {
             onSave={(updated) => { setViewingPista(updated); setView('viewPista') }} />
         )}
 
-        {view === 'proximaSemana' && <ProximaSemana key={psVista} onViewOrder={(o) => handleViewOrder(o, 'proximaSemana')} onViewMiDia={(vista) => { setMidiaVista(vista || 'hoy'); navigate('midia') }} initialVista={psVista} />}
+        {view === 'proximaSemana' && <ProximaSemana onViewOrder={(o) => handleViewOrder(o, 'proximaSemana')} onViewMiDia={(vista) => { setMidiaVista(vista || 'hoy'); navigate('midia') }} onViewEstaSemana={() => navigate('estaSemana')} />}
+
+        {view === 'estaSemana' && <EstaSemana onViewOrder={(o) => handleViewOrder(o, 'estaSemana')} onViewMiDia={(vista) => { setMidiaVista(vista || 'hoy'); navigate('midia') }} onViewProximaSemana={() => navigate('proximaSemana')} />}
 
         {view === 'dashboard' && <Dashboard />}
 
