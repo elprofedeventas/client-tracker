@@ -2216,13 +2216,6 @@ function ActividadesView({ onViewOrder, onViewPista, modoInicial }) {
         </div>
       )}
 
-      {/* Búsqueda */}
-      <div style={{ position:'relative', marginBottom:'12px' }}>
-        <span style={{ position:'absolute', left:'14px', top:'50%', transform:'translateY(-50%)', color:'var(--muted)', pointerEvents:'none' }}><Icon d={icons.search} size={16} /></span>
-        <input type="text" placeholder="Buscar por cliente, negocio, # orden o acción..." value={busqueda} onChange={e => setBusqueda(e.target.value)}
-          style={{ ...inputStyle, paddingLeft:'42px', paddingRight:busqueda?'42px':'14px', fontSize:'14px' }} />
-        {busqueda && <button onClick={() => setBusqueda('')} style={{ position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--muted)', display:'flex', padding:'2px' }}><Icon d={icons.x} size={16} /></button>}
-      </div>
 
       {/* Tarjeta de totales */}
       {actividades.length > 0 && (() => {
