@@ -604,47 +604,6 @@ function MiDia({ onViewOrder, onViewPista }) {
         </div>
       </div>
 
-      {/* Meta y Avance del mes */}
-      {dashData && (() => {
-        const now2    = getNowGuayaquil()
-        const mesLbl2 = MESES_LARGO[now2.getMonth()].charAt(0).toUpperCase() + MESES_LARGO[now2.getMonth()].slice(1)
-        const anio2   = now2.getFullYear()
-        const meta2    = dashData.meta    || 0
-        const vendido2 = dashData.vendido || 0
-        const pct2     = meta2 > 0 ? Math.round((vendido2 / meta2) * 100) : 0
-        const verde2   = '#16a34a'
-        const cv       = dashData.conteos || {}
-        return (
-          <>
-            <div style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:'10px', boxShadow:'var(--shadow)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-                <div style={{ width:'32px', height:'32px', borderRadius:'8px', background:'#eef2ff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <Icon d={icons.target} size={15} stroke="#6366f1" />
-                </div>
-                <div style={{ fontSize:'12px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Meta {mesLbl2} {anio2}</div>
-              </div>
-              <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'#6366f1' }}>{fmtMoney(meta2)}</div>
-            </div>
-            <div style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:'16px', boxShadow:'var(--shadow)' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
-                <span style={{ fontSize:'12px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Avance del mes</span>
-                <span style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'16px', color: pct2 >= 100 ? verde2 : 'var(--ink)' }}>{pct2}%</span>
-              </div>
-              <div style={{ background:'var(--cream)', borderRadius:'100px', height:'8px', overflow:'hidden', marginBottom:'6px' }}>
-                <div style={{ height:'100%', width:`${Math.min(100,pct2)}%`, background: pct2>=100 ? verde2 : pct2>=60 ? '#2563eb' : 'var(--brand)', borderRadius:'100px', transition:'width 0.8s ease' }} />
-              </div>
-              <div style={{ display:'flex', alignItems:'center', gap:'10px', fontSize:'12px', color:'var(--muted)' }}>
-                <span style={{ fontWeight:'600', color:verde2 }}>{fmtMoney(vendido2)} vendido</span>
-                <span>·</span>
-                <span>{cv.Vendido?.clientes||0} {(cv.Vendido?.clientes||0)===1?'cliente':'clientes'}</span>
-                <span>·</span>
-                <span>{cv.Vendido?.ordenes||0} {(cv.Vendido?.ordenes||0)===1?'orden':'órdenes'}</span>
-              </div>
-            </div>
-          </>
-        )
-      })()}
-
       {/* ── SECCIÓN 1: Actividades de hoy ─────────────────────────────────── */}
       <div style={{ marginBottom: '24px' }}>
         <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -2217,47 +2176,6 @@ function ActividadesView({ onViewOrder, onViewPista, modoInicial }) {
         </div>
 
       </div>
-
-      {/* Meta y Avance del mes */}
-      {dashData && (() => {
-        const now2    = getNowGuayaquil()
-        const mesLbl2 = MESES_LARGO[now2.getMonth()].charAt(0).toUpperCase() + MESES_LARGO[now2.getMonth()].slice(1)
-        const anio2   = now2.getFullYear()
-        const meta2    = dashData.meta    || 0
-        const vendido2 = dashData.vendido || 0
-        const pct2     = meta2 > 0 ? Math.round((vendido2 / meta2) * 100) : 0
-        const verde2   = '#16a34a'
-        const cv       = dashData.conteos || {}
-        return (
-          <>
-            <div style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:'10px', boxShadow:'var(--shadow)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-                <div style={{ width:'32px', height:'32px', borderRadius:'8px', background:'#eef2ff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <Icon d={icons.target} size={15} stroke="#6366f1" />
-                </div>
-                <div style={{ fontSize:'12px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Meta {mesLbl2} {anio2}</div>
-              </div>
-              <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'#6366f1' }}>{fmtMoney(meta2)}</div>
-            </div>
-            <div style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', marginBottom:'10px', boxShadow:'var(--shadow)' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
-                <span style={{ fontSize:'12px', fontWeight:'700', color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Avance del mes</span>
-                <span style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'16px', color: pct2 >= 100 ? verde2 : 'var(--ink)' }}>{pct2}%</span>
-              </div>
-              <div style={{ background:'var(--cream)', borderRadius:'100px', height:'8px', overflow:'hidden', marginBottom:'6px' }}>
-                <div style={{ height:'100%', width:`${Math.min(100,pct2)}%`, background: pct2>=100 ? verde2 : pct2>=60 ? '#2563eb' : 'var(--brand)', borderRadius:'100px', transition:'width 0.8s ease' }} />
-              </div>
-              <div style={{ display:'flex', alignItems:'center', gap:'10px', fontSize:'12px', color:'var(--muted)' }}>
-                <span style={{ fontWeight:'600', color:verde2 }}>{fmtMoney(vendido2)} vendido</span>
-                <span>·</span>
-                <span>{cv.Vendido?.clientes||0} {(cv.Vendido?.clientes||0)===1?'cliente':'clientes'}</span>
-                <span>·</span>
-                <span>{cv.Vendido?.ordenes||0} {(cv.Vendido?.ordenes||0)===1?'orden':'órdenes'}</span>
-              </div>
-            </div>
-          </>
-        )
-      })()}
 
       {/* Botones de modo */}
       <div style={{ display:'flex', gap:'6px', marginBottom:'14px', flexWrap:'wrap', alignItems:'center' }}>
