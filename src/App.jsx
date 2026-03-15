@@ -3710,6 +3710,187 @@ function ProximaSemana({ onViewOrder }) {
 
 
 // ─── HELPERS PISTAS SELECTS ───────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CALCULADORA FLOTANTE
+// ─────────────────────────────────────────────────────────────────────────────
+function Calculadora() {
+  const [display, setDisplay] = useState('0')
+  const [prev, setPrev] = useState(null)
+  const [op, setOp] = useState(null)
+  const [reset, setReset] = useState(false)
+
+  const fmt = (n) => {
+    const s = parseFloat(n).toString()
+    if (s.length > 10) return parseFloat(n).toExponential(4)
+    return s
+  }
+
+  const press = (val) => {
+    if (val === 'C') { setDisplay('0'); setPrev(null); setOp(null); setReset(false); return }
+    if (val === '⌫') { setDisplay(d => d.length > 1 ? d.slice(0,-1) : '0'); return }
+    if (val === '%') { setDisplay(d => fmt(parseFloat(d) / 100)); return }
+    if (val === '+/-') { setDisplay(d => fmt(parseFloat(d) * -1)); return }
+    if (['+','-','×','÷'].includes(val)) {
+      setPrev(parseFloat(display)); setOp(val); setReset(true); return
+    }
+    if (val === '=') {
+      if (prev === null || !op) return
+      const a = prev, b = parseFloat(display)
+      const res = op==='+' ? a+b : op==='-' ? a-b : op==='×' ? a*b : b!==0 ? a/b : 'Error'
+      setDisplay(res === 'Error' ? 'Error' : fmt(res))
+      setPrev(null); setOp(null); setReset(false)
+      return
+    }
+    if (val === '.') {
+      if (reset) { setDisplay('0.'); setReset(false); return }
+      setDisplay(d => d.includes('.') ? d : d + '.')
+      return
+    }
+    setDisplay(d => {
+      if (reset) { setReset(false); return val }
+      return d === '0' ? val : d.length >= 12 ? d : d + val
+    })
+  }
+
+  const btns = [
+    ['C','±','%','÷'],
+    ['7','8','9','×'],
+    ['4','5','6','-'],
+    ['1','2','3','+'],
+    ['0','.','⌫','='],
+  ]
+  const opColor = '#0891b2'
+  const isOp = (v) => ['÷','×','-','+','='].includes(v)
+  const isGray = (v) => ['C','±','%'].includes(v)
+
+  return (
+    <div style={{ padding:'12px' }}>
+      <div style={{ background:'#f1f5f9', borderRadius:'var(--radius)', padding:'10px 14px', marginBottom:'10px', textAlign:'right' }}>
+        {op && prev !== null && <div style={{ fontSize:'11px', color:'var(--muted)', marginBottom:'2px' }}>{prev} {op}</div>}
+        <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'26px', letterSpacing:'-0.02em', overflowX:'auto', whiteSpace:'nowrap' }}>{display}</div>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'6px' }}>
+        {btns.flat().map((b,i) => (
+          <button key={i} onClick={() => press(b)}
+            style={{ padding:'14px 0', borderRadius:'var(--radius)', border:'none', fontSize:'16px', fontWeight:'700', cursor:'pointer', background: isOp(b) ? opColor : isGray(b) ? '#e2e8f0' : 'var(--cream)', color: isOp(b) ? 'white' : 'var(--ink)', transition:'opacity 0.1s', gridColumn: b==='0' ? 'span 1' : undefined }}
+            onMouseDown={e => e.currentTarget.style.opacity='0.7'}
+            onMouseUp={e => e.currentTarget.style.opacity='1'}
+            onTouchStart={e => e.currentTarget.style.opacity='0.7'}
+            onTouchEnd={e => { e.currentTarget.style.opacity='1'; press(b) }}>
+            {b === '±' ? '+/-' : b}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CALENDARIO FLOTANTE
+// ─────────────────────────────────────────────────────────────────────────────
+function CalendarioFlotante() {
+  const hoy = getNowGuayaquil()
+  const [mes, setMes] = useState(hoy.getMonth())
+  const [anio, setAnio] = useState(hoy.getFullYear())
+  const [sel, setSel] = useState(null)
+
+  const DIAS = ['L','M','M','J','V','S','D']
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+
+  const primerDia = new Date(anio, mes, 1).getDay() // 0=dom
+  const offset = primerDia === 0 ? 6 : primerDia - 1 // lunes=0
+  const diasEnMes = new Date(anio, mes + 1, 0).getDate()
+
+  const prevMes = () => { if (mes === 0) { setMes(11); setAnio(a => a-1) } else setMes(m => m-1) }
+  const nextMes = () => { if (mes === 11) { setMes(0); setAnio(a => a+1) } else setMes(m => m+1) }
+
+  const isHoy = (d) => d === hoy.getDate() && mes === hoy.getMonth() && anio === hoy.getFullYear()
+  const isSel = (d) => sel && sel.d === d && sel.m === mes && sel.a === anio
+
+  const cells = []
+  for (let i = 0; i < offset; i++) cells.push(null)
+  for (let d = 1; d <= diasEnMes; d++) cells.push(d)
+
+  return (
+    <div style={{ padding:'12px' }}>
+      {/* Nav mes */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
+        <button onClick={prevMes} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--muted)', fontSize:'18px', padding:'4px 8px' }}>‹</button>
+        <span style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'14px' }}>{MESES[mes]} {anio}</span>
+        <button onClick={nextMes} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--muted)', fontSize:'18px', padding:'4px 8px' }}>›</button>
+      </div>
+      {/* Días semana */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:'2px', marginBottom:'4px' }}>
+        {DIAS.map((d,i) => <div key={i} style={{ textAlign:'center', fontSize:'11px', fontWeight:'700', color:'var(--muted)', padding:'4px 0' }}>{d}</div>)}
+      </div>
+      {/* Celdas */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:'2px' }}>
+        {cells.map((d, i) => (
+          <div key={i} onClick={() => d && setSel({ d, m: mes, a: anio })}
+            style={{ textAlign:'center', padding:'7px 0', borderRadius:'50%', fontSize:'13px', fontWeight: isHoy(d) ? '800' : '500', cursor: d ? 'pointer' : 'default',
+              background: isSel(d) ? '#7c3aed' : isHoy(d) ? '#ede9fe' : 'transparent',
+              color: isSel(d) ? 'white' : isHoy(d) ? '#7c3aed' : d ? 'var(--ink)' : 'transparent',
+              transition:'background 0.1s' }}>
+            {d || ''}
+          </div>
+        ))}
+      </div>
+      {/* Fecha seleccionada */}
+      {sel && (
+        <div style={{ marginTop:'10px', padding:'8px 12px', background:'#ede9fe', borderRadius:'var(--radius)', fontSize:'13px', fontWeight:'600', color:'#7c3aed', textAlign:'center' }}>
+          {sel.d} de {MESES[sel.m]} {sel.a}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTAS RÁPIDAS FLOTANTE
+// ─────────────────────────────────────────────────────────────────────────────
+function NotasRapidas({ valor, onChange }) {
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const guardarSheets = async () => {
+    if (!valor.trim()) return
+    setSaving(true)
+    try {
+      const params = new URLSearchParams({ action: 'guardarNota', nota: valor })
+      await fetch(`${API_BASE}?${params}`)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {}
+    setSaving(false)
+  }
+
+  return (
+    <div style={{ padding:'12px' }}>
+      <textarea
+        value={valor}
+        onChange={e => onChange(e.target.value)}
+        placeholder="Escribe aquí tu nota rápida..."
+        style={{ width:'100%', minHeight:'120px', border:'1.5px solid var(--border)', borderRadius:'var(--radius)', padding:'10px 12px', fontSize:'14px', lineHeight:'1.6', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box', outline:'none' }}
+        autoFocus
+      />
+      <div style={{ display:'flex', gap:'8px', marginTop:'8px' }}>
+        <button onClick={() => onChange('')}
+          style={{ flex:1, padding:'8px', background:'var(--cream)', border:'1.5px solid var(--border)', borderRadius:'var(--radius)', fontSize:'12px', fontWeight:'700', cursor:'pointer', color:'var(--muted)' }}>
+          Limpiar
+        </button>
+        <button onClick={guardarSheets} disabled={saving || !valor.trim()}
+          style={{ flex:2, padding:'8px', background: saved ? '#16a34a' : saving ? 'var(--muted)' : '#d97706', border:'none', borderRadius:'var(--radius)', fontSize:'12px', fontWeight:'700', cursor: saving || !valor.trim() ? 'not-allowed' : 'pointer', color:'white', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
+          {saved ? '✓ Guardado' : saving ? '⏳ Guardando...' : '☁ Guardar en Sheets'}
+        </button>
+      </div>
+      <div style={{ fontSize:'11px', color:'var(--muted)', marginTop:'6px', textAlign:'center' }}>
+        Las notas se guardan localmente al escribir
+      </div>
+    </div>
+  )
+}
+
 function PistaFuenteSelect({ value, onChange }) {
   const [fuentes, setFuentes] = useState([])
   useEffect(() => {
@@ -3745,6 +3926,9 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [voiceState, setVoiceState] = useState('idle') // 'idle' | 'listening' | 'success' | 'error'
   const recognitionRef = useRef(null)
+  const [fabOpen, setFabOpen] = useState(false)
+  const [fabTool, setFabTool] = useState(null) // 'calc' | 'cal' | 'notes'
+  const [notasRapidas, setNotasRapidas] = useState(() => { try { return localStorage.getItem('notas_rapidas') || '' } catch { return '' } })
   const [form, setForm] = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -4111,29 +4295,85 @@ export default function App() {
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      {/* Botón flotante de voz */}
-      {!['form','edit','newOrder'].includes(view) && (
-        <button onClick={startVoice}
-          title={voiceState === 'listening' ? 'Escuchando... (toca para cancelar)' : 'Comando de voz'}
-          style={{
-            position: 'fixed', bottom: '24px', right: '20px', zIndex: 500,
-            width: '52px', height: '52px', borderRadius: '50%', border: 'none',
-            background: voiceState === 'listening' ? '#dc2626' : voiceState === 'success' ? '#16a34a' : voiceState === 'error' ? '#d97706' : 'var(--brand)',
-            color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: voiceState === 'listening' ? '0 0 0 6px rgba(220,38,38,0.2)' : '0 4px 16px rgba(30,58,95,0.3)',
-            animation: voiceState === 'listening' ? 'pulse 1s infinite' : 'none',
-            transition: 'background 0.2s, box-shadow 0.2s'
-          }}>
-          {voiceState === 'listening' ? (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
-          ) : voiceState === 'success' ? (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-          ) : voiceState === 'error' ? (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="8" y1="23" x2="16" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>
+      {/* ── FAB: Relámpago + herramientas ─────────────────────────────────── */}
+      {!['form','edit','newOrder','editPista'].includes(view) && (
+        <div style={{ position:'fixed', bottom:'24px', right:'20px', zIndex:600, display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'10px' }}>
+
+          {/* Overlay para cerrar */}
+          {fabOpen && <div onClick={() => { setFabOpen(false); setFabTool(null) }} style={{ position:'fixed', inset:0, zIndex:-1 }} />}
+
+          {/* Herramientas en columna */}
+          {fabOpen && (
+            <div style={{ display:'flex', flexDirection:'column', gap:'8px', alignItems:'flex-end' }}>
+              {[
+                { key:'voice', label: voiceState==='listening'?'Escuchando...':'Voz', icon: voiceState==='listening'
+                    ? <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+                    : voiceState==='success'
+                    ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    : <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="8" y1="23" x2="16" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>,
+                  bg: voiceState==='listening'?'#dc2626':voiceState==='success'?'#16a34a':voiceState==='error'?'#d97706':'#1e3a5f',
+                  action: () => { startVoice(); setFabOpen(false) } },
+                { key:'calc', label:'Calculadora', icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10" strokeWidth="3"/><line x1="12" y1="10" x2="12" y2="10" strokeWidth="3"/><line x1="16" y1="10" x2="16" y2="10" strokeWidth="3"/><line x1="8" y1="14" x2="8" y2="14" strokeWidth="3"/><line x1="12" y1="14" x2="12" y2="14" strokeWidth="3"/><line x1="16" y1="14" x2="16" y2="14" strokeWidth="3"/><line x1="8" y1="18" x2="8" y2="18" strokeWidth="3"/><line x1="12" y1="18" x2="12" y2="18" strokeWidth="3"/><line x1="16" y1="18" x2="16" y2="18" strokeWidth="3"/></svg>,
+                  bg:'#0891b2', action: () => setFabTool(fabTool==='calc'?null:'calc') },
+                { key:'cal', label:'Calendario', icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>,
+                  bg:'#7c3aed', action: () => setFabTool(fabTool==='cal'?null:'cal') },
+                { key:'notes', label:'Notas rápidas', icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>,
+                  bg:'#d97706', action: () => setFabTool(fabTool==='notes'?null:'notes') },
+              ].map(({ key, label, icon, bg, action }, i) => (
+                <div key={key} style={{ display:'flex', alignItems:'center', gap:'8px', animation:`fadeUp 0.15s ${i*0.04}s ease both` }}>
+                  <span style={{ fontSize:'12px', fontWeight:'700', color:'white', background:'rgba(0,0,0,0.55)', padding:'3px 10px', borderRadius:'20px', whiteSpace:'nowrap', backdropFilter:'blur(4px)' }}>{label}</span>
+                  <button onClick={action} style={{ width:'44px', height:'44px', borderRadius:'50%', border:'none', background:bg, color:'white', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 3px 12px rgba(0,0,0,0.25)', transition:'transform 0.15s', flexShrink:0 }}
+                    onMouseEnter={e => e.currentTarget.style.transform='scale(1.1)'}
+                    onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}>
+                    {icon}
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
-        </button>
+
+          {/* Botón principal ⚡ */}
+          <button onClick={() => { setFabOpen(o => !o); if (fabOpen) setFabTool(null) }}
+            style={{ width:'56px', height:'56px', borderRadius:'50%', border:'none', background: fabOpen?'#374151':'var(--brand)', color:'white', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 20px rgba(30,58,95,0.4)', transition:'background 0.2s, transform 0.2s', transform: fabOpen?'rotate(45deg)':'rotate(0deg)', flexShrink:0 }}>
+            {fabOpen
+              ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              : <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            }
+          </button>
+        </div>
+      )}
+
+      {/* ── CALCULADORA FLOTANTE ─────────────────────────────────────────────── */}
+      {fabTool === 'calc' && (
+        <div style={{ position:'fixed', bottom:'100px', right:'20px', zIndex:700, background:'var(--white)', borderRadius:'var(--radius-lg)', boxShadow:'0 8px 40px rgba(0,0,0,0.25)', width:'280px', overflow:'hidden', animation:'fadeUp 0.2s ease' }}>
+          <div style={{ background:'#0891b2', padding:'12px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <span style={{ color:'white', fontWeight:'700', fontSize:'14px' }}>Calculadora</span>
+            <button onClick={() => setFabTool(null)} style={{ background:'none', border:'none', color:'white', cursor:'pointer', fontSize:'18px', lineHeight:1 }}>✕</button>
+          </div>
+          <Calculadora />
+        </div>
+      )}
+
+      {/* ── CALENDARIO FLOTANTE ──────────────────────────────────────────────── */}
+      {fabTool === 'cal' && (
+        <div style={{ position:'fixed', bottom:'100px', right:'20px', zIndex:700, background:'var(--white)', borderRadius:'var(--radius-lg)', boxShadow:'0 8px 40px rgba(0,0,0,0.25)', width:'300px', overflow:'hidden', animation:'fadeUp 0.2s ease' }}>
+          <div style={{ background:'#7c3aed', padding:'12px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <span style={{ color:'white', fontWeight:'700', fontSize:'14px' }}>Calendario</span>
+            <button onClick={() => setFabTool(null)} style={{ background:'none', border:'none', color:'white', cursor:'pointer', fontSize:'18px', lineHeight:1 }}>✕</button>
+          </div>
+          <CalendarioFlotante />
+        </div>
+      )}
+
+      {/* ── NOTAS RÁPIDAS FLOTANTE ───────────────────────────────────────────── */}
+      {fabTool === 'notes' && (
+        <div style={{ position:'fixed', bottom:'100px', right:'20px', zIndex:700, background:'var(--white)', borderRadius:'var(--radius-lg)', boxShadow:'0 8px 40px rgba(0,0,0,0.25)', width:'300px', overflow:'hidden', animation:'fadeUp 0.2s ease' }}>
+          <div style={{ background:'#d97706', padding:'12px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <span style={{ color:'white', fontWeight:'700', fontSize:'14px' }}>Notas rápidas</span>
+            <button onClick={() => setFabTool(null)} style={{ background:'none', border:'none', color:'white', cursor:'pointer', fontSize:'18px', lineHeight:1 }}>✕</button>
+          </div>
+          <NotasRapidas valor={notasRapidas} onChange={v => { setNotasRapidas(v); try { localStorage.setItem('notas_rapidas', v) } catch {} }} />
+        </div>
       )}
     </div>
   )
