@@ -4404,7 +4404,13 @@ function Calculadora() {
     }
     setDisplay(d => {
       if (reset) { setReset(false); return val }
-      return d === '0' ? val : d.length >= 12 ? d : d + val
+      const raw = d === '0' ? val : d + val
+      if (raw.length > 15) return d
+      // Aplicar separador de miles al parte entera
+      const partes = raw.split(',')
+      const entero = partes[0].replace(/\./g, '') // quitar puntos existentes
+      const conPuntos = entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+      return partes.length > 1 ? conPuntos + ',' + partes[1] : conPuntos
     })
   }
 
