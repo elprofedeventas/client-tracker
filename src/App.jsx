@@ -241,7 +241,7 @@ function Highlight({ text, query }) {
 // ─────────────────────────────────────────────────────────────────────────────
 const _hasSpoken = { current: false }
 
-function MiDia({ onViewOrder, onViewPista }) {
+function MiDia({ onViewOrder, onViewPista, onViewProximaSemana }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [diasExtra, setDiasExtra] = useState(0)
@@ -250,6 +250,7 @@ function MiDia({ onViewOrder, onViewPista }) {
 
   const [dashData, setDashData] = useState(null)
   const [speaking, setSpeaking] = useState(false)
+  const [vistaActiva, setVistaActiva] = useState('hoy')
 
   const hablar = (actividadesHoy, actividadesVencidas, diasVencidos, diasExtra, faltante, totalVencido) => {
     if (!window.speechSynthesis) return
@@ -602,7 +603,29 @@ function MiDia({ onViewOrder, onViewPista }) {
             </button>
           )}
         </div>
+        {/* Botones Hoy / Esta semana / Próxima semana */}
+        <div style={{ display:'flex', gap:'6px', marginTop:'10px' }}>
+          {[['hoy','Hoy'],['semana','Esta semana'],['proxima','Próxima semana']].map(([key, lbl]) => (
+            <button key={key} onClick={() => {
+              if (key === 'proxima' && onViewProximaSemana) { onViewProximaSemana(); return }
+              setVistaActiva(key)
+            }}
+              style={{ padding:'6px 14px', borderRadius:'20px', border:`1.5px solid ${vistaActiva===key?'var(--brand)':'var(--border)'}`, background:vistaActiva===key?'var(--brand)':'var(--white)', color:vistaActiva===key?'white':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}>
+              {lbl}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {vistaActiva === 'semana' && (
+        <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--muted)' }}>
+          <div style={{ fontSize:'32px', marginBottom:'12px' }}>🚧</div>
+          <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'16px', marginBottom:'6px' }}>Esta semana</div>
+          <div style={{ fontSize:'13px' }}>Próximamente</div>
+        </div>
+      )}
+
+      {vistaActiva === 'hoy' && <>
 
       {/* ── BANNER + MEDIDOR HOY ─────────────────────────────────────────────── */}
       {(() => {
@@ -747,6 +770,8 @@ function MiDia({ onViewOrder, onViewPista }) {
             </>
           )
         })()}
+
+      </>
       </div>
     </div>
   )
@@ -4766,7 +4791,7 @@ export default function App() {
       <main style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 20px' }}>
 
         {/* ── DASHBOARD ─────────────────────────────────────────────────────── */}
-        {view === 'midia' && <MiDia onViewOrder={(o) => handleViewOrder(o, 'midia')} onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} />}
+        {view === 'midia' && <MiDia onViewOrder={(o) => handleViewOrder(o, 'midia')} onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} onViewProximaSemana={() => navigate('proximaSemana')} />}
 
         {view === 'pistas' && (
           <PistasView onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} />
