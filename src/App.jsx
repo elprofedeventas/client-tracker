@@ -4306,7 +4306,7 @@ export default function App() {
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       {/* ── FAB: Relámpago + herramientas ─────────────────────────────────── */}
-      {!['form','edit','newOrder','editPista'].includes(view) && (
+      {!['form','edit','editPista'].includes(view) && (
         <div style={{ position:'fixed', bottom:'24px', right:'20px', zIndex:600, display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'10px' }}>
 
           {/* Overlay para cerrar */}
