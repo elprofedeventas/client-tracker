@@ -4484,10 +4484,10 @@ export default function App() {
 
           {/* Botón principal ⚡ */}
           <button onClick={() => { setFabOpen(o => !o); if (fabOpen) setFabTool(null) }}
-            style={{ width:'56px', height:'56px', borderRadius:'50%', border:'none', background: fabOpen?'#374151':'var(--brand)', color:'white', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 20px rgba(30,58,95,0.4)', transition:'background 0.2s, transform 0.2s', transform: fabOpen?'rotate(45deg)':'rotate(0deg)', flexShrink:0 }}>
+            style={{ width:'56px', height:'56px', borderRadius:'50%', border:'none', background: fabOpen?'#374151':'#fbbf24', color:'white', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 20px rgba(251,191,36,0.5)', transition:'background 0.2s, transform 0.2s', transform: fabOpen?'rotate(45deg)':'rotate(0deg)', flexShrink:0 }}>
             {fabOpen
               ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              : <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              : <span style={{ fontSize:'30px', fontWeight:'900', color:'#1e3a5f', lineHeight:1, fontFamily:'Georgia, serif' }}>!</span>
             }
           </button>
         </div>
