@@ -3777,7 +3777,7 @@ function Calculadora() {
             onMouseDown={e => e.currentTarget.style.opacity='0.7'}
             onMouseUp={e => e.currentTarget.style.opacity='1'}
             onTouchStart={e => e.currentTarget.style.opacity='0.7'}
-            onTouchEnd={e => { e.currentTarget.style.opacity='1'; press(b) }}>
+            onTouchEnd={e => e.currentTarget.style.opacity='1'}>
             {b === '±' ? '+/-' : b}
           </button>
         ))}
