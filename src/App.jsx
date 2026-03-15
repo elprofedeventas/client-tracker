@@ -4714,12 +4714,10 @@ export default function App() {
     // Android: escucha el evento automático
     const handler = (e) => { e.preventDefault(); setPwaPrompt(e); setPwaBanner(true) }
     window.addEventListener('beforeinstallprompt', handler)
-    // iOS y otros: mostrar banner manual si no está instalada y no fue descartada
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
+    // Mostrar banner si no está instalada como app
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
-    const dismissed = localStorage.getItem('pwa_banner_dismissed')
-    if (!isStandalone && !dismissed) {
-      setTimeout(() => setPwaBanner(true), 3000)
+    if (!isStandalone) {
+      setTimeout(() => setPwaBanner(true), 2000)
     }
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
@@ -5048,7 +5046,7 @@ export default function App() {
             {!isIOS && pwaPrompt && (
               <button onClick={instalarPwa} style={{ padding:'7px 14px', background:'#fbbf24', color:'#1e3a5f', border:'none', borderRadius:'var(--radius)', fontSize:'12px', fontWeight:'800', cursor:'pointer', flexShrink:0 }}>Instalar</button>
             )}
-            <button onClick={() => { setPwaBanner(false); localStorage.setItem('pwa_banner_dismissed','1') }} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.5)', cursor:'pointer', fontSize:'18px', padding:'2px', flexShrink:0, lineHeight:1 }}>✕</button>
+            <button onClick={() => setPwaBanner(false)} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.5)', cursor:'pointer', fontSize:'18px', padding:'2px', flexShrink:0, lineHeight:1 }}>✕</button>
           </div>
         )
       })()}
