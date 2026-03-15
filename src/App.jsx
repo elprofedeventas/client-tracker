@@ -625,7 +625,7 @@ function MiDia({ onViewOrder, onViewPista, onViewProximaSemana }) {
         </div>
       )}
 
-      {vistaActiva === 'hoy' && <>
+      {vistaActiva === 'hoy' && <div>
 
       {/* ── BANNER + MEDIDOR HOY ─────────────────────────────────────────────── */}
       {(() => {
@@ -771,7 +771,7 @@ function MiDia({ onViewOrder, onViewPista, onViewProximaSemana }) {
           )
         })()}
 
-      </>
+      </div>}
     </div>
   )
 }
