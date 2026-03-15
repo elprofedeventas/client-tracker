@@ -1407,7 +1407,9 @@ function ViewClient({ client, onEdit, onBack, onViewOrder }) {
             ))}
           </>
         )}
-      </div>
+      <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', padding: '0', marginTop: '8px' }}>
+        <Icon d={icons.arrowLeft} size={15} /> Volver a clientes
+      </button>
     </div>
   )
 }
@@ -1975,6 +1977,9 @@ Total:             ${fmtMoney(order.total)}`
         )
       })()}
 
+      <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', padding: '0', marginTop: '8px' }}>
+        <Icon d={icons.arrowLeft} size={15} /> {backLabel}
+      </button>
     </div>
   )
 }
