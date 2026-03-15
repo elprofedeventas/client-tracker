@@ -604,6 +604,39 @@ function MiDia({ onViewOrder, onViewPista }) {
         </div>
       </div>
 
+      {/* ── BANNER + MEDIDOR HOY ─────────────────────────────────────────────── */}
+      {(() => {
+        const totalHoy = actividadesHoy.reduce((s,o) => s + (o.total||0), 0)
+        const enCaminoHoy = totalHoy >= valorX
+        const faltaHoy = Math.max(0, valorX - totalHoy)
+        return (
+          <>
+            <div style={{ background: enCaminoHoy ? '#16a34a' : '#dc2626', borderRadius:'var(--radius-lg)', padding:'8px 16px', marginBottom:'8px', textAlign:'center' }}>
+              <span style={{ fontSize:'13px', fontWeight:'900', color:'white', letterSpacing:'0.12em', textTransform:'uppercase' }}>
+                {enCaminoHoy ? '🟢 Estás en verde' : '🔴 Estás en rojo'}
+              </span>
+            </div>
+            <div style={{ background: enCaminoHoy ? '#f0fdf4' : '#fef2f2', border:`1.5px solid ${enCaminoHoy ? '#bbf7d0' : '#fecaca'}`, borderRadius:'var(--radius-lg)', padding:'16px 20px', marginBottom:'16px' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'10px' }}>
+                <div>
+                  <div style={{ fontSize:'10px', fontWeight:'700', color: enCaminoHoy?'#16a34a':'#dc2626', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>En juego hoy</div>
+                  <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'22px', color: enCaminoHoy?'#16a34a':'#dc2626' }}>{fmtM(totalHoy)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize:'10px', fontWeight:'700', color: enCaminoHoy?'#16a34a':'#dc2626', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:'2px' }}>Necesitas</div>
+                  <div style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'22px', color: enCaminoHoy?'#16a34a':'#dc2626' }}>{fmtM(valorX)}</div>
+                </div>
+              </div>
+              {enCaminoHoy ? (
+                <div style={{ fontSize:'13px', fontWeight:'700', color:'#16a34a' }}>✓ Tienes suficiente en juego para hoy — ¡estás en camino!</div>
+              ) : (
+                <div style={{ fontSize:'13px', fontWeight:'700', color:'#dc2626' }}>⚠ Te faltan {fmtM(faltaHoy)} — necesitas prospectar o recuperar órdenes hoy</div>
+              )}
+            </div>
+          </>
+        )
+      })()}
+
       {/* ── SECCIÓN 1: Actividades de hoy ─────────────────────────────────── */}
       <div style={{ marginBottom: '24px' }}>
         <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -611,17 +644,11 @@ function MiDia({ onViewOrder, onViewPista }) {
           Actividades de hoy · {actividadesHoy.length}
         </div>
         {actividadesHoy.length > 0 && (() => {
-          const totalHoy = actividadesHoy.reduce((s,o) => s + (o.total||0), 0)
+          const totalHoy2 = actividadesHoy.reduce((s,o) => s + (o.total||0), 0)
           return (
-            <>
-              <div style={{ textAlign:'center', marginBottom:'10px', padding:'8px 0' }}>
-                <span style={{ fontSize:'13px', fontWeight:'800', color:'var(--brand)', textTransform:'uppercase', letterSpacing:'0.12em' }}>⚡ Esto es lo más importante</span>
-              </div>
-              <div style={{ background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:'var(--radius-lg)', padding:'12px 18px', marginBottom:'10px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <span style={{ fontSize:'12px', fontWeight:'700', color:'#16a34a', textTransform:'uppercase', letterSpacing:'0.06em' }}>Total hoy</span>
-                <span style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'#16a34a' }}>{fmtM(totalHoy)}</span>
-              </div>
-            </>
+            <div style={{ textAlign:'center', marginBottom:'10px', padding:'8px 0' }}>
+              <span style={{ fontSize:'13px', fontWeight:'800', color:'var(--brand)', textTransform:'uppercase', letterSpacing:'0.12em' }}>⚡ Esto es lo más importante</span>
+            </div>
           )
         })()}
         {actividadesHoy.length === 0 ? (
@@ -637,8 +664,8 @@ function MiDia({ onViewOrder, onViewPista }) {
 
       {/* ── SECCIÓN 2: Dinero que estás dejando en la mesa ─────────────────── */}
       <div>
-        <div style={{ textAlign:'center', marginBottom:'10px', padding:'8px 0' }}>
-          <span style={{ fontSize:'13px', fontWeight:'800', color:'#dc2626', textTransform:'uppercase', letterSpacing:'0.12em' }}>💸 Dinero que estás perdiendo</span>
+        <div style={{ background:'#dc2626', borderRadius:'var(--radius-lg)', padding:'8px 16px', marginBottom:'12px', textAlign:'center' }}>
+          <span style={{ fontSize:'13px', fontWeight:'900', color:'white', letterSpacing:'0.12em', textTransform:'uppercase' }}>💸 Dinero que estás perdiendo</span>
         </div>
         {/* Medidor verde/rojo */}
         {(() => {
@@ -2291,9 +2318,22 @@ function ActividadesView({ onViewOrder, onViewPista, modoInicial }) {
               const hoyD2 = getNowGuayaquil(); hoyD2.setHours(0,0,0,0)
               const fD2 = order._fecha ? new Date(order._fecha) : null; if (fD2) fD2.setHours(0,0,0,0)
               const diffDias2 = fD2 ? Math.round((fD2 - hoyD2) / 86400000) : 0
-              const esVencida2 = !esPistaCard2 && (diffDias2 < 0)
-              const s1Bg = esPistaCard2 ? '#eff6ff' : esVencida2 ? '#fef2f2' : '#f0fdf4'
-              const s1Color = esPistaCard2 ? '#2563eb' : esVencida2 ? '#dc2626' : '#16a34a'
+              const esSinFecha2 = modo === 'sinFecha'
+              // Pistas vencidas = rojo, pistas sin fecha = naranja, pistas pendientes = azul
+              // Órdenes sin fecha = naranja, órdenes vencidas = rojo, órdenes pendientes = verde
+              const esVencida2 = esPistaCard2
+                ? (fD2 && diffDias2 < 0)          // pista con fecha pasada
+                : (!esSinFecha2 && diffDias2 < 0)  // orden vencida
+              const s1Bg = esSinFecha2 ? '#fffbeb'
+                : esPistaCard2 && esVencida2 ? '#fef2f2'
+                : esPistaCard2 ? '#eff6ff'
+                : esVencida2 ? '#fef2f2'
+                : '#f0fdf4'
+              const s1Color = esSinFecha2 ? '#d97706'
+                : esPistaCard2 && esVencida2 ? '#dc2626'
+                : esPistaCard2 ? '#2563eb'
+                : esVencida2 ? '#dc2626'
+                : '#16a34a'
               const s1Label = diff ? diff.label : (modo === 'sinFecha' ? 'Sin fecha' : '')
               const DIAS_ES3 = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
               const MESES_ES4 = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
@@ -2318,7 +2358,7 @@ function ActividadesView({ onViewOrder, onViewPista, modoInicial }) {
                   </div>
 
                   {/* Sección 2 — verde o rojo */}
-                  <div style={{ background: esPistaCard2 ? '#eff6ff' : esVencida2 ? '#fef2f2' : '#f0fdf4', padding:'10px 14px' }}>
+                  <div style={{ background: s1Bg, padding:'10px 14px' }}>
                     <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'15px', color:'var(--ink)' }}>{order.clienteNombre || order.nombre}</div>
                     {(order.clienteNegocio || order.negocio) && <div style={{ fontSize:'13px', color:'var(--muted)', marginTop:'1px' }}>{order.clienteNegocio || order.negocio}</div>}
                     {contactos.length > 0 && (
@@ -3540,8 +3580,8 @@ function ProximaSemana({ onViewOrder }) {
       {/* ── SECCIÓN 3: Vencidas ─────────────────────────────────────────────────── */}
       {!enCamino && (
         <div>
-          <div style={{ textAlign:'center', marginBottom:'10px', padding:'8px 0' }}>
-            <span style={{ fontSize:'13px', fontWeight:'800', color:'#dc2626', textTransform:'uppercase', letterSpacing:'0.12em' }}>💸 Dinero que estás perdiendo</span>
+          <div style={{ background:'#dc2626', borderRadius:'var(--radius-lg)', padding:'8px 16px', marginBottom:'12px', textAlign:'center' }}>
+            <span style={{ fontSize:'13px', fontWeight:'900', color:'white', letterSpacing:'0.12em', textTransform:'uppercase' }}>💸 Dinero que estás perdiendo</span>
           </div>
 
           {/* Medidor vencidas */}
