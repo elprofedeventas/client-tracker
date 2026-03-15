@@ -241,7 +241,7 @@ function Highlight({ text, query }) {
 // ─────────────────────────────────────────────────────────────────────────────
 const _hasSpoken = { current: false }
 
-function MiDia({ onViewOrder, onViewPista, onViewProximaSemana }) {
+function MiDia({ onViewOrder, onViewPista, onViewProximaSemana, initialVista }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [diasExtra, setDiasExtra] = useState(0)
@@ -250,7 +250,7 @@ function MiDia({ onViewOrder, onViewPista, onViewProximaSemana }) {
 
   const [dashData, setDashData] = useState(null)
   const [speaking, setSpeaking] = useState(false)
-  const [vistaActiva, setVistaActiva] = useState('hoy')
+  const [vistaActiva, setVistaActiva] = useState(initialVista || 'hoy')
 
   const hablar = (actividadesHoy, actividadesVencidas, diasVencidos, diasExtra, faltante, totalVencido) => {
     if (!window.speechSynthesis) return
@@ -3289,7 +3289,7 @@ function OrdersView({ onViewOrder, filtroInicial, onFiltroChange }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // PRÓXIMA SEMANA
 // ─────────────────────────────────────────────────────────────────────────────
-function ProximaSemana({ onViewOrder }) {
+function ProximaSemana({ onViewOrder, onViewMiDia }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [diasExtraVenc, setDiasExtraVenc] = useState(0)
@@ -3519,20 +3519,28 @@ function ProximaSemana({ onViewOrder }) {
     <div style={{ animation:'fadeUp 0.4s ease', paddingBottom:'40px' }}>
 
       {/* Header */}
-      <div style={{ marginBottom:'20px' }}>
+      <div style={{ marginBottom:'16px' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
           <div>
             <h1 style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'26px', letterSpacing:'-0.02em', margin:0 }}>Próxima semana</h1>
             <div style={{ fontSize:'13px', color:'var(--muted)', fontWeight:'500', marginTop:'4px' }}>
               {lunesProximo} — {finSemana} · {semanaLaboral} días laborables
             </div>
-
           </div>
           <button onClick={() => hablarSemana(data)}
             title={speaking ? 'Detener' : 'Escuchar resumen de la semana'}
             style={{ background: speaking ? 'var(--brand)' : 'var(--white)', border:`1.5px solid ${speaking?'var(--brand)':'var(--border)'}`, borderRadius:'50%', width:'38px', height:'38px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', transition:'all 0.2s', flexShrink:0, animation: !speaking?'pulse 1.5s infinite':'none', boxShadow: !speaking?'0 0 0 3px var(--brand-light)':'none' }}>
             <span style={{ fontSize:'18px', lineHeight:1 }}>{speaking ? '⏹' : '🔊'}</span>
           </button>
+        </div>
+        {/* Botones navegación */}
+        <div style={{ display:'flex', gap:'6px', marginTop:'10px' }}>
+          {[['hoy','Hoy'],['semana','Esta semana'],['proxima','Próxima semana']].map(([key, lbl]) => (
+            <button key={key} onClick={() => { if (key === 'hoy' && onViewMiDia) onViewMiDia(); else if (key === 'semana' && onViewMiDia) onViewMiDia('semana') }}
+              style={{ padding:'6px 14px', borderRadius:'20px', border:`1.5px solid ${key==='proxima'?'var(--brand)':'var(--border)'}`, background:key==='proxima'?'var(--brand)':'var(--white)', color:key==='proxima'?'white':'var(--muted)', fontSize:'12px', fontWeight:'700', cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap' }}>
+              {lbl}
+            </button>
+          ))}
         </div>
       </div>
       {/* ── SECCIÓN 1: Medidor semana ──────────────────────────────────────────── */}
@@ -4596,6 +4604,7 @@ export default function App() {
   const [voiceState, setVoiceState] = useState('idle') // 'idle' | 'listening' | 'success' | 'error'
   const recognitionRef = useRef(null)
   const [fabOpen, setFabOpen] = useState(false)
+  const [midiaVista, setMidiaVista] = useState('hoy')
   const [fabTool, setFabTool] = useState(null) // 'calc' | 'cal' | 'notes'
   const [notasRapidas, setNotasRapidas] = useState(() => { try { return localStorage.getItem('notas_rapidas') || '' } catch { return '' } })
   const [form, setForm] = useState(EMPTY_FORM)
@@ -4791,7 +4800,7 @@ export default function App() {
       <main style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 20px' }}>
 
         {/* ── DASHBOARD ─────────────────────────────────────────────────────── */}
-        {view === 'midia' && <MiDia onViewOrder={(o) => handleViewOrder(o, 'midia')} onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} onViewProximaSemana={() => navigate('proximaSemana')} />}
+        {view === 'midia' && <MiDia key={midiaVista} onViewOrder={(o) => handleViewOrder(o, 'midia')} onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} onViewProximaSemana={() => navigate('proximaSemana')} initialVista={midiaVista} />}
 
         {view === 'pistas' && (
           <PistasView onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} />
@@ -4807,7 +4816,7 @@ export default function App() {
             onSave={(updated) => { setViewingPista(updated); setView('viewPista') }} />
         )}
 
-        {view === 'proximaSemana' && <ProximaSemana onViewOrder={(o) => handleViewOrder(o, 'proximaSemana')} />}
+        {view === 'proximaSemana' && <ProximaSemana onViewOrder={(o) => handleViewOrder(o, 'proximaSemana')} onViewMiDia={(vista) => { setMidiaVista(vista || 'hoy'); navigate('midia') }} />}
 
         {view === 'dashboard' && <Dashboard />}
 
