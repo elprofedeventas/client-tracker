@@ -3721,6 +3721,122 @@ function ProximaSemana({ onViewOrder }) {
 
 // ─── HELPERS PISTAS SELECTS ───────────────────────────────────────────────────
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CAPTURA RÁPIDA DE PISTA
+// ─────────────────────────────────────────────────────────────────────────────
+function CapturaRapida({ onClose, showToast }) {
+  const [nombre, setNombre] = useState('')
+  const [telefono, setTelefono] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const guardar = async () => {
+    if (!nombre.trim() || !telefono.trim()) return
+    setSaving(true)
+    try {
+      const params = new URLSearchParams({ action: 'create', nombre: nombre.trim(), telefono: telefono.trim() })
+      const res = await fetch(`${API_BASE}?${params}`)
+      const data = await res.json()
+      if (data.success) {
+        showToast(`✓ Pista "${nombre}" registrada`)
+        setNombre(''); setTelefono('')
+        onClose()
+      } else showToast(data.error || 'Error al guardar', 'error')
+    } catch { showToast('Error de conexión', 'error') }
+    setSaving(false)
+  }
+
+  const handleKey = (e) => { if (e.key === 'Enter') guardar() }
+
+  return (
+    <div style={{ padding:'14px' }}>
+      <input value={nombre} onChange={e => setNombre(e.target.value)} onKeyDown={handleKey}
+        placeholder="Nombre completo *" autoFocus
+        style={{ ...inputStyle, fontSize:'14px', marginBottom:'8px', width:'100%', boxSizing:'border-box' }} />
+      <input value={telefono} onChange={e => setTelefono(e.target.value)} onKeyDown={handleKey}
+        placeholder="Celular *" type="tel"
+        style={{ ...inputStyle, fontSize:'14px', marginBottom:'10px', width:'100%', boxSizing:'border-box' }} />
+      <button onClick={guardar} disabled={saving || !nombre.trim() || !telefono.trim()}
+        style={{ width:'100%', padding:'10px', background: saving || !nombre.trim() || !telefono.trim() ? 'var(--muted)' : '#16a34a', color:'white', border:'none', borderRadius:'var(--radius)', fontSize:'13px', fontWeight:'700', cursor: saving || !nombre.trim() || !telefono.trim() ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
+        {saving ? '⏳ Guardando...' : '⚡ Guardar pista'}
+      </button>
+      <div style={{ fontSize:'11px', color:'var(--muted)', marginTop:'6px', textAlign:'center' }}>Se guarda como pista en Sheets</div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONVERSOR RÁPIDO
+// ─────────────────────────────────────────────────────────────────────────────
+function ConversorRapido() {
+  const [monto, setMonto] = useState('')
+  const IVA = 0.15
+
+  const n = parseFloat(monto.replace(/,/g,'')) || 0
+  const fmt = (v) => v > 0 ? `$${v.toLocaleString('es-EC', { minimumFractionDigits:2, maximumFractionDigits:2 })}` : '—'
+
+  const filas = [
+    { label: '+ IVA 15%',     valor: n > 0 ? n * (1 + IVA) : 0 },
+    { label: '− IVA (base)',  valor: n > 0 ? n / (1 + IVA) : 0 },
+    { label: 'Solo IVA',      valor: n > 0 ? n * IVA : 0 },
+    { label: 'Desc. 5%',      valor: n > 0 ? n * 0.95 : 0 },
+    { label: 'Desc. 10%',     valor: n > 0 ? n * 0.90 : 0 },
+    { label: 'Desc. 15%',     valor: n > 0 ? n * 0.85 : 0 },
+    { label: 'Desc. 20%',     valor: n > 0 ? n * 0.80 : 0 },
+    { label: 'Comisión 5%',   valor: n > 0 ? n * 0.05 : 0 },
+    { label: 'Comisión 10%',  valor: n > 0 ? n * 0.10 : 0 },
+  ]
+
+  return (
+    <div style={{ padding:'12px' }}>
+      <input value={monto} onChange={e => setMonto(e.target.value)} placeholder="Ingresa un monto..." type="number"
+        autoFocus style={{ ...inputStyle, fontSize:'18px', fontWeight:'700', textAlign:'right', marginBottom:'10px', width:'100%', boxSizing:'border-box' }} />
+      <div style={{ display:'flex', flexDirection:'column', gap:'2px' }}>
+        {filas.map(({ label, valor }) => (
+          <div key={label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'6px 8px', borderRadius:'6px', background: valor > 0 ? 'var(--cream)' : 'transparent' }}>
+            <span style={{ fontSize:'12px', color:'var(--muted)', fontWeight:'600' }}>{label}</span>
+            <span style={{ fontSize:'13px', fontWeight:'700', color: valor > 0 ? 'var(--ink)' : 'var(--border)', fontFamily:'var(--font-display)' }}>{fmt(valor)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WHATSAPP RÁPIDO
+// ─────────────────────────────────────────────────────────────────────────────
+function WhatsAppRapido({ onClose }) {
+  const [numero, setNumero] = useState('')
+  const [mensaje, setMensaje] = useState('')
+
+  const abrir = () => {
+    if (!numero.trim()) return
+    const limpio = numero.replace(/\D/g,'').replace(/^0/,'')
+    const url = `https://wa.me/593${limpio}${mensaje.trim() ? `?text=${encodeURIComponent(mensaje.trim())}` : ''}`
+    window.open(url, '_blank')
+    onClose()
+  }
+
+  const handleKey = (e) => { if (e.key === 'Enter' && !e.shiftKey) abrir() }
+
+  return (
+    <div style={{ padding:'14px' }}>
+      <input value={numero} onChange={e => setNumero(e.target.value)} onKeyDown={handleKey}
+        placeholder="Número de celular *" type="tel" autoFocus
+        style={{ ...inputStyle, fontSize:'14px', marginBottom:'8px', width:'100%', boxSizing:'border-box' }} />
+      <textarea value={mensaje} onChange={e => setMensaje(e.target.value)}
+        placeholder="Mensaje (opcional)..."
+        style={{ ...inputStyle, fontSize:'13px', resize:'none', minHeight:'64px', lineHeight:'1.5', marginBottom:'10px', width:'100%', boxSizing:'border-box' }} />
+      <button onClick={abrir} disabled={!numero.trim()}
+        style={{ width:'100%', padding:'10px', background: !numero.trim() ? 'var(--muted)' : '#16a34a', color:'white', border:'none', borderRadius:'var(--radius)', fontSize:'13px', fontWeight:'700', cursor: !numero.trim() ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.999 2C6.477 2 2 6.477 2 12c0 1.89.525 3.656 1.438 5.168L2 22l4.984-1.393A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" fill="none" stroke="white" strokeWidth="1.5"/></svg>
+        Abrir WhatsApp
+      </button>
+    </div>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CALCULADORA FLOTANTE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -4329,6 +4445,12 @@ export default function App() {
                   bg:'#7c3aed', action: () => setFabTool(fabTool==='cal'?null:'cal') },
                 { key:'notes', label:'Notas rápidas', icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>,
                   bg:'#d97706', action: () => setFabTool(fabTool==='notes'?null:'notes') },
+                { key:'captura', label:'Nueva pista', icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+                  bg:'#2563eb', action: () => setFabTool(fabTool==='captura'?null:'captura') },
+                { key:'conversor', label:'Conversor', icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+                  bg:'#0891b2', action: () => setFabTool(fabTool==='conversor'?null:'conversor') },
+                { key:'whatsapp', label:'WhatsApp', icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.999 2C6.477 2 2 6.477 2 12c0 1.89.525 3.656 1.438 5.168L2 22l4.984-1.393A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" fill="none" stroke="white" strokeWidth="1.5"/></svg>,
+                  bg:'#16a34a', action: () => setFabTool(fabTool==='whatsapp'?null:'whatsapp') },
               ].map(({ key, label, icon, bg, action }, i) => (
                 <div key={key} style={{ display:'flex', alignItems:'center', gap:'8px', animation:`fadeUp 0.15s ${i*0.04}s ease both` }}>
                   <span style={{ fontSize:'12px', fontWeight:'700', color:'white', background:'rgba(0,0,0,0.55)', padding:'3px 10px', borderRadius:'20px', whiteSpace:'nowrap', backdropFilter:'blur(4px)' }}>{label}</span>
@@ -4383,6 +4505,39 @@ export default function App() {
             <button onClick={() => setFabTool(null)} style={{ background:'none', border:'none', color:'white', cursor:'pointer', fontSize:'18px', lineHeight:1 }}>✕</button>
           </div>
           <NotasRapidas valor={notasRapidas} onChange={v => { setNotasRapidas(v); try { localStorage.setItem('notas_rapidas', v) } catch {} }} />
+        </div>
+      )}
+
+      {/* ── CAPTURA RÁPIDA FLOTANTE ──────────────────────────────────────────── */}
+      {fabTool === 'captura' && (
+        <div style={{ position:'fixed', bottom:'100px', right:'20px', zIndex:700, background:'var(--white)', borderRadius:'var(--radius-lg)', boxShadow:'0 8px 40px rgba(0,0,0,0.25)', width:'290px', overflow:'hidden', animation:'fadeUp 0.2s ease' }}>
+          <div style={{ background:'#2563eb', padding:'12px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <span style={{ color:'white', fontWeight:'700', fontSize:'14px' }}>Nueva pista rápida</span>
+            <button onClick={() => setFabTool(null)} style={{ background:'none', border:'none', color:'white', cursor:'pointer', fontSize:'18px', lineHeight:1 }}>✕</button>
+          </div>
+          <CapturaRapida onClose={() => setFabTool(null)} showToast={showToast} />
+        </div>
+      )}
+
+      {/* ── CONVERSOR FLOTANTE ───────────────────────────────────────────────── */}
+      {fabTool === 'conversor' && (
+        <div style={{ position:'fixed', bottom:'100px', right:'20px', zIndex:700, background:'var(--white)', borderRadius:'var(--radius-lg)', boxShadow:'0 8px 40px rgba(0,0,0,0.25)', width:'290px', overflow:'hidden', animation:'fadeUp 0.2s ease' }}>
+          <div style={{ background:'#0891b2', padding:'12px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <span style={{ color:'white', fontWeight:'700', fontSize:'14px' }}>Conversor rápido</span>
+            <button onClick={() => setFabTool(null)} style={{ background:'none', border:'none', color:'white', cursor:'pointer', fontSize:'18px', lineHeight:1 }}>✕</button>
+          </div>
+          <ConversorRapido />
+        </div>
+      )}
+
+      {/* ── WHATSAPP RÁPIDO FLOTANTE ─────────────────────────────────────────── */}
+      {fabTool === 'whatsapp' && (
+        <div style={{ position:'fixed', bottom:'100px', right:'20px', zIndex:700, background:'var(--white)', borderRadius:'var(--radius-lg)', boxShadow:'0 8px 40px rgba(0,0,0,0.25)', width:'290px', overflow:'hidden', animation:'fadeUp 0.2s ease' }}>
+          <div style={{ background:'#16a34a', padding:'12px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <span style={{ color:'white', fontWeight:'700', fontSize:'14px' }}>WhatsApp rápido</span>
+            <button onClick={() => setFabTool(null)} style={{ background:'none', border:'none', color:'white', cursor:'pointer', fontSize:'18px', lineHeight:1 }}>✕</button>
+          </div>
+          <WhatsAppRapido onClose={() => setFabTool(null)} />
         </div>
       )}
     </div>
