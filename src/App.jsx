@@ -643,14 +643,7 @@ function MiDia({ onViewOrder, onViewPista }) {
           <Icon d={icons.calendar} size={13} />
           Actividades de hoy · {actividadesHoy.length}
         </div>
-        {actividadesHoy.length > 0 && (() => {
-          const totalHoy2 = actividadesHoy.reduce((s,o) => s + (o.total||0), 0)
-          return (
-            <div style={{ textAlign:'center', marginBottom:'10px', padding:'8px 0' }}>
-              <span style={{ fontSize:'13px', fontWeight:'800', color:'var(--brand)', textTransform:'uppercase', letterSpacing:'0.12em' }}>⚡ Esto es lo más importante</span>
-            </div>
-          )
-        })()}
+
         {actividadesHoy.length === 0 ? (
           <div style={{ background: 'var(--white)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', textAlign: 'center', color: 'var(--muted)', fontSize: '13px' }}>
             Sin actividades programadas para hoy
@@ -3548,13 +3541,6 @@ function ProximaSemana({ onViewOrder }) {
           Actividades programadas · {ordenesProximaSemana.length}
         </div>
 
-        {/* Total */}
-        {ordenesProximaSemana.length > 0 && (
-          <div style={{ background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:'var(--radius-lg)', padding:'12px 18px', marginBottom:'10px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <span style={{ fontSize:'12px', fontWeight:'700', color:'#16a34a', textTransform:'uppercase', letterSpacing:'0.06em' }}>Total en juego</span>
-            <span style={{ fontFamily:'var(--font-display)', fontWeight:'800', fontSize:'18px', color:'#16a34a' }}>{fmtM(totalProximaSemana)}</span>
-          </div>
-        )}
 
         {/* Sort */}
         {ordenesProximaSemana.length > 0 && (
