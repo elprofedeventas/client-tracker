@@ -677,8 +677,10 @@ function MiDia({ onViewOrder, onViewPista }) {
             return Math.floor((hoy2 - f) / (1000*60*60*24)) <= diasVencidos + diasExtra
           })
           const totalV = listaVenc.reduce((s,o) => s + (o.total||0), 0)
-          const ok = totalV >= valorX
-          const falt = Math.max(0, valorX - totalV)
+          const totalHoyRecup = actividadesHoy.reduce((s,o) => s + (o.total||0), 0)
+          const recuperar = Math.max(0, valorX - totalHoyRecup) // lo que falta de la tarjeta de arriba
+          const ok = totalV >= recuperar
+          const falt = Math.max(0, recuperar - totalV)
 
           const listaSort = [...listaVenc].sort((a, b) => {
             if (sortField === 'fecha') {
@@ -700,7 +702,7 @@ function MiDia({ onViewOrder, onViewPista }) {
                   </div>
                   <div>
                     <div style={{ fontSize: '10px', fontWeight: '700', color: ok ? '#16a34a' : '#dc2626', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' }}>Recuperar</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '22px', color: ok ? '#16a34a' : '#dc2626' }}>{fmtM(valorX)}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontWeight: '800', fontSize: '22px', color: ok ? '#16a34a' : '#dc2626' }}>{fmtM(recuperar)}</div>
                   </div>
                 </div>
                 <div style={{ fontSize: '13px', fontWeight: '700', color: ok ? '#16a34a' : '#dc2626' }}>
