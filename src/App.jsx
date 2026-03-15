@@ -4317,7 +4317,6 @@ function CapturaRapida({ onClose, showToast }) {
         style={{ width:'100%', padding:'10px', background: saving || !nombre.trim() || !telefono.trim() ? 'var(--muted)' : '#16a34a', color:'white', border:'none', borderRadius:'var(--radius)', fontSize:'13px', fontWeight:'700', cursor: saving || !nombre.trim() || !telefono.trim() ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
         {saving ? '⏳ Guardando...' : '⚡ Guardar pista'}
       </button>
-      <div style={{ fontSize:'11px', color:'var(--muted)', marginTop:'6px', textAlign:'center' }}>Se guarda como pista en Sheets</div>
     </div>
   )
 }
@@ -4584,9 +4583,6 @@ function NotasRapidas({ valor, onChange }) {
           style={{ flex:2, padding:'8px', background: saved ? '#16a34a' : saving ? 'var(--muted)' : '#d97706', border:'none', borderRadius:'var(--radius)', fontSize:'12px', fontWeight:'700', cursor: saving || !valor.trim() ? 'not-allowed' : 'pointer', color:'white', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
           {saved ? '✓ Guardado' : saving ? '⏳ Guardando...' : '☁ Guardar en Sheets'}
         </button>
-      </div>
-      <div style={{ fontSize:'11px', color:'var(--muted)', marginTop:'6px', textAlign:'center' }}>
-        Las notas se guardan localmente al escribir
       </div>
     </div>
   )
