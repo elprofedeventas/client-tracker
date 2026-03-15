@@ -1986,7 +1986,7 @@ Total:             ${fmtMoney(order.total)}`
 }
 const ACCION_PHONE_EMAIL = ['Mensaje','Solicitar Referidos','Enviar Propuesta','Seguimiento','Resolver Objeción','Cerrar Venta','Post Venta','Venta Cruzada','Venta Ascendente']
 
-function ActividadesView({ onViewOrder, modoInicial }) {
+function ActividadesView({ onViewOrder, onViewPista, modoInicial }) {
   const [orders, setOrders] = useState([])
   const [pistasData, setPistasData] = useState([])
   const [loading, setLoading] = useState(true)
@@ -2364,8 +2364,8 @@ function ActividadesView({ onViewOrder, modoInicial }) {
             }
 
             return (
-              <div key={order.numOrden}
-                onClick={() => onViewOrder(order)}
+              <div key={order.estado === 'Pista' ? `pista-${order.rowIndex}` : order.numOrden}
+                onClick={() => order.estado === 'Pista' ? onViewPista && onViewPista(order) : onViewOrder(order)}
                 style={{ background:'var(--white)', border:'1.5px solid var(--border)', borderRadius:'var(--radius-lg)', padding:'14px 18px', cursor:'pointer', transition:'box-shadow 0.15s', animation:`fadeUp 0.2s ${Math.min(i,5)*0.04}s ease both` }}
                 onMouseEnter={e => e.currentTarget.style.boxShadow='var(--shadow)'}
                 onMouseLeave={e => e.currentTarget.style.boxShadow='none'}>
@@ -4086,7 +4086,7 @@ export default function App() {
 
         {/* ── ACTIVIDADES ───────────────────────────────────────────────────── */}
         {view === 'activities' && (
-          <ActividadesView key={activitiesKey} onViewOrder={(o) => handleViewOrder(o, 'activities')} modoInicial={activitiesModo} />
+          <ActividadesView key={activitiesKey} onViewOrder={(o) => handleViewOrder(o, 'activities')} onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} modoInicial={activitiesModo} />
         )}
 
         {/* ── ÓRDENES ───────────────────────────────────────────────────────── */}
