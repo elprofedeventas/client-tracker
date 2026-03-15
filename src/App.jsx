@@ -4856,7 +4856,7 @@ export default function App() {
 
       {/* Dropdown menu */}
       {menuOpen && (
-        <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: '68px', right: '16px', zIndex: 300, background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', minWidth: '200px', animation: 'fadeUp 0.2s ease' }}>
+        <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: '68px', right: '16px', zIndex: 300, background: 'var(--white)', border: '1.5px solid var(--border)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', overflowY: 'auto', maxHeight: 'calc(100vh - 90px)', minWidth: '200px', animation: 'fadeUp 0.2s ease' }}>
           {menuItems.map(({ key, icon, label }) => {
               const isActive = view === key || (view === 'edit' && key === 'list') || (view === 'view' && key === 'list') || (view === 'viewOrder' && key === 'orders') || (view === 'viewOrder' && key === 'activities') || (view === 'viewOrder' && key === 'midia') || (view === 'viewPista' && key === 'pistas') || (view === 'editPista' && key === 'pistas')
               return (
