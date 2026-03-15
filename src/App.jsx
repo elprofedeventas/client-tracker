@@ -617,13 +617,11 @@ function MiDia({ onViewOrder, onViewPista, onViewProximaSemana, initialVista }) 
         </div>
       </div>
 
-      {vistaActiva === 'semana' && (
-        <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--muted)' }}>
-          <div style={{ fontSize:'32px', marginBottom:'12px' }}>🚧</div>
-          <div style={{ fontFamily:'var(--font-display)', fontWeight:'700', fontSize:'16px', marginBottom:'6px' }}>Esta semana</div>
-          <div style={{ fontSize:'13px' }}>Próximamente</div>
-        </div>
-      )}
+      {vistaActiva === 'semana' && (() => {
+        // Navegar a ProximaSemana con vista esta semana
+        if (onViewProximaSemana) onViewProximaSemana('semana')
+        return null
+      })()}
 
       {vistaActiva === 'hoy' && <div>
 
@@ -4801,6 +4799,7 @@ export default function App() {
   const recognitionRef = useRef(null)
   const [fabOpen, setFabOpen] = useState(false)
   const [midiaVista, setMidiaVista] = useState('hoy')
+  const [psVista, setPsVista] = useState('proxima')
   const [fabTool, setFabTool] = useState(null) // 'calc' | 'cal' | 'notes'
   const [notasRapidas, setNotasRapidas] = useState(() => { try { return localStorage.getItem('notas_rapidas') || '' } catch { return '' } })
   const [form, setForm] = useState(EMPTY_FORM)
@@ -4996,7 +4995,7 @@ export default function App() {
       <main style={{ maxWidth: '680px', margin: '0 auto', padding: '40px 20px' }}>
 
         {/* ── DASHBOARD ─────────────────────────────────────────────────────── */}
-        {view === 'midia' && <MiDia key={midiaVista} onViewOrder={(o) => handleViewOrder(o, 'midia')} onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} onViewProximaSemana={() => navigate('proximaSemana')} initialVista={midiaVista} />}
+        {view === 'midia' && <MiDia key={midiaVista} onViewOrder={(o) => handleViewOrder(o, 'midia')} onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} onViewProximaSemana={(vista) => { setMidiaVista('hoy'); navigate('proximaSemana'); setPsVista(vista || 'proxima') }} initialVista={midiaVista} />}
 
         {view === 'pistas' && (
           <PistasView onViewPista={(p) => { setViewingPista(p); setEditingPista(false); setView('viewPista') }} />
@@ -5012,7 +5011,7 @@ export default function App() {
             onSave={(updated) => { setViewingPista(updated); setView('viewPista') }} />
         )}
 
-        {view === 'proximaSemana' && <ProximaSemana onViewOrder={(o) => handleViewOrder(o, 'proximaSemana')} onViewMiDia={(vista) => { setMidiaVista(vista || 'hoy'); navigate('midia') }} />}
+        {view === 'proximaSemana' && <ProximaSemana key={psVista} onViewOrder={(o) => handleViewOrder(o, 'proximaSemana')} onViewMiDia={(vista) => { setMidiaVista(vista || 'hoy'); navigate('midia') }} initialVista={psVista} />}
 
         {view === 'dashboard' && <Dashboard />}
 
