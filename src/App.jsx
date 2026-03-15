@@ -3410,8 +3410,48 @@ function EstaSemana({ onViewOrder, onViewMiDia, onViewProximaSemana }) {
       .finally(() => setLoading(false))
   }, [])
 
+  const [speaking, setSpeaking] = useState(false)
+
   const toggleSort  = (f) => { if (sortField===f) setSortDir(d=>d==='asc'?'desc':'asc'); else { setSortField(f); setSortDir(f==='total'?'desc':'asc') } }
   const toggleSortV = (f) => { if (sortFieldV===f) setSortDirV(d=>d==='asc'?'desc':'asc'); else { setSortFieldV(f); setSortDirV(f==='total'?'desc':'asc') } }
+
+  const hablarEstaSemana = (d) => {
+    if (!window.speechSynthesis) return
+    if (speaking) { window.speechSynthesis.cancel(); setSpeaking(false); return }
+    const redondear = (n) => Math.round((parseFloat(n)||0) / 100) * 100
+    const numAPalabras = (n) => {
+      const num = redondear(n)
+      if (num === 0) return 'cero dólares'
+      const unidades = ['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce','quince','dieciséis','diecisiete','dieciocho','diecinueve']
+      const decenas = ['','','veinte','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa']
+      const centenas = ['','cien','doscientos','trescientos','cuatrocientos','quinientos','seiscientos','setecientos','ochocientos','novecientos']
+      const p = (n) => {
+        if (n===0) return ''
+        if (n<20) return unidades[n]
+        if (n<100) { const d=Math.floor(n/10),u=n%10; return u===0?decenas[d]:`${d===2?'veinti'+unidades[u]:decenas[d]+' y '+unidades[u]}` }
+        if (n<1000) { const cv=Math.floor(n/100),r=n%100; const sc=cv===1&&r===0?'cien':cv===1?'ciento':centenas[cv]; return r===0?sc:`${sc} ${p(r)}` }
+        if (n<1000000) { const miles=Math.floor(n/1000),r=n%1000; const sm=miles===1?'mil':`${p(miles)} mil`; return r===0?sm:`${sm} ${p(r)}` }
+        return n.toString()
+      }
+      return `${p(num)} dólares`
+    }
+    const nombre = d.nombreUsuario ? `, ${d.nombreUsuario}` : ''
+    const numActs = (d.ordenesEstaSemana||[]).length
+    const total = d.totalEstaSemana || 0
+    const parteActs = numActs === 0
+      ? 'No tienes actividades programadas para esta semana.'
+      : `Tienes ${numActs} ${numActs===1?'actividad programada':'actividades programadas'} por ${numAPalabras(total)}.`
+    const parteEstado = d.enCaminoEsta
+      ? '¡Estás en camino! Tienes suficiente para completar la semana.'
+      : `Te faltan ${numAPalabras(d.faltanteEsta)} para completar la semana. Necesitas prospectar o recuperar órdenes.`
+    const texto = `Esta semana${nombre}. ${parteActs} ${parteEstado}`
+    const utter = new SpeechSynthesisUtterance(texto)
+    utter.lang = 'es-EC'
+    utter.rate = 0.95
+    utter.onend = () => setSpeaking(false)
+    setSpeaking(true)
+    window.speechSynthesis.speak(utter)
+  }
 
   const parseFecha = (s) => {
     if (!s) return null
@@ -3487,6 +3527,11 @@ function EstaSemana({ onViewOrder, onViewMiDia, onViewProximaSemana }) {
               {lunesEsta} — {finEsta} · {diasSemana} días laborables
             </div>
           </div>
+          <button onClick={() => hablarEstaSemana(data)}
+            title={speaking ? 'Detener' : 'Escuchar resumen de la semana'}
+            style={{ background:speaking?'var(--brand)':'var(--white)', border:`1.5px solid ${speaking?'var(--brand)':'var(--border)'}`, borderRadius:'50%', width:'38px', height:'38px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', transition:'all 0.2s', flexShrink:0, animation:!speaking?'pulse 1.5s infinite':'none', boxShadow:!speaking?'0 0 0 3px var(--brand-light)':'none' }}>
+            <span style={{ fontSize:'18px', lineHeight:1 }}>{speaking ? '⏹' : '🔊'}</span>
+          </button>
         </div>
         {/* Botones navegación */}
         <div style={{display:'flex',gap:'6px',marginTop:'10px'}}>
@@ -3527,9 +3572,7 @@ function EstaSemana({ onViewOrder, onViewMiDia, onViewProximaSemana }) {
           ) : (
             <div style={{fontSize:'13px',fontWeight:'700',color:'#dc2626'}}>⚠ Te faltan {fmtM(faltanteEsta)} — necesitas prospectar o recuperar órdenes esta semana</div>
           )}
-          <span style={{fontSize:'11px',fontWeight:'700',color:'var(--muted)',background:'var(--cream)',padding:'2px 8px',borderRadius:'20px',whiteSpace:'nowrap'}}>
-            Sem {numSemanaEsta} · ×{pesoSemanaEsta}
-          </span>
+
         </div>
       </div>
 
@@ -4005,9 +4048,6 @@ function ProximaSemana({ onViewOrder, onViewMiDia, onViewEstaSemana, initialVist
                 <span style={{ fontWeight:'700', color:'var(--ink)' }}>{lunesEsta}</span> — <span style={{ fontWeight:'700', color:'var(--ink)' }}>{finEsta}</span>
                 <span style={{ marginLeft:'8px' }}>· {tipoLabel}</span>
               </div>
-              <span style={{ fontSize:'11px', fontWeight:'700', color:'var(--muted)', background:'var(--cream)', padding:'2px 8px', borderRadius:'20px' }}>
-                Sem {numSemanaEsta} · ×{pesoSemanaEsta}
-              </span>
             </div>
 
             {/* Órdenes de esta semana */}
