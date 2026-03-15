@@ -4628,6 +4628,8 @@ export default function App() {
   const [voiceState, setVoiceState] = useState('idle') // 'idle' | 'listening' | 'success' | 'error'
   const recognitionRef = useRef(null)
   const [fabOpen, setFabOpen] = useState(false)
+  const [pwaPrompt, setPwaPrompt] = useState(null)
+  const [pwaBanner, setPwaBanner] = useState(false)
   const [fabTool, setFabTool] = useState(null) // 'calc' | 'cal' | 'notes'
   const [notasRapidas, setNotasRapidas] = useState(() => { try { return localStorage.getItem('notas_rapidas') || '' } catch { return '' } })
   const [form, setForm] = useState(EMPTY_FORM)
@@ -4703,6 +4705,23 @@ export default function App() {
   }
 
   const navigate = (v, opts = {}) => { setView(v); setMenuOpen(false); if (v !== 'edit') setEditingClient(null); if (v !== 'view') setViewingClient(null); if (v !== 'viewPista' && v !== 'editPista') { setViewingPista(null); setEditingPista(false) } if (v !== 'viewOrder' && v !== 'newOrder') setViewingOrder(null); if (v === 'orders') { setOrdersKey(k => k + 1); setOrdersFiltro('Negociando') } if (v === 'activities' && !opts.keepModo) setActivitiesModo('pendientes') }
+
+  // PWA: captura prompt de instalación y registra SW
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
+    const handler = (e) => { e.preventDefault(); setPwaPrompt(e); setPwaBanner(true) }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const instalarPwa = async () => {
+    if (!pwaPrompt) return
+    pwaPrompt.prompt()
+    const { outcome } = await pwaPrompt.userChoice
+    if (outcome === 'accepted') { setPwaBanner(false); setPwaPrompt(null) }
+  }
 
   const voiceSpeak = (texto) => {
     if (!window.speechSynthesis) return
@@ -5000,6 +5019,19 @@ export default function App() {
       </main>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {/* Banner PWA */}
+      {pwaBanner && (
+        <div style={{ position:'fixed', bottom: fabOpen ? '320px' : '92px', left:'16px', right:'16px', zIndex:550, background:'#1e3a5f', borderRadius:'var(--radius-lg)', padding:'14px 16px', boxShadow:'0 8px 32px rgba(0,0,0,0.3)', display:'flex', alignItems:'center', gap:'12px', animation:'fadeUp 0.3s ease' }}>
+          <div style={{ width:'40px', height:'40px', borderRadius:'10px', background:'#fbbf24', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:'22px', fontWeight:'900', fontFamily:'Georgia,serif', color:'#1e3a5f' }}>O</div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:'13px', fontWeight:'700', color:'white' }}>Instalar ORDEN PPP</div>
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.65)', marginTop:'1px' }}>Agrega a tu pantalla de inicio</div>
+          </div>
+          <button onClick={instalarPwa} style={{ padding:'7px 14px', background:'#fbbf24', color:'#1e3a5f', border:'none', borderRadius:'var(--radius)', fontSize:'12px', fontWeight:'800', cursor:'pointer', flexShrink:0 }}>Instalar</button>
+          <button onClick={() => setPwaBanner(false)} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.5)', cursor:'pointer', fontSize:'18px', padding:'2px', flexShrink:0, lineHeight:1 }}>✕</button>
+        </div>
+      )}
 
       {/* ── FAB: Relámpago + herramientas ─────────────────────────────────── */}
       {!['form','edit','editPista'].includes(view) && (
