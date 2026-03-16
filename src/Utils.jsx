@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { API_BASE, Icon, icons, fmt, norm, formatFecha, getNowGuayaquil, getTodayLabel, Field, DatePicker, Toast, Highlight, inputStyle, sectionTitle, EMPTY_FORM, DIAS, MESES_LARGO, CARD_STYLE, CARD_STYLE_COMPACT, BTN_PRIMARY, BTN_GHOST, BTN_DANGER, SECTION_HEADER, BADGE_BASE, PILL_STYLE, FLOAT_PANEL } from './shared.jsx'
 
-export function CapturaRapida({ onClose, showToast }) {
+function CapturaRapida({ onClose, showToast }) {
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [saving, setSaving] = useState(false)
@@ -43,7 +43,7 @@ export function CapturaRapida({ onClose, showToast }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // CONVERSOR RÁPIDO
 // ─────────────────────────────────────────────────────────────────────────────
-export function ConversorRapido() {
+function ConversorRapido() {
   const [raw, setRaw] = useState('') // solo dígitos y punto decimal
   const IVA = 0.15
 
@@ -99,7 +99,7 @@ export function ConversorRapido() {
 // ─────────────────────────────────────────────────────────────────────────────
 // WHATSAPP RÁPIDO
 // ─────────────────────────────────────────────────────────────────────────────
-export function WhatsAppRapido({ onClose }) {
+function WhatsAppRapido({ onClose }) {
   const [numero, setNumero] = useState('')
   const [mensaje, setMensaje] = useState('')
 
@@ -133,7 +133,7 @@ export function WhatsAppRapido({ onClose }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // CALCULADORA FLOTANTE
 // ─────────────────────────────────────────────────────────────────────────────
-export function Calculadora() {
+function Calculadora() {
   const [display, setDisplay] = useState('0')
   const [prev, setPrev] = useState(null)
   const [op, setOp] = useState(null)
@@ -218,7 +218,7 @@ export function Calculadora() {
 // ─────────────────────────────────────────────────────────────────────────────
 // CALENDARIO FLOTANTE
 // ─────────────────────────────────────────────────────────────────────────────
-export function CalendarioFlotante() {
+function CalendarioFlotante() {
   const hoy = getNowGuayaquil()
   const [mes, setMes] = useState(hoy.getMonth())
   const [anio, setAnio] = useState(hoy.getFullYear())
@@ -278,7 +278,7 @@ export function CalendarioFlotante() {
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTAS RÁPIDAS FLOTANTE
 // ─────────────────────────────────────────────────────────────────────────────
-export function NotasRapidas({ valor, onChange }) {
+function NotasRapidas({ valor, onChange }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -317,7 +317,7 @@ export function NotasRapidas({ valor, onChange }) {
   )
 }
 
-function PistaFuenteSelect({ value, onChange }) {
+export function PistaFuenteSelect({ value, onChange }) {
   const [fuentes, setFuentes] = useState([])
   useEffect(() => {
     fetch(`${API_BASE}?action=getPistasFuentes`).then(r=>r.json()).then(d=>{ if(d.success) setFuentes(d.data) }).catch(()=>{})
@@ -330,7 +330,7 @@ function PistaFuenteSelect({ value, onChange }) {
   )
 }
 
-function PistaAccionSelect({ value, onChange }) {
+export function PistaAccionSelect({ value, onChange }) {
   const [acciones, setAcciones] = useState([])
   useEffect(() => {
     fetch(`${API_BASE}?action=getPistasAcciones`).then(r=>r.json()).then(d=>{ if(d.success) setAcciones(d.data) }).catch(()=>{})
