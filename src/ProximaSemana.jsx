@@ -3,7 +3,7 @@ import { API_BASE, Icon, icons, fmt, norm, formatFecha, getNowGuayaquil, getToda
 import { CardOrdenGlobal } from './OrdersView.jsx'
 import { EstaSemanaVencidas } from './EstaSemana.jsx'
 
-function ProximaSemana({ onViewOrder, onViewMiDia, onViewEstaSemana, initialVista }) {
+export default function ProximaSemana({ onViewOrder, onViewMiDia, onViewEstaSemana, initialVista }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [vistaActiva, setVistaActiva] = useState(initialVista || 'proxima')
