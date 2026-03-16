@@ -315,3 +315,15 @@ export const FLOAT_PANEL = {
   overflow: 'hidden',
   animation: 'fadeUp 0.2s ease',
 }
+
+// ─── Formato de dinero con decimales ─────────────────────────────────────────
+export const fmtMoney = (n) => `$${(parseFloat(n)||0).toLocaleString('es-EC',{minimumFractionDigits:2,maximumFractionDigits:2})}`
+
+// ─── Colores por estado de orden ──────────────────────────────────────────────
+export const ESTADO_COLORS = {
+  Vendido:    { bg:'#dcfce7', color:'#166534', border:'#16a34a' },
+  Negociando: { bg:'#dbeafe', color:'#1e40af', border:'#2563eb' },
+  Detenido:   { bg:'#fef9c3', color:'#854d0e', border:'#ca8a04' },
+  Perdido:    { bg:'#fee2e2', color:'#991b1b', border:'#dc2626' },
+  Pista:      { bg:'#f3e8ff', color:'#6b21a8', border:'#9333ea' },
+}
